@@ -560,7 +560,7 @@ export default function AgentsPage() {
           </div>
           <button
             onClick={openCreate}
-            className="px-4 py-2 rounded-lg text-sm font-mono font-bold transition-all"
+            className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
             style={{ background: "var(--accent)", color: "#000" }}
           >
             + New Agent
@@ -573,7 +573,7 @@ export default function AgentsPage() {
         ) : agents.length === 0 ? (
           <div className="border rounded-xl p-12 text-center" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
             <div className="text-4xl mb-3">🤖</div>
-            <p className="font-mono">ยังไม่มี agents — กด New Agent เพื่อเริ่มต้น</p>
+            <p>ยังไม่มี agents — กด New Agent เพื่อเริ่มต้น</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -586,26 +586,26 @@ export default function AgentsPage() {
                 <div className="text-3xl">{agent.emoji}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold font-mono" style={{ color: "var(--text)" }}>{agent.name}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-mono border ${PROVIDER_COLORS[agent.provider]}`}>
+                    <span className="font-bold" style={{ color: "var(--text)" }}>{agent.name}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs border ${PROVIDER_COLORS[agent.provider]}`}>
                       {PROVIDER_LABELS[agent.provider]}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-xs font-mono border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                    <span className="px-2 py-0.5 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                       {agent.role}
                     </span>
                     {!agent.hasApiKey && agent.provider !== "ollama" && (
-                      <span className="px-2 py-0.5 rounded text-xs font-mono bg-red-500/20 text-red-400 border border-red-500/30">
+                      <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">
                         ⚠ No API Key
                       </span>
                     )}
                   </div>
-                  <div className="text-xs mt-1 font-mono" style={{ color: "var(--text-muted)" }}>{agent.model}</div>
+                  <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{agent.model}</div>
                   {agent.skills && agent.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {agent.skills.map((s) => {
                         const skill = ALL_SKILLS.find((sk) => sk.id === s);
                         return skill ? (
-                          <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                          <span key={s} className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                             {skill.label}
                           </span>
                         ) : null;
@@ -619,25 +619,25 @@ export default function AgentsPage() {
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                   <button
                     onClick={() => handleToggle(agent)}
-                    className="px-3 py-2 sm:py-1 rounded text-xs font-mono border transition-all"
+                    className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
                     style={{ borderColor: "var(--border)", color: agent.active ? "var(--accent)" : "var(--text-muted)" }}
                   >
                     {agent.active ? "● On" : "○ Off"}
                   </button>
                   <button
                     onClick={() => openEdit(agent)}
-                    className="px-3 py-2 sm:py-1 rounded text-xs font-mono border transition-all"
+                    className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
                     style={{ borderColor: "var(--border)", color: "var(--text)" }}
                   >
                     Edit
                   </button>
                   {deleteConfirm === agent.id ? (
                     <>
-                      <button onClick={() => handleDelete(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs font-mono bg-red-500/20 text-red-400 border border-red-500/30">Confirm</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 sm:py-1 rounded text-xs font-mono border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>Cancel</button>
+                      <button onClick={() => handleDelete(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">Confirm</button>
+                      <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 sm:py-1 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>Cancel</button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs font-mono border border-red-500/30 text-red-400">Delete</button>
+                    <button onClick={() => setDeleteConfirm(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs border border-red-500/30 text-red-400">Delete</button>
                   )}
                 </div>
               </div>
@@ -651,19 +651,19 @@ export default function AgentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)" }}>
           <div className="w-full max-w-3xl rounded-2xl border p-4 sm:p-6 max-h-[92vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold font-mono text-lg" style={{ color: "var(--text)" }}>
+              <h2 className="font-bold text-lg" style={{ color: "var(--text)" }}>
                 {editingId ? "✏️ Edit Agent" : "✨ New Agent"}
               </h2>
               <button onClick={() => setShowForm(false)} style={{ color: "var(--text-muted)" }}>✕</button>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-mono">{error}</div>
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
             )}
 
             {/* ── Template Picker ── */}
             <div className="mb-6">
-              <div className="text-xs font-mono mb-3 font-bold" style={{ color: "var(--text-muted)" }}>
+              <div className="text-xs mb-3 font-bold" style={{ color: "var(--text-muted)" }}>
                 เลือก Template สำเร็จรูป
               </div>
 
@@ -673,7 +673,7 @@ export default function AgentsPage() {
                   <button
                     key={cat.key}
                     onClick={() => setActiveCategory(cat.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all`}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all`}
                     style={{
                       borderColor: activeCategory === cat.key ? "var(--accent)" : "var(--border)",
                       color: activeCategory === cat.key ? "var(--accent)" : "var(--text-muted)",
@@ -702,16 +702,16 @@ export default function AgentsPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xl">{t.emoji}</span>
                         <div>
-                          <div className="text-xs font-mono font-bold" style={{ color: "var(--text)" }}>{t.role}</div>
+                          <div className="text-xs font-bold" style={{ color: "var(--text)" }}>{t.role}</div>
                           {t.skills.length > 0 && (
-                            <div className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                               {t.skills.slice(0, 3).map((s) => ALL_SKILLS.find((sk) => sk.id === s)?.label.split(" ")[0]).join(" · ")}
                             </div>
                           )}
                         </div>
                       </div>
                       {t.soul && (
-                        <div className="text-[10px] font-mono line-clamp-2 mt-1" style={{ color: "var(--text-muted)" }}>
+                        <div className="text-[10px] line-clamp-2 mt-1" style={{ color: "var(--text-muted)" }}>
                           {t.soul.slice(0, 80)}...
                         </div>
                       )}
@@ -724,32 +724,32 @@ export default function AgentsPage() {
               {/* Name + Emoji + Role */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="w-20 sm:w-20">
-                  <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Emoji</label>
+                  <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Emoji</label>
                   <input
                     value={form.emoji}
                     onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border text-center text-xl font-mono"
+                    className="w-full px-3 py-2 rounded-lg border text-center text-xl"
                     style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                     maxLength={2}
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Name *</label>
+                  <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Name *</label>
                   <input
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="เช่น CEO Advisor"
-                    className="w-full px-3 py-2 rounded-lg border font-mono"
+                    className="w-full px-3 py-2 rounded-lg border"
                     style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Role *</label>
+                  <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Role *</label>
                   <input
                     value={form.role}
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
                     placeholder="เช่น CEO / Strategic Advisor"
-                    className="w-full px-3 py-2 rounded-lg border font-mono"
+                    className="w-full px-3 py-2 rounded-lg border"
                     style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                   />
                 </div>
@@ -757,11 +757,11 @@ export default function AgentsPage() {
 
               {/* Provider */}
               <div>
-                <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Provider *</label>
+                <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Provider *</label>
                 <select
                   value={form.provider}
                   onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value as Provider, model: "" }))}
-                  className="w-full px-3 py-2 rounded-lg border font-mono"
+                  className="w-full px-3 py-2 rounded-lg border"
                   style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                 >
                   {Object.entries(PROVIDER_LABELS).map(([k, v]) => (
@@ -772,7 +772,7 @@ export default function AgentsPage() {
 
               {/* API Key — highlight */}
               <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                <label className="text-xs font-mono mb-1 block font-bold" style={{ color: "var(--accent)" }}>
+                <label className="text-xs mb-1 block font-bold" style={{ color: "var(--accent)" }}>
                   🔑 API Key {editingId ? "(เว้นว่างถ้าไม่ต้องการเปลี่ยน)" : "— ใส่แค่นี้เพียงอย่างเดียว!"}
                 </label>
                 <input
@@ -780,7 +780,7 @@ export default function AgentsPage() {
                   value={form.apiKey}
                   onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
                   placeholder={editingId ? "••••••• (เว้นว่างถ้าไม่เปลี่ยน)" : "sk-ant-xxx / sk-xxx / AIzaSy..."}
-                  className="w-full px-3 py-2 rounded-lg border font-mono"
+                  className="w-full px-3 py-2 rounded-lg border"
                   style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                 />
               </div>
@@ -788,14 +788,14 @@ export default function AgentsPage() {
               {/* Base URL */}
               {(form.provider === "ollama" || form.provider === "custom") && (
                 <div>
-                  <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>
+                  <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
                     Base URL {form.provider === "ollama" ? "(default: http://localhost:11434)" : "(OpenAI-compatible endpoint)"}
                   </label>
                   <input
                     value={form.baseUrl}
                     onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
                     placeholder={form.provider === "ollama" ? "http://localhost:11434" : "https://your-api.com/v1"}
-                    className="w-full px-3 py-2 rounded-lg border font-mono"
+                    className="w-full px-3 py-2 rounded-lg border"
                     style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                   />
                 </div>
@@ -803,12 +803,12 @@ export default function AgentsPage() {
 
               {/* Model */}
               <div>
-                <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Model *</label>
+                <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Model *</label>
                 {models.length > 0 ? (
                   <select
                     value={form.model}
                     onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border font-mono"
+                    className="w-full px-3 py-2 rounded-lg border"
                     style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                   >
                     <option value="">เลือก model...</option>
@@ -821,7 +821,7 @@ export default function AgentsPage() {
                     value={form.model}
                     onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
                     placeholder="ชื่อ model เช่น llama3.2, custom-model"
-                    className="w-full px-3 py-2 rounded-lg border font-mono"
+                    className="w-full px-3 py-2 rounded-lg border"
                     style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                   />
                 )}
@@ -829,7 +829,7 @@ export default function AgentsPage() {
 
               {/* Skills */}
               <div>
-                <label className="text-xs font-mono mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
+                <label className="text-xs mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
                   Skills / ความสามารถพิเศษ
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -844,7 +844,7 @@ export default function AgentsPage() {
                         background: form.skills.includes(skill.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
                       }}
                     >
-                      <span className="text-xs font-mono font-bold" style={{ color: form.skills.includes(skill.id) ? "var(--accent)" : "var(--text)" }}>
+                      <span className="text-xs font-bold" style={{ color: form.skills.includes(skill.id) ? "var(--accent)" : "var(--text)" }}>
                         {skill.label}
                       </span>
                     </button>
@@ -856,8 +856,8 @@ export default function AgentsPage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 p-3 rounded-lg border flex items-center justify-between" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
                   <div>
-                    <div className="text-xs font-mono font-bold" style={{ color: "var(--text)" }}>🔍 Web Search</div>
-                    <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>ค้นหาข้อมูลจากอินเทอร์เน็ต</div>
+                    <div className="text-xs font-bold" style={{ color: "var(--text)" }}>🔍 Web Search</div>
+                    <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>ค้นหาข้อมูลจากอินเทอร์เน็ต</div>
                   </div>
                   <button
                     type="button"
@@ -874,7 +874,7 @@ export default function AgentsPage() {
                   </button>
                 </div>
                 <div className="flex-1 p-3 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                  <label className="text-xs font-mono font-bold block mb-1" style={{ color: "var(--text)" }}>
+                  <label className="text-xs font-bold block mb-1" style={{ color: "var(--text)" }}>
                     🏛️ Seniority (ลำดับพูด)
                   </label>
                   <div className="flex items-center gap-2">
@@ -888,38 +888,38 @@ export default function AgentsPage() {
                       onChange={(e) => setForm((f) => ({ ...f, seniority: Number(e.target.value) }))}
                       className="flex-1"
                     />
-                    <span className="text-xs font-mono w-8 text-center" style={{ color: "var(--accent)" }}>{form.seniority}</span>
+                    <span className="text-xs w-8 text-center" style={{ color: "var(--accent)" }}>{form.seniority}</span>
                   </div>
-                  <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>1 = ประธาน, 99 = พูดท้าย</div>
+                  <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>1 = ประธาน, 99 = พูดท้าย</div>
                 </div>
               </div>
 
               {/* MCP Server */}
               <div className="p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                <div className="text-xs font-mono font-bold mb-3" style={{ color: "var(--text)" }}>
+                <div className="text-xs font-bold mb-3" style={{ color: "var(--text)" }}>
                   🔌 MCP Server Connection <span className="font-normal" style={{ color: "var(--text-muted)" }}>(ไม่บังคับ)</span>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>MCP Endpoint URL <span className="font-normal">(ใส่ base URL เช่น http://ip:3002)</span></label>
+                    <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>MCP Endpoint URL <span className="font-normal">(ใส่ base URL เช่น http://ip:3002)</span></label>
                     <input
                       value={form.mcpEndpoint}
                       onChange={(e) => { setForm((f) => ({ ...f, mcpEndpoint: e.target.value })); setMcpTestResult(null); }}
                       placeholder="http://192.168.1.100:3002"
-                      className="w-full px-3 py-2 rounded-lg border font-mono text-sm"
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
                       style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
                     />
                   </div>
                   {form.mcpEndpoint.trim() && (
                     <div className="flex gap-3 items-start">
                       <div className="flex-1">
-                        <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Access Mode</label>
+                        <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Access Mode</label>
                         <select
                           value={form.mcpAccessMode}
                           onChange={(e) => setForm((f) => ({ ...f, mcpAccessMode: e.target.value }))}
                           title="MCP Access Mode"
                           aria-label="MCP Access Mode"
-                          className="w-full px-3 py-2 rounded-lg border font-mono text-sm"
+                          className="w-full px-3 py-2 rounded-lg border text-sm"
                           style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
                         >
                           <option value="general">general — ทั่วไป</option>
@@ -934,7 +934,7 @@ export default function AgentsPage() {
                           type="button"
                           onClick={testMcp}
                           disabled={mcpTesting}
-                          className="px-4 py-2 rounded-lg text-xs font-mono border transition-all disabled:opacity-50"
+                          className="px-4 py-2 rounded-lg text-xs border transition-all disabled:opacity-50"
                           style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                         >
                           {mcpTesting ? "กำลังทดสอบ..." : "🔍 ทดสอบ"}
@@ -944,7 +944,7 @@ export default function AgentsPage() {
                   )}
                   {mcpTestResult && (
                     <div
-                      className="text-xs font-mono px-3 py-2 rounded-lg border"
+                      className="text-xs px-3 py-2 rounded-lg border"
                       style={{
                         borderColor: mcpTestResult.ok ? "#22c55e40" : "#ef444440",
                         background: mcpTestResult.ok ? "#22c55e10" : "#ef444410",
@@ -959,7 +959,7 @@ export default function AgentsPage() {
 
               {/* Soul */}
               <div>
-                <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>
+                <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
                   Soul (System Prompt) * — บุคลิกและบทบาทของ agent
                 </label>
                 <textarea
@@ -967,7 +967,7 @@ export default function AgentsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, soul: e.target.value }))}
                   rows={5}
                   placeholder="อธิบายบุคลิก ความเชี่ยวชาญ และวิธีการทำงานของ agent นี้..."
-                  className="w-full px-3 py-2 rounded-lg border font-mono text-sm resize-none"
+                  className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
                   style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                 />
                 <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{form.soul.length} ตัวอักษร</div>
@@ -977,7 +977,7 @@ export default function AgentsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 rounded-lg text-sm font-mono border"
+                className="px-4 py-2 rounded-lg text-sm border"
                 style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
               >
                 Cancel
@@ -985,7 +985,7 @@ export default function AgentsPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 rounded-lg text-sm font-mono font-bold disabled:opacity-50 transition-all"
+                className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
                 style={{ background: "var(--accent)", color: "#000" }}
               >
                 {saving ? "Saving..." : editingId ? "Update Agent" : "Create Agent"}

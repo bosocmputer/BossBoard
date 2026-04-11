@@ -186,13 +186,13 @@ export default function MockTrialPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold font-mono" style={{ color: "var(--text)" }}>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)" }}>
             🏛️ ศาลจำลอง — Mock Trial Simulator
           </h1>
-          <p className="text-xs sm:text-sm mt-1 font-mono" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
             จำลองการพิจารณาคดี วิเคราะห์จุดแข็ง-จุดอ่อน ประเมินโอกาสชนะคดี
           </p>
-          <p className="text-xs mt-1 font-mono" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
             ⚠️ ผลวิเคราะห์เป็นเพียงการจำลองเบื้องต้น ไม่ใช่คำแนะนำทางกฎหมายที่เป็นทางการ — ควรปรึกษาทนายความจริงเสมอ
           </p>
         </div>
@@ -201,7 +201,7 @@ export default function MockTrialPage() {
         <div className="mb-6">
           <button
             onClick={() => setShowModelGuide(!showModelGuide)}
-            className="text-xs font-mono px-3 py-1.5 rounded-lg border transition-all"
+            className="text-xs px-3 py-1.5 rounded-lg border transition-all"
             style={{ borderColor: "var(--border)", color: "var(--accent)" }}
           >
             🤖 {showModelGuide ? "ซ่อนคำแนะนำ Model" : "แนะนำ Model สำหรับงานกฎหมาย"}
@@ -211,7 +211,7 @@ export default function MockTrialPage() {
               {MODEL_RECOMMENDATIONS.map((rec) => (
                 <div
                   key={rec.tier}
-                  className="p-3 rounded-xl border font-mono"
+                  className="p-3 rounded-xl border"
                   style={{ borderColor: "var(--border)", background: "var(--surface)" }}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -229,20 +229,20 @@ export default function MockTrialPage() {
         <div className="space-y-4 sm:space-y-5 mb-6 sm:mb-8">
           {/* Agent Selection */}
           <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-            <label className="text-xs font-mono font-bold mb-2 block" style={{ color: "var(--accent)" }}>
+            <label className="text-xs font-bold mb-2 block" style={{ color: "var(--accent)" }}>
               🤖 เลือก Agent สำหรับวิเคราะห์คดี *
             </label>
             {loadingAgents ? (
-              <div className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>กำลังโหลด agents...</div>
+              <div className="text-xs" style={{ color: "var(--text-muted)" }}>กำลังโหลด agents...</div>
             ) : agents.length === 0 ? (
-              <div className="text-xs font-mono p-3 rounded-lg border" style={{ borderColor: "#ef444440", background: "#ef444410", color: "#f87171" }}>
+              <div className="text-xs p-3 rounded-lg border" style={{ borderColor: "#ef444440", background: "#ef444410", color: "#f87171" }}>
                 ⚠️ ยังไม่มี Agent ที่ใช้งานได้ — กรุณาสร้าง Agent พร้อม API Key ที่หน้า <a href="/agents" className="underline">Team Agents</a> ก่อน
               </div>
             ) : (
               <select
                 value={selectedAgent}
                 onChange={(e) => setSelectedAgent(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border font-mono text-sm"
+                className="w-full px-3 py-2 rounded-lg border text-sm"
                 style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
               >
                 {agents.map((a) => (
@@ -256,7 +256,7 @@ export default function MockTrialPage() {
 
           {/* Case Type Selection */}
           <div>
-            <label className="text-xs font-mono font-bold mb-2 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-2 block" style={{ color: "var(--text-muted)" }}>
               ประเภทคดี
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
@@ -271,10 +271,10 @@ export default function MockTrialPage() {
                   }}
                 >
                   <div className="text-xl mb-1">{ct.emoji}</div>
-                  <div className="text-xs font-mono font-bold" style={{ color: caseType === ct.value ? "var(--accent)" : "var(--text)" }}>
+                  <div className="text-xs font-bold" style={{ color: caseType === ct.value ? "var(--accent)" : "var(--text)" }}>
                     {ct.label}
                   </div>
-                  <div className="text-[9px] font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>{ct.desc}</div>
+                  <div className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>{ct.desc}</div>
                 </button>
               ))}
             </div>
@@ -282,7 +282,7 @@ export default function MockTrialPage() {
 
           {/* Client Side */}
           <div>
-            <label className="text-xs font-mono font-bold mb-2 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-2 block" style={{ color: "var(--text-muted)" }}>
               ลูกค้าของคุณเป็นฝ่ายใด
             </label>
             <div className="flex gap-3">
@@ -295,7 +295,7 @@ export default function MockTrialPage() {
                 }}
               >
                 <div className="text-lg">🗣️</div>
-                <div className="text-xs font-mono font-bold" style={{ color: clientSide === "plaintiff" ? "var(--accent)" : "var(--text)" }}>
+                <div className="text-xs font-bold" style={{ color: clientSide === "plaintiff" ? "var(--accent)" : "var(--text)" }}>
                   ฝ่ายโจทก์ / ผู้ฟ้อง
                 </div>
               </button>
@@ -308,7 +308,7 @@ export default function MockTrialPage() {
                 }}
               >
                 <div className="text-lg">🛡️</div>
-                <div className="text-xs font-mono font-bold" style={{ color: clientSide === "defendant" ? "var(--accent)" : "var(--text)" }}>
+                <div className="text-xs font-bold" style={{ color: clientSide === "defendant" ? "var(--accent)" : "var(--text)" }}>
                   ฝ่ายจำเลย / ผู้ถูกฟ้อง
                 </div>
               </button>
@@ -317,21 +317,21 @@ export default function MockTrialPage() {
 
           {/* Case Title */}
           <div>
-            <label className="text-xs font-mono font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
               ชื่อคดี / หัวข้อ *
             </label>
             <input
               value={caseTitle}
               onChange={(e) => setCaseTitle(e.target.value)}
               placeholder="เช่น คดีผิดสัญญาซื้อขายที่ดิน, คดีเลิกจ้างไม่เป็นธรรม"
-              className="w-full px-3 py-2 rounded-lg border font-mono"
+              className="w-full px-3 py-2 rounded-lg border"
               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
             />
           </div>
 
           {/* Case Story */}
           <div>
-            <label className="text-xs font-mono font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
               เรื่องราวคดี / ข้อเท็จจริง *
             </label>
             <textarea
@@ -339,15 +339,15 @@ export default function MockTrialPage() {
               onChange={(e) => setCaseStory(e.target.value)}
               rows={6}
               placeholder={`อธิบายรายละเอียดของคดี:\n- เกิดอะไรขึ้น เมื่อไหร่\n- ใครคือคู่กรณี\n- ข้อพิพาทคืออะไร\n- มีการเจรจาอะไรมาก่อนหรือไม่`}
-              className="w-full px-3 py-2 rounded-lg border font-mono text-sm resize-none"
+              className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
             />
-            <div className="text-[10px] font-mono mt-1" style={{ color: "var(--text-muted)" }}>{caseStory.length} ตัวอักษร</div>
+            <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>{caseStory.length} ตัวอักษร</div>
           </div>
 
           {/* Evidence */}
           <div>
-            <label className="text-xs font-mono font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
               หลักฐานที่มี (ถ้ามี)
             </label>
             <textarea
@@ -355,14 +355,14 @@ export default function MockTrialPage() {
               onChange={(e) => setEvidence(e.target.value)}
               rows={4}
               placeholder={`ระบุหลักฐานที่มี เช่น:\n- สัญญาเป็นลายลักษณ์อักษร ลงวันที่...\n- ใบเสร็จ/ใบแจ้งหนี้\n- แชท LINE/Email ที่เกี่ยวข้อง\n- พยานบุคคล (ใคร รู้เห็นอะไร)`}
-              className="w-full px-3 py-2 rounded-lg border font-mono text-sm resize-none"
+              className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
             />
           </div>
 
           {/* Opposing Info */}
           <div>
-            <label className="text-xs font-mono font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
               ข้อมูลฝ่ายตรงข้าม (ถ้ามี)
             </label>
             <textarea
@@ -370,14 +370,14 @@ export default function MockTrialPage() {
               onChange={(e) => setOpposingInfo(e.target.value)}
               rows={3}
               placeholder="ข้อกล่าวอ้างของอีกฝ่าย, หลักฐานที่อีกฝ่ายอาจมี, จุดแข็งของเขา..."
-              className="w-full px-3 py-2 rounded-lg border font-mono text-sm resize-none"
+              className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
             />
           </div>
 
           {/* Relevant Laws */}
           <div>
-            <label className="text-xs font-mono font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
+            <label className="text-xs font-bold mb-1 block" style={{ color: "var(--text-muted)" }}>
               กฎหมายที่เกี่ยวข้อง (ถ้าทราบ)
             </label>
             <textarea
@@ -385,13 +385,13 @@ export default function MockTrialPage() {
               onChange={(e) => setRelevantLaws(e.target.value)}
               rows={2}
               placeholder="เช่น ปพพ. มาตรา 456, พ.ร.บ.คุ้มครองแรงงาน มาตรา 118"
-              className="w-full px-3 py-2 rounded-lg border font-mono text-sm resize-none"
+              className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-mono">{error}</div>
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
           )}
 
           {/* Action Buttons */}
@@ -399,7 +399,7 @@ export default function MockTrialPage() {
             <button
               onClick={runTrial}
               disabled={!canSubmit}
-              className="flex-1 px-6 py-3 rounded-xl text-sm font-mono font-bold transition-all disabled:opacity-40"
+              className="flex-1 px-6 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
               style={{ background: "var(--accent)", color: "#000" }}
             >
               {phase === "idle" ? "🏛️ เริ่มศาลจำลอง" : phaseLabels[phase].emoji + " " + phaseLabels[phase].label}
@@ -407,7 +407,7 @@ export default function MockTrialPage() {
             {phase === "done" && (
               <button
                 onClick={resetTrial}
-                className="px-6 py-3 rounded-xl text-sm font-mono border transition-all"
+                className="px-6 py-3 rounded-xl text-sm border transition-all"
                 style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
               >
                 🔄 เริ่มใหม่
@@ -422,17 +422,17 @@ export default function MockTrialPage() {
             <div className="flex items-center gap-3">
               <div className="animate-spin text-lg">⚖️</div>
               <div>
-                <div className="text-sm font-mono font-bold" style={{ color: "var(--accent)" }}>
+                <div className="text-sm font-bold" style={{ color: "var(--accent)" }}>
                   {phaseLabels[phase].emoji} {phaseLabels[phase].label}
                 </div>
-                <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
+                <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                   กรุณารอสักครู่ — AI กำลังวิเคราะห์คดีอย่างละเอียด
                 </div>
               </div>
             </div>
             {streamingText && (
               <div
-                className="mt-3 text-xs font-mono whitespace-pre-wrap max-h-40 overflow-y-auto p-3 rounded-lg"
+                className="mt-3 text-xs whitespace-pre-wrap max-h-40 overflow-y-auto p-3 rounded-lg"
                 style={{ background: "var(--bg)", color: "var(--text)", borderColor: "var(--border)" }}
               >
                 {streamingText}
@@ -447,11 +447,11 @@ export default function MockTrialPage() {
             {/* Win Probability */}
             <div className="p-4 sm:p-6 rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <div className="text-center mb-4">
-                <div className="text-xs font-mono font-bold mb-2" style={{ color: "var(--text-muted)" }}>
+                <div className="text-xs font-bold mb-2" style={{ color: "var(--text-muted)" }}>
                   📊 โอกาสชนะคดี (ประเมินเบื้องต้น)
                 </div>
                 <div
-                  className="text-4xl sm:text-5xl font-bold font-mono"
+                  className="text-4xl sm:text-5xl font-bold"
                   style={{
                     color: result.winProbability >= 70
                       ? "#4ade80"
@@ -462,7 +462,7 @@ export default function MockTrialPage() {
                 >
                   {result.winProbability}%
                 </div>
-                <div className="text-xs font-mono mt-1" style={{ color: "var(--text-muted)" }}>
+                <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                   {result.winProbability >= 70
                     ? "🟢 โอกาสค่อนข้างดี — มีหลักฐานและข้อกฎหมายสนับสนุน"
                     : result.winProbability >= 40
@@ -489,12 +489,12 @@ export default function MockTrialPage() {
             {/* Strengths & Weaknesses */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "#22c55e40", background: "#22c55e08" }}>
-                <div className="text-xs font-mono font-bold mb-3" style={{ color: "#4ade80" }}>
+                <div className="text-xs font-bold mb-3" style={{ color: "#4ade80" }}>
                   💪 จุดแข็งของคดี
                 </div>
                 <ul className="space-y-2">
                   {result.strengths.map((s, i) => (
-                    <li key={i} className="text-xs font-mono flex gap-2" style={{ color: "var(--text)" }}>
+                    <li key={i} className="text-xs flex gap-2" style={{ color: "var(--text)" }}>
                       <span style={{ color: "#4ade80" }}>✓</span>
                       <span>{s}</span>
                     </li>
@@ -502,12 +502,12 @@ export default function MockTrialPage() {
                 </ul>
               </div>
               <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "#ef444440", background: "#ef444408" }}>
-                <div className="text-xs font-mono font-bold mb-3" style={{ color: "#f87171" }}>
+                <div className="text-xs font-bold mb-3" style={{ color: "#f87171" }}>
                   ⚠️ จุดอ่อน / ความเสี่ยง
                 </div>
                 <ul className="space-y-2">
                   {result.weaknesses.map((w, i) => (
-                    <li key={i} className="text-xs font-mono flex gap-2" style={{ color: "var(--text)" }}>
+                    <li key={i} className="text-xs flex gap-2" style={{ color: "var(--text)" }}>
                       <span style={{ color: "#f87171" }}>✗</span>
                       <span>{w}</span>
                     </li>
@@ -518,7 +518,7 @@ export default function MockTrialPage() {
 
             {/* Trial Messages (Simulation) */}
             <div className="p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="text-xs font-mono font-bold mb-4" style={{ color: "var(--text-muted)" }}>
+              <div className="text-xs font-bold mb-4" style={{ color: "var(--text-muted)" }}>
                 🏛️ จำลองการพิจารณาคดี
               </div>
               <div className="space-y-4">
@@ -542,7 +542,7 @@ export default function MockTrialPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm">{msg.emoji}</span>
                       <span
-                        className="text-xs font-mono font-bold"
+                        className="text-xs font-bold"
                         style={{
                           color:
                             msg.role === "judge" ? "#a78bfa" :
@@ -554,7 +554,7 @@ export default function MockTrialPage() {
                         {msg.label}
                       </span>
                     </div>
-                    <div className="text-xs font-mono whitespace-pre-wrap" style={{ color: "var(--text)", lineHeight: 1.7 }}>
+                    <div className="text-xs whitespace-pre-wrap" style={{ color: "var(--text)", lineHeight: 1.7 }}>
                       {msg.text}
                     </div>
                   </div>
@@ -564,17 +564,17 @@ export default function MockTrialPage() {
 
             {/* Recommendation */}
             <div className="p-4 sm:p-5 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-              <div className="text-xs font-mono font-bold mb-2" style={{ color: "var(--accent)" }}>
+              <div className="text-xs font-bold mb-2" style={{ color: "var(--accent)" }}>
                 📋 คำแนะนำจากการวิเคราะห์
               </div>
-              <div className="text-sm font-mono whitespace-pre-wrap" style={{ color: "var(--text)", lineHeight: 1.8 }}>
+              <div className="text-sm whitespace-pre-wrap" style={{ color: "var(--text)", lineHeight: 1.8 }}>
                 {result.recommendation}
               </div>
             </div>
 
             {/* Disclaimer */}
             <div className="p-3 rounded-lg border text-center" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-              <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
+              <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                 ⚠️ <strong>ข้อจำกัดความรับผิดชอบ:</strong> ผลการจำลองนี้เป็นเพียงการวิเคราะห์เบื้องต้นโดย AI เท่านั้น
                 ไม่ถือเป็นคำแนะนำทางกฎหมายที่เป็นทางการ ผลคดีจริงขึ้นอยู่กับปัจจัยหลายอย่าง — กรุณาปรึกษาทนายความที่มีใบอนุญาตเสมอ
               </div>

@@ -252,7 +252,7 @@ function NavItemIcon({ name, active }: { name: NavIconName; active: boolean }) {
           : "border-[var(--border)] bg-[var(--bg)]/88"
       }`}
       style={{
-        borderRadius: 0,
+        borderRadius: "0.5rem",
         boxShadow: active
           ? "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)"
           : "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -2px 0 rgba(0,0,0,0.1)",
