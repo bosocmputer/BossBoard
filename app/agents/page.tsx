@@ -214,6 +214,135 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
   },
 ];
 
+// ─── Model Recommendations ────────────────────────────────────────────────────
+
+interface ModelRec {
+  role: string;
+  emoji: string;
+  recommended: { id: string; label: string; price: string };
+  budget: { id: string; label: string; price: string };
+  reason: string;
+}
+
+const MODEL_RECOMMENDATIONS: { category: string; label: string; models: ModelRec[] }[] = [
+  {
+    category: "accounting",
+    label: "🏛️ สำนักงานบัญชี",
+    models: [
+      {
+        role: "หัวหน้าบัญชี",
+        emoji: "💰",
+        recommended: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
+        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
+        reason: "Thinking mode + context 1M สำหรับวิเคราะห์งบซับซ้อน",
+      },
+      {
+        role: "พนักงานบัญชี",
+        emoji: "🤖",
+        recommended: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
+        budget: { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano", price: "$0.10 / $0.40" },
+        reason: "แม่นยำ ละเอียด เหมาะกับงานตรวจทานตัวเลข",
+      },
+      {
+        role: "ผู้สอบบัญชี",
+        emoji: "🔍",
+        recommended: { id: "google/gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro", price: "$1.25 / $10" },
+        budget: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
+        reason: "Context 1M สำหรับ audit เอกสารหลายร้อยหน้า",
+      },
+      {
+        role: "ที่ปรึกษาภาษี",
+        emoji: "📋",
+        recommended: { id: "anthropic/claude-4-sonnet", label: "Claude 4 Sonnet", price: "$3 / $15" },
+        budget: { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini", price: "$0.25 / $2" },
+        reason: "Reasoning ลึก + ภาษาไทยเยี่ยม สำหรับวิเคราะห์กฎหมาย",
+      },
+      {
+        role: "นักวิเคราะห์การเงิน",
+        emoji: "📊",
+        recommended: { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini", price: "$0.25 / $2" },
+        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
+        reason: "คำนวณ DCF / ratio / projection ได้แม่นยำ",
+      },
+      {
+        role: "เจ้าหน้าที่ Compliance",
+        emoji: "⚖️",
+        recommended: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
+        budget: { id: "mistralai/mistral-small-2603", label: "Mistral Small 4", price: "$0.15 / $0.60" },
+        reason: "Tool use ดี สำหรับตรวจสอบ compliance checklist",
+      },
+      {
+        role: "ผู้จัดการสำนักงาน",
+        emoji: "🏢",
+        recommended: { id: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", price: "$0.10 / $0.40" },
+        budget: { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano", price: "$0.10 / $0.40" },
+        reason: "ถูกและเร็ว เหมาะกับงานสรุป/ประสานงาน",
+      },
+    ],
+  },
+  {
+    category: "business",
+    label: "🏢 Business & Management",
+    models: [
+      {
+        role: "CEO Advisor",
+        emoji: "👔",
+        recommended: { id: "anthropic/claude-4.5-sonnet", label: "Claude 4.5 Sonnet", price: "$3 / $15" },
+        budget: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
+        reason: "Reasoning ระดับสูงสุด สำหรับกลยุทธ์องค์กร",
+      },
+      {
+        role: "CFO Analyst",
+        emoji: "💰",
+        recommended: { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini", price: "$0.25 / $2" },
+        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
+        reason: "วิเคราะห์ ROI / cash flow / unit economics",
+      },
+      {
+        role: "CMO Strategist",
+        emoji: "📣",
+        recommended: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
+        budget: { id: "mistralai/mistral-small-2603", label: "Mistral Small 4", price: "$0.15 / $0.60" },
+        reason: "คิดเร็ว + สร้างสรรค์ สำหรับ marketing strategy",
+      },
+      {
+        role: "Legal Advisor",
+        emoji: "⚖️",
+        recommended: { id: "anthropic/claude-4-sonnet", label: "Claude 4 Sonnet", price: "$3 / $15" },
+        budget: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
+        reason: "วิเคราะห์สัญญา / กฎหมายซับซ้อน ได้ละเอียด",
+      },
+      {
+        role: "HR Lead",
+        emoji: "👥",
+        recommended: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
+        budget: { id: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", price: "$0.10 / $0.40" },
+        reason: "สื่อสารดี เหมาะกับงาน culture / people",
+      },
+      {
+        role: "Sales Coach",
+        emoji: "🤝",
+        recommended: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
+        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
+        reason: "ตอบเร็ว + วิเคราะห์ sales funnel ได้ดี",
+      },
+      {
+        role: "Ops Manager",
+        emoji: "⚙️",
+        recommended: { id: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", price: "$0.10 / $0.40" },
+        budget: { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano", price: "$0.10 / $0.40" },
+        reason: "ราคาถูก เหมาะกับงาน coordination / สรุปรายงาน",
+      },
+    ],
+  },
+];
+
+const TIER_SUGGESTIONS = [
+  { tier: "Starter (ฟรี)", model: "google/gemma-3-27b-it:free", cost: "฿0" },
+  { tier: "Professional", model: "google/gemini-2.5-flash", cost: "~฿0.50-2.00/session" },
+  { tier: "Enterprise", model: "Mix: Claude + Flash", cost: "~฿2-10/session" },
+];
+
 const EMPTY_FORM = {
   name: "",
   emoji: "🤖",
@@ -250,6 +379,8 @@ export default function AgentsPage() {
   const [activeCategory, setActiveCategory] = useState("accounting");
   const [mcpTesting, setMcpTesting] = useState(false);
   const [mcpTestResult, setMcpTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [showModelGuide, setShowModelGuide] = useState(false);
+  const [guideCategory, setGuideCategory] = useState("accounting");
   const [agentStats, setAgentStats] = useState<Record<string, { totalSessions: number; totalInputTokens: number; totalOutputTokens: number; lastUsed: string; daily: { date: string; sessions: number; inputTokens: number; outputTokens: number }[] }>>({});
 
   const fetchAgents = useCallback(async () => {
@@ -460,6 +591,106 @@ export default function AgentsPage() {
             ))}
           </div>
         )}
+
+        {/* Model Recommendation Guide */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowModelGuide(!showModelGuide)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all"
+            style={{
+              borderColor: showModelGuide ? "var(--accent)" : "var(--border)",
+              background: showModelGuide ? "color-mix(in srgb, var(--accent) 5%, var(--surface))" : "var(--surface)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">💡</span>
+              <span className="text-sm font-mono font-bold" style={{ color: "var(--text)" }}>
+                คู่มือเลือก Model — แนะนำ Model ที่เหมาะกับแต่ละตำแหน่ง
+              </span>
+            </div>
+            <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
+              {showModelGuide ? "▲ ซ่อน" : "▼ ดูคำแนะนำ"}
+            </span>
+          </button>
+
+          {showModelGuide && (
+            <div className="mt-3 border rounded-xl p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+              {/* Category tabs */}
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {MODEL_RECOMMENDATIONS.map((cat) => (
+                  <button
+                    key={cat.category}
+                    onClick={() => setGuideCategory(cat.category)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-mono border transition-all"
+                    style={{
+                      borderColor: guideCategory === cat.category ? "var(--accent)" : "var(--border)",
+                      color: guideCategory === cat.category ? "var(--accent)" : "var(--text-muted)",
+                      background: guideCategory === cat.category ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Model table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs font-mono">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>ตำแหน่ง</th>
+                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>⭐ แนะนำ (คุ้มค่า)</th>
+                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>💚 ประหยัด</th>
+                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>เหตุผล</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MODEL_RECOMMENDATIONS.find((c) => c.category === guideCategory)?.models.map((m) => (
+                      <tr key={m.role} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td className="py-2.5 px-2">
+                          <span className="mr-1">{m.emoji}</span>
+                          <span style={{ color: "var(--text)" }}>{m.role}</span>
+                        </td>
+                        <td className="py-2.5 px-2">
+                          <div style={{ color: "var(--accent)" }}>{m.recommended.label}</div>
+                          <div style={{ color: "var(--text-muted)" }}>{m.recommended.price}</div>
+                        </td>
+                        <td className="py-2.5 px-2">
+                          <div style={{ color: "#4ade80" }}>{m.budget.label}</div>
+                          <div style={{ color: "var(--text-muted)" }}>{m.budget.price}</div>
+                        </td>
+                        <td className="py-2.5 px-2" style={{ color: "var(--text-muted)" }}>
+                          {m.reason}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pricing tiers */}
+              <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="text-xs font-mono font-bold mb-2" style={{ color: "var(--text-muted)" }}>
+                  📦 แพ็กเกจแนะนำตาม Pricing Tier
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {TIER_SUGGESTIONS.map((t) => (
+                    <div key={t.tier} className="px-3 py-2.5 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                      <div className="text-xs font-mono font-bold" style={{ color: "var(--text)" }}>{t.tier}</div>
+                      <div className="text-[10px] font-mono mt-0.5" style={{ color: "var(--accent)" }}>{t.model}</div>
+                      <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{t.cost}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="mt-3 text-[10px] font-mono px-2" style={{ color: "var(--text-muted)" }}>
+                💡 ราคาเป็น $/M tokens (input / output) — ใช้ OpenRouter เป็น Provider · เลือก model จาก dropdown ตอนสร้าง agent
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Agent List */}
         {loading ? (
