@@ -235,7 +235,7 @@ export default function MockTrialPage() {
             {loadingAgents ? (
               <div className="text-xs" style={{ color: "var(--text-muted)" }}>กำลังโหลด agents...</div>
             ) : agents.length === 0 ? (
-              <div className="text-xs p-3 rounded-lg border" style={{ borderColor: "#ef444440", background: "#ef444410", color: "#f87171" }}>
+              <div className="text-xs p-3 rounded-lg border" style={{ borderColor: "var(--danger)", background: "color-mix(in srgb, var(--danger) 8%, transparent)", color: "var(--danger)" }}>
                 ⚠️ ยังไม่มี Agent ที่ใช้งานได้ — กรุณาสร้าง Agent พร้อม API Key ที่หน้า <a href="/agents" className="underline">Team Agents</a> ก่อน
               </div>
             ) : (
@@ -454,10 +454,10 @@ export default function MockTrialPage() {
                   className="text-4xl sm:text-5xl font-bold"
                   style={{
                     color: result.winProbability >= 70
-                      ? "#4ade80"
+                      ? "var(--success)"
                       : result.winProbability >= 40
-                      ? "#facc15"
-                      : "#f87171",
+                      ? "var(--warning, #facc15)"
+                      : "var(--danger)",
                   }}
                 >
                   {result.winProbability}%
@@ -477,10 +477,10 @@ export default function MockTrialPage() {
                   style={{
                     width: `${result.winProbability}%`,
                     background: result.winProbability >= 70
-                      ? "#4ade80"
+                      ? "var(--success)"
                       : result.winProbability >= 40
-                      ? "#facc15"
-                      : "#f87171",
+                      ? "var(--warning, #facc15)"
+                      : "var(--danger)",
                   }}
                 />
               </div>
@@ -488,27 +488,27 @@ export default function MockTrialPage() {
 
             {/* Strengths & Weaknesses */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "#22c55e40", background: "#22c55e08" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "#4ade80" }}>
+              <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "color-mix(in srgb, var(--success) 30%, transparent)", background: "color-mix(in srgb, var(--success) 5%, transparent)" }}>
+                <div className="text-xs font-bold mb-3" style={{ color: "var(--success)" }}>
                   💪 จุดแข็งของคดี
                 </div>
                 <ul className="space-y-2">
                   {result.strengths.map((s, i) => (
                     <li key={i} className="text-xs flex gap-2" style={{ color: "var(--text)" }}>
-                      <span style={{ color: "#4ade80" }}>✓</span>
+                      <span style={{ color: "var(--success)" }}>✓</span>
                       <span>{s}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "#ef444440", background: "#ef444408" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "#f87171" }}>
+              <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "color-mix(in srgb, var(--danger) 30%, transparent)", background: "color-mix(in srgb, var(--danger) 5%, transparent)" }}>
+                <div className="text-xs font-bold mb-3" style={{ color: "var(--danger)" }}>
                   ⚠️ จุดอ่อน / ความเสี่ยง
                 </div>
                 <ul className="space-y-2">
                   {result.weaknesses.map((w, i) => (
                     <li key={i} className="text-xs flex gap-2" style={{ color: "var(--text)" }}>
-                      <span style={{ color: "#f87171" }}>✗</span>
+                      <span style={{ color: "var(--danger)" }}>✗</span>
                       <span>{w}</span>
                     </li>
                   ))}
@@ -528,14 +528,14 @@ export default function MockTrialPage() {
                     className="p-3 rounded-lg border"
                     style={{
                       borderColor:
-                        msg.role === "judge" ? "#a78bfa40" :
-                        msg.role === "prosecutor" ? "#60a5fa40" :
-                        msg.role === "defense" ? "#f9731640" :
+                        msg.role === "judge" ? "color-mix(in srgb, var(--purple) 30%, transparent)" :
+                        msg.role === "prosecutor" ? "color-mix(in srgb, var(--info) 30%, transparent)" :
+                        msg.role === "defense" ? "color-mix(in srgb, var(--warning, #f97316) 30%, transparent)" :
                         "var(--border)",
                       background:
-                        msg.role === "judge" ? "#a78bfa08" :
-                        msg.role === "prosecutor" ? "#60a5fa08" :
-                        msg.role === "defense" ? "#f9731608" :
+                        msg.role === "judge" ? "color-mix(in srgb, var(--purple) 5%, transparent)" :
+                        msg.role === "prosecutor" ? "color-mix(in srgb, var(--info) 5%, transparent)" :
+                        msg.role === "defense" ? "color-mix(in srgb, var(--warning, #f97316) 5%, transparent)" :
                         "var(--bg)",
                     }}
                   >
@@ -545,9 +545,9 @@ export default function MockTrialPage() {
                         className="text-xs font-bold"
                         style={{
                           color:
-                            msg.role === "judge" ? "#a78bfa" :
-                            msg.role === "prosecutor" ? "#60a5fa" :
-                            msg.role === "defense" ? "#fb923c" :
+                            msg.role === "judge" ? "var(--purple)" :
+                            msg.role === "prosecutor" ? "var(--info)" :
+                            msg.role === "defense" ? "var(--orange)" :
                             "var(--accent)",
                         }}
                       >

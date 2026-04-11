@@ -125,7 +125,7 @@ export default function TeamsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-pixel, monospace)", letterSpacing: "0.04em" }}>
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
             📋 Teams
           </h1>
           <p className="mt-1 text-sm opacity-55">จัดกลุ่ม agents เพื่อใช้งานใน Research ร่วมกัน</p>
@@ -172,7 +172,7 @@ export default function TeamsPage() {
             <div
               key={team.id}
               className="flex flex-col gap-3 border p-4 transition-colors"
-              style={{ borderColor: "var(--border)", background: "var(--card-bg, var(--bg))" }}
+              style={{ borderColor: "var(--border)", background: "var(--card)" }}
             >
               {/* Card header */}
               <div className="flex items-start justify-between gap-2">

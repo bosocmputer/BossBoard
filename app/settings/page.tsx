@@ -112,7 +112,7 @@ export default function SettingsPage() {
             {state.hasSerperKey && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{state.serperKeyPreview}</span>
-                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, #22c55e 15%, transparent)", color: "#22c55e" }}>✓ บันทึกแล้ว</span>
+                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--success) 15%, transparent)", color: "var(--success)" }}>✓ บันทึกแล้ว</span>
                 <button onClick={() => handleClear("serper")} className="text-xs px-3 py-1.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
               </div>
             )}
@@ -140,7 +140,7 @@ export default function SettingsPage() {
             {state.hasSerpApiKey && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{state.serpApiKeyPreview}</span>
-                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, #22c55e 15%, transparent)", color: "#22c55e" }}>✓ บันทึกแล้ว</span>
+                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--success) 15%, transparent)", color: "var(--success)" }}>✓ บันทึกแล้ว</span>
                 <button onClick={() => handleClear("serpapi")} className="text-xs px-3 py-1.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
               </div>
             )}
@@ -189,14 +189,14 @@ export default function SettingsPage() {
             {testing ? "กำลังทดสอบ..." : "🧪 ทดสอบ"}
           </button>
 
-          {saved && <span className="text-sm" style={{ color: "#22c55e" }}>✅ บันทึกสำเร็จ!</span>}
+          {saved && <span className="text-sm" style={{ color: "var(--success)" }}>✅ บันทึกสำเร็จ!</span>}
         </div>
 
         {testResult && (
           <div className="mt-3 text-sm px-3 py-2 rounded-lg" style={{
-            background: testResult.ok ? "color-mix(in srgb, #22c55e 10%, transparent)" : "color-mix(in srgb, #ef4444 10%, transparent)",
-            border: `1px solid ${testResult.ok ? "#22c55e44" : "#ef444444"}`,
-            color: testResult.ok ? "#22c55e" : "#ef4444",
+            background: testResult.ok ? "color-mix(in srgb, var(--success) 10%, transparent)" : "color-mix(in srgb, var(--danger) 10%, transparent)",
+            border: `1px solid ${testResult.ok ? "var(--success)" : "var(--danger)"}`,
+            color: testResult.ok ? "var(--success)" : "var(--danger)",
           }}>
             {testResult.message}
           </div>
