@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n, LanguageSwitcher } from "@/lib/i18n";
 import { ThemeSwitcher } from "@/lib/theme";
-
-const BUGS_ENABLED_KEY = "pixel-office-bugs-enabled";
-const BUGS_COUNT_KEY = "pixel-office-bugs-count";
-const BUGS_MAX = 400;
 
 type NavIconName = "agents" | "pixelOffice" | "models" | "sessions" | "stats" | "alerts" | "skills" | "teamAgents" | "research" | "teams" | "meetingRoom";
 type PixelTone = "base" | "shade" | "light";
@@ -274,31 +270,14 @@ const NAV_ITEMS: { group: string; items: { href: string; icon: NavIconName; labe
       { href: "/agents", icon: "teamAgents", labelKey: "nav.teamAgents" },
       { href: "/teams", icon: "teams", labelKey: "nav.teams" },
       { href: "/research", icon: "research", labelKey: "nav.research" },
-      { href: "/pixel-office-research", icon: "meetingRoom", labelKey: "nav.meetingRoom" },
       { href: "/mock-trial", icon: "agents", labelKey: "nav.mockTrial" },
-    ],
-  },
-  {
-    group: "nav.overview",
-    items: [
-      { href: "/", icon: "agents", labelKey: "nav.agents" },
-      { href: "/pixel-office", icon: "pixelOffice", labelKey: "nav.pixelOffice" },
-      { href: "/models", icon: "models", labelKey: "nav.models" },
-    ],
-  },
-  {
-    group: "nav.monitor",
-    items: [
-      { href: "/sessions", icon: "sessions", labelKey: "nav.sessions" },
-      { href: "/stats", icon: "stats", labelKey: "nav.stats" },
-      { href: "/alerts", icon: "alerts", labelKey: "nav.alerts" },
     ],
   },
   {
     group: "nav.config",
     items: [
-      { href: "/skills", icon: "skills", labelKey: "nav.skills" },
       { href: "/settings", icon: "skills", labelKey: "nav.settings" },
+      { href: "/benefits", icon: "stats", labelKey: "nav.benefits" },
     ],
   },
 ];
@@ -310,155 +289,13 @@ export function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileAgentCount, setMobileAgentCount] = useState<number | null>(null);
   const [mobileOpenclawVersion, setMobileOpenclawVersion] = useState<string | null>(null);
-  const [experimentOpen, setExperimentOpen] = useState(false);
-  const [bugsEnabled, setBugsEnabled] = useState(false);
-  const [bugsCount, setBugsCount] = useState(5);
-  const [logoCarry, setLogoCarry] = useState<{ active: boolean; dx: number; dy: number; angle: number; hidden: boolean }>({
-    active: false,
-    dx: 0,
-    dy: 0,
-    angle: 0,
-    hidden: false,
-  });
-  const [manualLogoOffset, setManualLogoOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
-  const [manualLogoAngle, setManualLogoAngle] = useState(0);
-  const [isLogoDragging, setIsLogoDragging] = useState(false);
-  const bugsEnabledRef = useRef(false);
-  const suppressLogoClickRef = useRef(false);
-  const dragRef = useRef<{ active: boolean; startX: number; startY: number; originDx: number; originDy: number; moved: boolean; lastX: number; lastY: number }>({
-    active: false,
-    startX: 0,
-    startY: 0,
-    originDx: 0,
-    originDy: 0,
-    moved: false,
-    lastX: 0,
-    lastY: 0,
-  });
 
-  useEffect(() => {
-    const onStart = () => setLogoCarry((s) => ({ ...s, active: true, hidden: false }));
-    const onStop = () => setLogoCarry({ active: false, dx: 0, dy: 0, angle: 0, hidden: false });
-    const onProgress = (e: Event) => {
-      if (dragRef.current.active) return;
-      const ce = e as CustomEvent<{ active: boolean; dx: number; dy: number; angle: number; hidden: boolean }>;
-      const d = ce.detail;
-      if (!d) return;
-      setLogoCarry({ active: !!d.active, dx: d.dx || 0, dy: d.dy || 0, angle: d.angle || 0, hidden: !!d.hidden });
-    };
-    window.addEventListener("openclaw-logo-drag-start", onStart as EventListener);
-    window.addEventListener("openclaw-logo-drag-stop", onStop as EventListener);
-    window.addEventListener("openclaw-logo-carry-progress", onProgress as EventListener);
-    return () => {
-      window.removeEventListener("openclaw-logo-drag-start", onStart as EventListener);
-      window.removeEventListener("openclaw-logo-drag-stop", onStop as EventListener);
-      window.removeEventListener("openclaw-logo-carry-progress", onProgress as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    const syncFromStorage = () => {
-      const enabled = localStorage.getItem(BUGS_ENABLED_KEY) === "true";
-      const raw = Number(localStorage.getItem(BUGS_COUNT_KEY) || "5");
-      const count = Math.max(0, Math.min(BUGS_MAX, Number.isFinite(raw) ? raw : 5));
-      bugsEnabledRef.current = enabled;
-      setBugsEnabled(enabled);
-      setBugsCount(count);
-    };
-    syncFromStorage();
-    window.addEventListener("storage", syncFromStorage);
-    window.addEventListener("openclaw-bugs-config-change", syncFromStorage as EventListener);
-    return () => {
-      window.removeEventListener("storage", syncFromStorage);
-      window.removeEventListener("openclaw-bugs-config-change", syncFromStorage as EventListener);
-    };
-  }, []);
-
-  const toggleBugs = () => {
-    const next = !bugsEnabled;
-    setBugsEnabled(next);
-    localStorage.setItem(BUGS_ENABLED_KEY, String(next));
-    window.dispatchEvent(new CustomEvent("openclaw-bugs-config-change"));
-  };
-
-  const onBugCountChange = (nextCount: number) => {
-    const clamped = Math.max(0, Math.min(BUGS_MAX, nextCount));
-    setBugsCount(clamped);
-    localStorage.setItem(BUGS_COUNT_KEY, String(clamped));
-    window.dispatchEvent(new CustomEvent("openclaw-bugs-config-change"));
-  };
-
-  useEffect(() => {
-    const stopDrag = () => {
-      if (!dragRef.current.active) return;
-      dragRef.current.active = false;
-      if (dragRef.current.moved) suppressLogoClickRef.current = true;
-      setIsLogoDragging(false);
-      document.body.style.userSelect = "";
-    };
-    const onMouseMove = (e: MouseEvent) => {
-      if (!dragRef.current.active) return;
-      if (bugsEnabledRef.current) {
-        stopDrag();
-        return;
-      }
-      const nextDx = dragRef.current.originDx + (e.clientX - dragRef.current.startX);
-      const nextDy = dragRef.current.originDy + (e.clientY - dragRef.current.startY);
-      if (Math.abs(nextDx - dragRef.current.originDx) > 3 || Math.abs(nextDy - dragRef.current.originDy) > 3) {
-        dragRef.current.moved = true;
-      }
-      const moveX = e.clientX - dragRef.current.lastX;
-      const moveY = e.clientY - dragRef.current.lastY;
-      if (Math.abs(moveX) + Math.abs(moveY) > 0.2) {
-        const targetAngle = Math.max(-0.95, Math.min(0.95, Math.atan2(moveY, moveX) * 0.65));
-        setManualLogoAngle((prev) => prev * 0.65 + targetAngle * 0.35);
-      }
-      dragRef.current.lastX = e.clientX;
-      dragRef.current.lastY = e.clientY;
-      setManualLogoOffset({ dx: nextDx, dy: nextDy });
-    };
-    const onMouseUp = () => stopDrag();
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      document.body.style.userSelect = "";
-    };
-  }, []);
-
-  const handleLogoMouseDown = (e: React.MouseEvent<HTMLSpanElement>) => {
-    if (e.button !== 0 || bugsEnabledRef.current) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragRef.current = {
-      active: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      originDx: manualLogoOffset.dx,
-      originDy: manualLogoOffset.dy,
-      moved: false,
-      lastX: e.clientX,
-      lastY: e.clientY,
-    };
-    setIsLogoDragging(true);
-    document.body.style.userSelect = "none";
-  };
-
-  const handleLogoClickCapture = (e: React.MouseEvent<HTMLElement>) => {
-    if (!suppressLogoClickRef.current) return;
-    suppressLogoClickRef.current = false;
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleLogoNativeDragStart = (e: React.DragEvent<HTMLElement>) => {
-    e.preventDefault();
-  };
-
-  const logoTransform = `translate(${manualLogoOffset.dx + logoCarry.dx}px, ${manualLogoOffset.dy + logoCarry.dy}px) rotate(${logoCarry.angle + manualLogoAngle}rad)`;
-  const mobileLogoTransform = `translate(${logoCarry.dx}px, ${logoCarry.dy}px) rotate(${logoCarry.angle}rad)`;
-  const logoCursor = !bugsEnabled ? (isLogoDragging ? "grabbing" : "grab") : "default";
+  const logoTransform = "none";
+  const mobileLogoTransform = "none";
+  const logoCursor = "default";
+  const handleLogoMouseDown = () => {};
+  const handleLogoClickCapture = () => {};
+  const handleLogoNativeDragStart = (e: React.DragEvent<HTMLElement>) => { e.preventDefault(); };
   const mobileCurrent = NAV_ITEMS.flatMap((g) => g.items).find((item) =>
     item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(item.href + "/")
   );
@@ -547,19 +384,19 @@ export function Sidebar() {
                   fontSize: "1.875rem",
                   transform: mobileLogoTransform,
                   transformOrigin: "50% 50%",
-                  opacity: logoCarry.hidden ? 0 : 1,
+                  opacity: 1,
                 }}
               >
-                🦞
+                🏛️
               </span>
               <div className="min-w-0">
                 <div className="text-xs font-bold tracking-wide truncate">
-                  OPENCLAW{mobileOpenclawVersion ? ` ${mobileOpenclawVersion}` : ""}
+                  BOSSBOARD
                 </div>
                 <div className="text-[10px] text-[var(--text-muted)] truncate">
                   {pathname === "/" && mobileAgentCount !== null
                     ? `${mobileAgentCount} ${t("home.agentCount")}`
-                    : mobileCurrent ? t(mobileCurrent.labelKey) : "BOT DASHBOARD"}
+                    : mobileCurrent ? t(mobileCurrent.labelKey) : "ห้องประชุม AI"}
                 </div>
               </div>
             </Link>
@@ -617,54 +454,6 @@ export function Sidebar() {
                       </div>
                     </div>
                   ))}
-                  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)]/65 p-2">
-                    <button
-                      onClick={() => setExperimentOpen((v) => !v)}
-                      className={`w-full flex items-center justify-between rounded-lg px-3 py-2 transition-colors ${
-                        experimentOpen
-                          ? "bg-[var(--accent)]/12 text-[var(--accent)] border border-[var(--accent)]/35"
-                          : "bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--accent)]/8"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm">🧪</span>
-                        <span className="text-sm font-semibold tracking-wide">{t("nav.experiments")}</span>
-                      </span>
-                      <span
-                        className={`inline-flex items-center justify-center text-base leading-none transition-transform ${
-                          experimentOpen ? "text-[var(--accent)] rotate-180" : "text-[var(--text-muted)]"
-                        }`}
-                      >
-                        ⌄
-                      </span>
-                    </button>
-                    {experimentOpen && (
-                      <div className="mt-2 space-y-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2">
-                        <button
-                          onClick={toggleBugs}
-                          className={`w-full px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                            bugsEnabled
-                              ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]"
-                              : "bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]"
-                          }`}
-                        >
-                          {bugsEnabled ? `🐛 ${t("nav.bugsOn")}` : `🐛 ${t("nav.bugsOff")}`}
-                        </button>
-                        <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded-lg border bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]">
-                          <span>{t("nav.bugsCount")} {bugsCount}</span>
-                          <input
-                            type="range"
-                            min={0}
-                            max={BUGS_MAX}
-                            step={1}
-                            value={bugsCount}
-                            onChange={(e) => onBugCountChange(Number(e.target.value))}
-                            className="w-24 accent-[var(--accent)]"
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </nav>
             </aside>
@@ -690,11 +479,11 @@ export function Sidebar() {
                     fontSize: "4.219rem",
                     lineHeight: 1,
                     transform: logoTransform,
-                    opacity: logoCarry.hidden ? 0 : 1,
+                    opacity: 1,
                     cursor: logoCursor,
                   }}
                 >
-                  🦞
+                  🏛️
                 </span>
               </Link>
               <button
@@ -724,15 +513,15 @@ export function Sidebar() {
                       fontSize: "4.219rem",
                       lineHeight: 1,
                       transform: logoTransform,
-                      opacity: logoCarry.hidden ? 0 : 1,
+                      opacity: 1,
                       cursor: logoCursor,
                     }}
                   >
-                    🦞
+                    🏛️
                   </span>
                   <div>
-                    <div className="text-sm font-bold text-[var(--text)] tracking-wide">OPENCLAW</div>
-                    <div className="text-[10px] text-[var(--text-muted)] tracking-wider">BOT DASHBOARD</div>
+                    <div className="text-sm font-bold text-[var(--text)] tracking-wide">BOSSBOARD</div>
+                    <div className="text-[10px] text-[var(--text-muted)] tracking-wider">ห้องประชุม AI</div>
                   </div>
                 </Link>
                 <button
@@ -789,65 +578,6 @@ export function Sidebar() {
                 </div>
               </div>
             ))}
-            {!collapsed && (
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--card)]/65 p-1">
-                <button
-                  onClick={() => setExperimentOpen((v) => !v)}
-                  className={`w-full flex items-center justify-between rounded-lg px-3 py-2 transition-colors ${
-                    experimentOpen
-                      ? "bg-[var(--accent)]/12 text-[var(--accent)] border border-[var(--accent)]/35"
-                      : "bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--accent)]/8"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm">🧪</span>
-                    <span className="text-sm font-semibold tracking-wide">{t("nav.experiments")}</span>
-                  </span>
-                  <span
-                    className={`inline-flex items-center justify-center text-base leading-none transition-transform ${
-                      experimentOpen ? "text-[var(--accent)] rotate-180" : "text-[var(--text-muted)]"
-                    }`}
-                  >
-                    ⌄
-                  </span>
-                </button>
-                {experimentOpen && (
-                  <div className="mt-2 space-y-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2">
-                    <button
-                      onClick={toggleBugs}
-                      className={`w-full px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                        bugsEnabled
-                          ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]"
-                          : "bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]"
-                      }`}
-                    >
-                      {bugsEnabled ? `🐛 ${t("nav.bugsOn")}` : `🐛 ${t("nav.bugsOff")}`}
-                    </button>
-                    <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded-lg border bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]">
-                      <span>{t("nav.bugsCount")} {bugsCount}</span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={BUGS_MAX}
-                        step={1}
-                        value={bugsCount}
-                        onChange={(e) => onBugCountChange(Number(e.target.value))}
-                        className="w-24 accent-[var(--accent)]"
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-            )}
-            {collapsed && (
-              <button
-                onClick={() => setCollapsed(false)}
-                title={t("nav.experiments")}
-                className="w-full flex items-center justify-center rounded-lg px-2 py-2 text-base border border-[var(--border)] bg-[var(--card)]/65 text-[var(--text)] hover:bg-[var(--bg)] transition-colors"
-              >
-                🧪
-              </button>
-            )}
           </div>
         </nav>
       </aside>
