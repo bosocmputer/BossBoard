@@ -5,7 +5,7 @@
 SERVER="bosscatdog@192.168.2.109"
 PASS="boss123456"
 APP_DIR="~/BossBoard"
-PORT=3002
+PORT=3003
 
 echo "🏛️ Deploying BossBoard to $SERVER..."
 
