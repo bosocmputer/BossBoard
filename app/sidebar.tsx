@@ -383,7 +383,7 @@ export function Sidebar() {
                   fontSize: "1.875rem",
                   transform: mobileLogoTransform,
                   transformOrigin: "50% 50%",
-                  opacity: logoCarry.hidden ? 0 : 1,
+                  opacity: 1,
                 }}
               >
                 🏛️
@@ -478,7 +478,7 @@ export function Sidebar() {
                     fontSize: "4.219rem",
                     lineHeight: 1,
                     transform: logoTransform,
-                    opacity: logoCarry.hidden ? 0 : 1,
+                    opacity: 1,
                     cursor: logoCursor,
                   }}
                 >
@@ -512,7 +512,7 @@ export function Sidebar() {
                       fontSize: "4.219rem",
                       lineHeight: 1,
                       transform: logoTransform,
-                      opacity: logoCarry.hidden ? 0 : 1,
+                      opacity: 1,
                       cursor: logoCursor,
                     }}
                   >
