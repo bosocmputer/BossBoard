@@ -270,7 +270,6 @@ const NAV_ITEMS: { group: string; items: { href: string; icon: NavIconName; labe
       { href: "/agents", icon: "teamAgents", labelKey: "nav.teamAgents" },
       { href: "/teams", icon: "teams", labelKey: "nav.teams" },
       { href: "/research", icon: "research", labelKey: "nav.research" },
-      { href: "/mock-trial", icon: "agents", labelKey: "nav.mockTrial" },
     ],
   },
   {
@@ -384,7 +383,7 @@ export function Sidebar() {
                   fontSize: "1.875rem",
                   transform: mobileLogoTransform,
                   transformOrigin: "50% 50%",
-                  opacity: 1,
+                  opacity: logoCarry.hidden ? 0 : 1,
                 }}
               >
                 🏛️
@@ -479,7 +478,7 @@ export function Sidebar() {
                     fontSize: "4.219rem",
                     lineHeight: 1,
                     transform: logoTransform,
-                    opacity: 1,
+                    opacity: logoCarry.hidden ? 0 : 1,
                     cursor: logoCursor,
                   }}
                 >
@@ -513,7 +512,7 @@ export function Sidebar() {
                       fontSize: "4.219rem",
                       lineHeight: 1,
                       transform: logoTransform,
-                      opacity: 1,
+                      opacity: logoCarry.hidden ? 0 : 1,
                       cursor: logoCursor,
                     }}
                   >
