@@ -1,8 +1,23 @@
-# OpenClaw Team Dashboard
+# BossBoard — ห้องประชุม AI
 
-AI Meeting Room — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time ทั้งในรูปแบบ text และ pixel-art meeting room
+ห้องประชุม AI สำหรับสำนักงานบัญชีและกฎหมาย — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time
 
 > **Forked and extended from** [xmanrui/OpenClaw-bot-review](https://github.com/xmanrui/OpenClaw-bot-review)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router, standalone output) |
+| Language | TypeScript |
+| Styling | Tailwind CSS 4 |
+| Runtime | Node.js 22 |
+| Data | JSON files (`~/.bossboard/`), no database |
+| Encryption | AES-256-CBC (API keys & search keys) |
+| Streaming | Server-Sent Events (SSE) |
+| Doc Parsing | xlsx, pdf-parse, mammoth |
 
 ---
 
@@ -11,45 +26,91 @@ AI Meeting Room — สร้างทีม AI agents หลายตัว ถ
 ### 👥 Team Agents (`/agents`)
 สร้างและจัดการทีม AI agents — แต่ละตัวมี provider, model, API key, soul (บุคลิก), skills, MCP endpoint เป็นของตัวเอง
 
-- **19 Agent Templates** สำเร็จรูป: CEO, CFO, CMO, Legal, HR, Sales, Ops, Software Architect, Security Engineer ฯลฯ
-- **6 Providers:** Anthropic, OpenAI, Google Gemini, Ollama, OpenRouter, Custom
-- **16 Skills** per agent: web_search, code_execution, data_analysis, financial_modeling ฯลฯ
+- **~25 Agent Templates** ใน 4 หมวด:
+  - **Legal (8):** ทนายอาวุโส, ทนายอาญา/แพ่ง/แรงงาน/ครอบครัว/ที่ดิน, นักวิจัยกฎหมาย, ผู้ช่วยทนาย
+  - **Business (7):** CEO, CFO, CMO, Legal Counsel, CHRO, Sales Coach, Ops Manager
+  - **IT (9):** Architect, Security, DevOps, Frontend/Backend Lead, AI/ML, Data Engineer, QA, PM
+  - **Research (1):** นักวิจัยวิชาการ
+- **6 Providers:** Anthropic, OpenAI, Google Gemini, Ollama, OpenRouter, Custom (OpenAI-compatible)
+- **19 Skills** per agent: web_search, code_execution, data_analysis, financial_modeling, legal_research, case_analysis, contract_review ฯลฯ
 - **Soul (System Prompt)** — กำหนดบุคลิก จุดยืน และวิธีถกเถียงของ agent
-- **MCP Endpoint** — เชื่อม MCP Server per agent เพื่อดึงข้อมูลจากระบบภายนอก
-- **Seniority (1–99)** — ลำดับพูดในการประชุม
+- **MCP Endpoint** — เชื่อม MCP Server per agent เพื่อดึงข้อมูลจากระบบภายนอก (admin/sales/purchase/stock/general)
+- **Seniority (1–99)** — ลำดับพูดในการประชุม + กำหนดประธาน
 - API keys encrypted (AES-256-CBC)
 
 ### 🏛️ Meeting Room (`/research`)
 ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
 
-- **3-Phase Meeting Flow:**
-  1. **นำเสนอ** — agents พูดตามลำดับ seniority จาก soul/role
-  2. **อภิปราย** — agents อ่านความเห็นกัน แสดงจุดยืน เห็นด้วย/ไม่เห็นด้วย
-  3. **มติประธาน** — Chairman สรุป + Action Items
+- **4-Phase Meeting Flow:**
+  1. **คิด (thinking)** — agents วิเคราะห์โจทย์
+  2. **นำเสนอ (finding)** — agents พูดตามลำดับ seniority จาก soul/role
+  3. **อภิปราย (chat)** — agents อ่านความเห็นกัน แสดงจุดยืน เห็นด้วย/ไม่เห็นด้วย
+  4. **มติประธาน (synthesis)** — Chairman สรุป + Action Items
 - **Chairman Auto-Detection** จาก role/seniority
 - **Real-time SSE Streaming** — ดูทุก agent ตอบ real-time
 - **Data Sources:**
-  - 📎 File Attachment (xlsx/pdf/docx/csv/json/txt, max 10MB)
+  - 📎 File Attachment (xlsx/xls/xlsm/pdf/docx/doc/csv/json/txt/md/log, max 10MB)
   - 🔌 MCP per Agent (ดึงข้อมูลจาก MCP Server อัตโนมัติ)
-  - 🌐 Web Search (Serper/SerpApi) per agent
-- **Token Tracking** per agent (input/output/total)
-- **Charts**: Auto-render Bar/Line/Pie จาก AI output
-- **History**: ดูประวัติ sessions เก่า + follow-up suggestions
+  - 🌐 Web Search (Serper/SerpAPI) per agent
+- **History Modes:** Full, Last 3, Summary, None (ประหยัด token)
+- **Token Tracking** per agent (input/output/total) + stats dashboard
+- **Charts**: Auto-render Bar/Line/Pie จาก `chart` blocks ใน AI output
+- **History**: ดูประวัติ sessions เก่า (เก็บ 100 sessions ล่าสุด)
+- **Follow-up Suggestions** จาก AI
 - **Export**: Meeting Minutes เป็น Markdown
 
-### 🏛️ Pixel Meeting Room (`/pixel-office-research`)
-ฟีเจอร์เดียวกับ `/research` แต่แสดงบน pixel-art canvas — agents นั่งรอบโต๊ะประชุม พร้อม animation
+### ⚖️ Mock Trial (`/mock-trial`)
+ศาลจำลอง — จำลองคดีไทยด้วย AI วิเคราะห์จาก 4 มุมมอง
+
+- **5 ประเภทคดี:** แพ่ง, อาญา, แรงงาน, ครอบครัว, ปกครอง
+- เลือกฝั่ง: โจทก์ หรือ จำเลย
+- Input: ชื่อคดี, เรื่องราว, พยานหลักฐาน, ข้อมูลฝ่ายตรงข้าม, กฎหมายที่เกี่ยวข้อง
+- AI วิเคราะห์ 4 บทบาท: นักวิเคราะห์, อัยการ, ทนายจำเลย, ผู้พิพากษา
+- ผลลัพธ์: **โอกาสชนะ (0–100%)**, จุดแข็ง, จุดอ่อน, คำแนะนำ
+- อ้างอิงกฎหมายไทยจริง (มาตรา, พ.ร.บ., ฎีกา)
 
 ### 📋 Teams (`/teams`)
-จัดกลุ่ม agents เป็น teams เพื่อเลือกใช้ใน Research
+จัดกลุ่ม agents เป็น teams เพื่อเลือกใช้ใน Research — เปิด meeting room พร้อมทีมที่เลือกได้ทันที
+
+### 💰 Benefits & Pricing (`/benefits`)
+หน้าแนะนำฟีเจอร์และแพ็คเกจ
+
+| Plan | ราคา | รายละเอียด |
+|------|------|------------|
+| Starter | ฟรี | 3 agents, 10 sessions/เดือน, 1 user |
+| Professional | ฿1,990/เดือน | Unlimited agents/sessions, 5 users, file upload |
+| Enterprise | ฿4,990/เดือน | Unlimited users, custom templates, MCP, white-label |
+
+> ค่า LLM API แยกต่างหาก (~0.50–2 บาท/session)
+
+### ⚙️ Settings (`/settings`)
+ตั้งค่า Web Search API keys (Serper / SerpAPI) พร้อมทดสอบ
+
+### 🌐 i18n & Theme
+- **2 ภาษา:** ไทย / English
+- **2 ธีม:** Dark / Light
+- เก็บค่าใน localStorage
+
+---
+
+## Supported Models
+
+| Provider | Models |
+|----------|--------|
+| **Anthropic** | Claude 4.6 Opus, Claude 4.5 Sonnet, Claude 4 Sonnet, Claude 3.7 Sonnet, Claude 3 Haiku |
+| **OpenAI** | GPT-5.4, GPT-5.4 Mini, GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, GPT-4o, o4 Mini, o3 |
+| **Gemini** | Gemini 2.5 Pro, 2.5 Flash, 2.5 Flash Lite, 2.0 Flash |
+| **Ollama** | Llama 3.2, Mistral, Qwen 2.5 (local) |
+| **OpenRouter** | 40+ models รวม DeepSeek V3.2/R1, Qwen3, Grok 4, Llama 4 + **5 free models** |
+| **Custom** | OpenAI-compatible endpoint ใดก็ได้ |
 
 ---
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/bosocmputer/openclaw-team-dashboard.git
-cd openclaw-team-dashboard
+git clone https://github.com/bosocmputer/BossBoard.git
+cd BossBoard
 npm install
 npm run dev
 ```
@@ -61,7 +122,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Requirements
 
 - Node.js 22+
-- No database required — ทุกอย่างเก็บเป็น JSON files
+- No database required — ทุกอย่างเก็บเป็น JSON files ใน `~/.bossboard/`
 
 ---
 
@@ -69,10 +130,11 @@ Open [http://localhost:3000](http://localhost:3000)
 
 | File | Contents |
 |------|----------|
-| `~/.openclaw-team/agents.json` | Agent configs (API keys encrypted) |
-| `~/.openclaw-team/teams.json` | Team groupings |
-| `~/.openclaw-team/settings.json` | Web Search API keys (encrypted) |
-| `~/.openclaw-team/research-history.json` | Research session history |
+| `~/.bossboard/agents.json` | Agent configs (API keys encrypted) |
+| `~/.bossboard/teams.json` | Team groupings |
+| `~/.bossboard/settings.json` | Web Search API keys (encrypted) |
+| `~/.bossboard/research-history.json` | Research session history (last 100) |
+| `~/.bossboard/agent-stats.json` | Per-agent token usage & session stats (last 90 days) |
 
 ---
 
@@ -85,47 +147,81 @@ AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
 
 ---
 
+## API Endpoints
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/team-agents` | GET, POST | List / Create agents |
+| `/api/team-agents/[id]` | PATCH, DELETE | Update / Delete agent |
+| `/api/team-models?provider=` | GET | Available models per provider |
+| `/api/teams` | GET, POST | List / Create teams |
+| `/api/teams/[id]` | PATCH, DELETE | Update / Delete team |
+| `/api/team-research` | GET | List research sessions |
+| `/api/team-research/[id]` | GET | Get specific session |
+| `/api/team-research/stream` | POST | SSE streaming multi-agent research |
+| `/api/team-research/upload` | POST | Parse uploaded files to text context |
+| `/api/mock-trial` | POST | Mock trial simulation |
+| `/api/team-settings` | GET, POST | Web search API keys |
+| `/api/team-websearch` | POST | Perform web search |
+| `/api/agent-stats` | GET | Agent usage statistics |
+
+---
+
 ## Deploy to Server
 
+### Production Server
+
+| Item | Detail |
+|------|--------|
+| Host | `192.168.2.109` (Ubuntu 24.04 LTS) |
+| Port | `3003` |
+| Node | v22.22.1 |
+| Mode | Next.js standalone (`nohup`) |
+| URL | `http://192.168.2.109:3003` |
+
+### First Time Setup
+
 ```bash
-# First time
-git clone https://github.com/bosocmputer/openclaw-team-dashboard.git
-cd openclaw-team-dashboard
+git clone https://github.com/bosocmputer/BossBoard.git
+cd BossBoard
 npm install
 npm run build
 cp -r .next/static .next/standalone/.next/static
-PORT=3001 node .next/standalone/server.js
+cp -r public .next/standalone/public
+PORT=3003 node .next/standalone/server.js
+```
 
-# Update
+### Deploy Update
+
+```bash
 ./scripts/deploy.sh
 ```
 
-> ⚠️ ต้อง `cp -r .next/static .next/standalone/.next/static` ทุกครั้ง ไม่งั้นจะเกิด ChunkLoadError
+> ⚠️ `deploy.sh` จัดการ copy static + public + kill port เก่า + start ให้อัตโนมัติ
 
-See [PLAN.md](PLAN.md) for full architecture and roadmap.
+### Docker (alternative)
+
+```bash
+docker build -t bossboard .
+docker run -p 3003:3000 -v ~/.bossboard:/root/.bossboard bossboard
+```
+
+### Server Services Overview (192.168.2.109)
+
+| Port | Service |
+|------|---------|
+| 3000 | OpenClaw Admin (Docker) |
+| 3001 | Other Next.js app |
+| 3002 | Centrix Web (Docker) |
+| **3003** | **BossBoard** ← this project |
+| 4000 | OpenClaw API |
+| 5001 | Centrix API (Docker) |
+| 5432, 5434 | PostgreSQL (Docker) |
+| 6380 | Redis (Docker) |
+| 18789 | OpenClaw Gateway |
 
 ---
 
-## Tech Stack
+## License
 
-- **Framework:** Next.js 16 + TypeScript
-- **Styling:** Tailwind CSS 4
-- **Storage:** JSON files (no database)
-- **Streaming:** Server-Sent Events (SSE)
-- **Encryption:** AES-256-CBC for API keys
-- **LLM Providers:** Anthropic, OpenAI, Google Gemini, Ollama, OpenRouter, Custom
-- **MCP:** Direct REST protocol per agent
-
----
-
-## Roadmap
-
-- [x] Phase 1 — Agent Management (CRUD, 19 templates, 16 skills, soul, seniority)
-- [x] Phase 2 — Research Meeting Room (3-phase flow, SSE, charts, history)
-- [x] Phase 3 — File Attachment (xlsx/pdf/docx/csv/json/txt + Excel Sheet Selector)
-- [x] Phase 4 — MCP Per-Agent (endpoint, access mode, tool selection scoring)
-- [x] Pixel Office Meeting Room (canvas + full meeting features)
-- [x] Team Management CRUD
-- [ ] Phase 5 — ตัดหน้าที่ไม่ใช้ออก (original OpenClaw pages)
-- [ ] Phase 6 — Team ↔ Research integration (team selector, filter)
-- [ ] Phase 7 — Pixel Office visualization enhancement (speech bubbles, crown)
+MIT

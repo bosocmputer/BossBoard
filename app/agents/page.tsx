@@ -546,15 +546,15 @@ export default function AgentsPage() {
   }));
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen p-4 sm:p-6" style={{ background: "var(--bg)" }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: "var(--text)", fontFamily: "monospace" }}>
+        <div className="flex items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)", fontFamily: "monospace" }}>
               👥 Team Agents
             </h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+            <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
               เลือก template สำเร็จรูป — ใส่แค่ API Key ก็พร้อมใช้งาน
             </p>
           </div>
@@ -580,7 +580,7 @@ export default function AgentsPage() {
             {agents.map((agent) => (
               <div
                 key={agent.id}
-                className="border rounded-xl p-5 flex items-start gap-4 transition-all"
+                className="border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-3 sm:gap-4 transition-all"
                 style={{ borderColor: "var(--border)", background: "var(--surface)", opacity: agent.active ? 1 : 0.5 }}
               >
                 <div className="text-3xl">{agent.emoji}</div>
@@ -616,28 +616,28 @@ export default function AgentsPage() {
                     {agent.soul}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                   <button
                     onClick={() => handleToggle(agent)}
-                    className="px-3 py-1 rounded text-xs font-mono border transition-all"
+                    className="px-3 py-2 sm:py-1 rounded text-xs font-mono border transition-all"
                     style={{ borderColor: "var(--border)", color: agent.active ? "var(--accent)" : "var(--text-muted)" }}
                   >
                     {agent.active ? "● On" : "○ Off"}
                   </button>
                   <button
                     onClick={() => openEdit(agent)}
-                    className="px-3 py-1 rounded text-xs font-mono border transition-all"
+                    className="px-3 py-2 sm:py-1 rounded text-xs font-mono border transition-all"
                     style={{ borderColor: "var(--border)", color: "var(--text)" }}
                   >
                     Edit
                   </button>
                   {deleteConfirm === agent.id ? (
                     <>
-                      <button onClick={() => handleDelete(agent.id)} className="px-3 py-1 rounded text-xs font-mono bg-red-500/20 text-red-400 border border-red-500/30">Confirm</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="px-3 py-1 rounded text-xs font-mono border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>Cancel</button>
+                      <button onClick={() => handleDelete(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs font-mono bg-red-500/20 text-red-400 border border-red-500/30">Confirm</button>
+                      <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 sm:py-1 rounded text-xs font-mono border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>Cancel</button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(agent.id)} className="px-3 py-1 rounded text-xs font-mono border border-red-500/30 text-red-400">Delete</button>
+                    <button onClick={() => setDeleteConfirm(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs font-mono border border-red-500/30 text-red-400">Delete</button>
                   )}
                 </div>
               </div>
@@ -649,7 +649,7 @@ export default function AgentsPage() {
       {/* ── Modal Form ── */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)" }}>
-          <div className="w-full max-w-3xl rounded-2xl border p-6 max-h-[92vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          <div className="w-full max-w-3xl rounded-2xl border p-4 sm:p-6 max-h-[92vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold font-mono text-lg" style={{ color: "var(--text)" }}>
                 {editingId ? "✏️ Edit Agent" : "✨ New Agent"}
@@ -686,7 +686,7 @@ export default function AgentsPage() {
               </div>
 
               {/* Templates in active category */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {categoriesWithTemplates
                   .find((c) => c.key === activeCategory)
                   ?.templates.map((t) => (
@@ -722,8 +722,8 @@ export default function AgentsPage() {
 
             <div className="space-y-4">
               {/* Name + Emoji + Role */}
-              <div className="flex gap-3">
-                <div className="w-20">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="w-20 sm:w-20">
                   <label className="text-xs font-mono mb-1 block" style={{ color: "var(--text-muted)" }}>Emoji</label>
                   <input
                     value={form.emoji}
@@ -832,7 +832,7 @@ export default function AgentsPage() {
                 <label className="text-xs font-mono mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
                   Skills / ความสามารถพิเศษ
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {ALL_SKILLS.map((skill) => (
                     <button
                       key={skill.id}
@@ -853,7 +853,7 @@ export default function AgentsPage() {
               </div>
 
               {/* Web Search + Seniority */}
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 p-3 rounded-lg border flex items-center justify-between" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
                   <div>
                     <div className="text-xs font-mono font-bold" style={{ color: "var(--text)" }}>🔍 Web Search</div>

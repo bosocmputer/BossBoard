@@ -88,12 +88,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--accent)" }}>⚙️ Settings</h1>
-      <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>ตั้งค่า API Keys สำหรับฟีเจอร์ต่างๆ</p>
+    <div className="p-4 sm:p-8 max-w-2xl mx-auto">
+      <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: "var(--accent)" }}>⚙️ Settings</h1>
+      <p className="text-sm mb-6 sm:mb-8" style={{ color: "var(--text-muted)" }}>ตั้งค่า API Keys สำหรับฟีเจอร์ต่างๆ</p>
 
       {/* Web Search Section */}
-      <div className="rounded-xl border p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+      <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg">🔍</span>
           <h2 className="text-base font-semibold">Web Search API Keys</h2>
@@ -104,16 +104,16 @@ export default function SettingsPage() {
 
         {/* Serper */}
         <div className="mb-5">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1">
             <label className="text-sm font-medium">
               Serper API Key
               <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}>Primary</span>
             </label>
             {state.hasSerperKey && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{state.serperKeyPreview}</span>
                 <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, #22c55e 15%, transparent)", color: "#22c55e" }}>✓ บันทึกแล้ว</span>
-                <button onClick={() => handleClear("serper")} className="text-xs px-2 py-0.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
+                <button onClick={() => handleClear("serper")} className="text-xs px-3 py-1.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
               </div>
             )}
           </div>
@@ -132,16 +132,16 @@ export default function SettingsPage() {
 
         {/* SerpApi */}
         <div className="mb-5">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1">
             <label className="text-sm font-medium">
               SerpApi API Key
               <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--text-muted) 15%, transparent)", color: "var(--text-muted)" }}>Fallback</span>
             </label>
             {state.hasSerpApiKey && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{state.serpApiKeyPreview}</span>
                 <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, #22c55e 15%, transparent)", color: "#22c55e" }}>✓ บันทึกแล้ว</span>
-                <button onClick={() => handleClear("serpapi")} className="text-xs px-2 py-0.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
+                <button onClick={() => handleClear("serpapi")} className="text-xs px-3 py-1.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
               </div>
             )}
           </div>
@@ -159,7 +159,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={handleSave}
             disabled={saving || (!serperKey && !serpApiKey)}
@@ -210,7 +210,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Info box */}
-      <div className="rounded-xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+      <div className="rounded-xl border p-4 sm:p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <h3 className="text-sm font-semibold mb-3">📋 วิธีใช้งาน Web Search</h3>
         <ol className="text-xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
           <li>1. บันทึก API Key อย่างน้อย 1 อัน (Serper แนะนำ)</li>

@@ -182,14 +182,14 @@ export default function MockTrialPage() {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen p-4 sm:p-6" style={{ background: "var(--bg)" }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold font-mono" style={{ color: "var(--text)" }}>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-bold font-mono" style={{ color: "var(--text)" }}>
             🏛️ ศาลจำลอง — Mock Trial Simulator
           </h1>
-          <p className="text-sm mt-1 font-mono" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs sm:text-sm mt-1 font-mono" style={{ color: "var(--text-muted)" }}>
             จำลองการพิจารณาคดี วิเคราะห์จุดแข็ง-จุดอ่อน ประเมินโอกาสชนะคดี
           </p>
           <p className="text-xs mt-1 font-mono" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
@@ -226,7 +226,7 @@ export default function MockTrialPage() {
         </div>
 
         {/* ── Input Form ── */}
-        <div className="space-y-5 mb-8">
+        <div className="space-y-4 sm:space-y-5 mb-6 sm:mb-8">
           {/* Agent Selection */}
           <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
             <label className="text-xs font-mono font-bold mb-2 block" style={{ color: "var(--accent)" }}>
@@ -259,7 +259,7 @@ export default function MockTrialPage() {
             <label className="text-xs font-mono font-bold mb-2 block" style={{ color: "var(--text-muted)" }}>
               ประเภทคดี
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
               {CASE_TYPES.map((ct) => (
                 <button
                   key={ct.value}
@@ -445,13 +445,13 @@ export default function MockTrialPage() {
         {result && phase === "done" && (
           <div ref={resultRef} className="space-y-6">
             {/* Win Probability */}
-            <div className="p-6 rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <div className="p-4 sm:p-6 rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <div className="text-center mb-4">
                 <div className="text-xs font-mono font-bold mb-2" style={{ color: "var(--text-muted)" }}>
                   📊 โอกาสชนะคดี (ประเมินเบื้องต้น)
                 </div>
                 <div
-                  className="text-5xl font-bold font-mono"
+                  className="text-4xl sm:text-5xl font-bold font-mono"
                   style={{
                     color: result.winProbability >= 70
                       ? "#4ade80"
@@ -487,8 +487,8 @@ export default function MockTrialPage() {
             </div>
 
             {/* Strengths & Weaknesses */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl border" style={{ borderColor: "#22c55e40", background: "#22c55e08" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "#22c55e40", background: "#22c55e08" }}>
                 <div className="text-xs font-mono font-bold mb-3" style={{ color: "#4ade80" }}>
                   💪 จุดแข็งของคดี
                 </div>
@@ -501,7 +501,7 @@ export default function MockTrialPage() {
                   ))}
                 </ul>
               </div>
-              <div className="p-4 rounded-xl border" style={{ borderColor: "#ef444440", background: "#ef444408" }}>
+              <div className="p-3 sm:p-4 rounded-xl border" style={{ borderColor: "#ef444440", background: "#ef444408" }}>
                 <div className="text-xs font-mono font-bold mb-3" style={{ color: "#f87171" }}>
                   ⚠️ จุดอ่อน / ความเสี่ยง
                 </div>
@@ -563,7 +563,7 @@ export default function MockTrialPage() {
             </div>
 
             {/* Recommendation */}
-            <div className="p-5 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+            <div className="p-4 sm:p-5 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
               <div className="text-xs font-mono font-bold mb-2" style={{ color: "var(--accent)" }}>
                 📋 คำแนะนำจากการวิเคราะห์
               </div>
