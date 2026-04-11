@@ -1,6 +1,6 @@
 # BossBoard — ห้องประชุม AI
 
-ห้องประชุม AI สำหรับสำนักงานบัญชีและกฎหมาย — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time
+ห้องประชุม AI สำหรับสำนักงานบัญชี — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time
 
 > **Forked and extended from** [xmanrui/OpenClaw-bot-review](https://github.com/xmanrui/OpenClaw-bot-review)
 
@@ -13,6 +13,7 @@
 | Framework | Next.js 16 (App Router, standalone output) |
 | Language | TypeScript |
 | Styling | Tailwind CSS 4 |
+| Icons | Lucide React |
 | Runtime | Node.js 22 |
 | Data | JSON files (`~/.bossboard/`), no database |
 | Encryption | AES-256-CBC (API keys & search keys) |
@@ -23,14 +24,15 @@
 
 ## Features
 
+### 🏠 Dashboard (`/`)
+หน้าภาพรวมระบบ — แสดงสถิติ agents, teams, sessions, tokens ใช้งาน, quick actions, การประชุมล่าสุด, เอเจนต์ยอดนิยม
+
 ### 👥 Team Agents (`/agents`)
 สร้างและจัดการทีม AI agents — แต่ละตัวมี provider, model, API key, soul (บุคลิก), skills, MCP endpoint เป็นของตัวเอง
 
-- **~25 Agent Templates** ใน 4 หมวด:
-  - **Legal (8):** ทนายอาวุโส, ทนายอาญา/แพ่ง/แรงงาน/ครอบครัว/ที่ดิน, นักวิจัยกฎหมาย, ผู้ช่วยทนาย
-  - **Business (7):** CEO, CFO, CMO, Legal Counsel, CHRO, Sales Coach, Ops Manager
-  - **IT (9):** Architect, Security, DevOps, Frontend/Backend Lead, AI/ML, Data Engineer, QA, PM
-  - **Research (1):** นักวิจัยวิชาการ
+- **11 Agent Templates** ใน 2 หมวด (เน้นสำนักงานบัญชี):
+  - **สำนักงานบัญชี (10):** นักบัญชีอาวุโส, ผู้สอบบัญชี CPA, ที่ปรึกษาภาษี, นักวิเคราะห์งบการเงิน, ที่ปรึกษาบัญชีนิติบุคคล, เจ้าหน้าที่บัญชี, ผู้ตรวจสอบภายใน, ที่ปรึกษาต้นทุน, ที่ปรึกษาบัญชีระหว่างประเทศ, ที่ปรึกษาระบบบัญชี
+  - **Custom (1):** สร้าง agent ตามต้องการ
 - **6 Providers:** Anthropic, OpenAI, Google Gemini, Ollama, OpenRouter, Custom (OpenAI-compatible)
 - **19 Skills** per agent: web_search, code_execution, data_analysis, financial_modeling, legal_research, case_analysis, contract_review ฯลฯ
 - **Soul (System Prompt)** — กำหนดบุคลิก จุดยืน และวิธีถกเถียงของ agent
@@ -88,8 +90,27 @@
 
 ### 🌐 i18n & Theme
 - **2 ภาษา:** ไทย / English
-- **2 ธีม:** Dark / Light
+- **2 ธีม:** Dark / Light (CSS variables, `data-theme` attribute)
 - เก็บค่าใน localStorage
+
+### 🧩 Shared UI Components (`app/components/`)
+
+| Component | Description |
+|-----------|-------------|
+| `Button` | primary / secondary / ghost / danger variants, sm / md / lg sizes |
+| `Card` | hover effect, padding options, rounded-2xl |
+| `Modal` | Escape key close, backdrop blur, max-width options |
+| `Badge` | default / accent / success / warning / danger / info variants |
+| `Toggle` | Switch with label, sm / lg sizes, `role="switch"` |
+| `EmptyState` | Icon / emoji + title + description + optional action |
+| `Toast` | `showToast(type, message)` auto-dismiss 4s, success / error / warning / info |
+| `Skeleton` | Loading placeholders — `Skeleton`, `SkeletonCard`, `SkeletonList` |
+
+### 🧭 Navigation (Sidebar)
+- **Icons:** Lucide React (ไม่ใช้ pixel art แล้ว)
+- **Desktop:** Collapsible sidebar (224px ↔ 64px)
+- **Mobile:** Header + slide-out drawer
+- **Groups:** Dashboard → AI Tools (Research, Mock Trial) → Management (Agents, Teams) → System (Settings)
 
 ---
 
@@ -194,10 +215,17 @@ PORT=3003 node .next/standalone/server.js
 ### Deploy Update
 
 ```bash
-./scripts/deploy.sh
+cd ~/BossBoard
+git pull origin main
+npm install          # ← สำคัญ ถ้ามี dependency ใหม่
+npm run build
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+fuser -k 3003/tcp
+cd .next/standalone && PORT=3003 nohup node server.js > /tmp/bossboard.log 2>&1 &
 ```
 
-> ⚠️ `deploy.sh` จัดการ copy static + public + kill port เก่า + start ให้อัตโนมัติ
+> `scripts/deploy.sh` มีอยู่แต่แนะนำให้ deploy manual ตามขั้นตอนด้านบน
 
 ### Docker (alternative)
 
