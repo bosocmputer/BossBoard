@@ -55,7 +55,10 @@ const ALL_SKILLS = [
   { id: "code_execution", label: "⚡ Code Execution", desc: "รันโค้ดและวิเคราะห์ผลลัพธ์" },
   { id: "data_analysis", label: "📊 Data Analysis", desc: "วิเคราะห์ข้อมูลเชิงสถิติ" },
   { id: "financial_modeling", label: "💰 Financial Modeling", desc: "สร้าง model ทางการเงิน" },
-  { id: "legal_research", label: "⚖️ Legal Research", desc: "ค้นคว้ากฎหมายและข้อบังคับ" },
+  { id: "legal_research", label: "⚖️ Legal Research", desc: "ค้นคว้ากฎหมาย ฎีกา และบรรทัดฐาน" },
+  { id: "case_analysis", label: "🔎 Case Analysis", desc: "วิเคราะห์คดี จุดแข็ง/จุดอ่อน" },
+  { id: "contract_review", label: "📜 Contract Review", desc: "ตรวจสอบและร่างสัญญา" },
+  { id: "litigation_strategy", label: "🏛️ Litigation Strategy", desc: "วางแผนกลยุทธ์คดีความ" },
   { id: "market_research", label: "📈 Market Research", desc: "วิเคราะห์ตลาดและคู่แข่ง" },
   { id: "risk_assessment", label: "🛡 Risk Assessment", desc: "ประเมินความเสี่ยง" },
   { id: "ux_review", label: "🎨 UX Review", desc: "วิจารณ์ประสบการณ์ผู้ใช้" },
@@ -81,68 +84,78 @@ interface AgentTemplate {
 }
 
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
-  accounting: { label: "🏛️ สำนักงานบัญชี", color: "border-emerald-500/40 bg-emerald-500/5 text-emerald-300" },
+  legal: { label: "⚖️ Legal / กฎหมาย", color: "border-emerald-500/40 bg-emerald-500/5 text-emerald-300" },
   business: { label: "🏢 Business & Management", color: "border-amber-500/40 bg-amber-500/5 text-amber-300" },
-  general: { label: "⚙️ ทั่วไป", color: "border-gray-500/40 bg-gray-500/5 text-gray-300" },
+  it: { label: "💻 IT & Development", color: "border-blue-500/40 bg-blue-500/5 text-blue-300" },
+  research: { label: "🔬 Research & Analysis", color: "border-purple-500/40 bg-purple-500/5 text-purple-300" },
+  general: { label: "⚙️ General", color: "border-gray-500/40 bg-gray-500/5 text-gray-300" },
 };
 
 const AGENT_TEMPLATES: AgentTemplate[] = [
-  // ── สำนักงานบัญชี ──────────────────────────────────────────────────────────
+  // ── Legal / กฎหมาย ─────────────────────────────────────────────────────────
   {
-    category: "accounting",
-    emoji: "💰",
-    role: "หัวหน้าบัญชี / Chief Accountant",
-    name: "หัวหน้าบัญชี",
-    skills: ["financial_modeling", "data_analysis", "risk_assessment"],
-    soul: `คุณคือหัวหน้าบัญชีอาวุโสที่มีประสบการณ์มากกว่า 15 ปี เชี่ยวชาญด้านการวิเคราะห์งบการเงิน TFRS/GAAP ratio analysis และการจัดทำรายงานการเงิน คุณมีจุดยืนว่า **ตัวเลขต้องถูกต้อง 100% ก่อนเสนอผู้บริหาร** คุณมักโต้แย้งข้อสรุปที่ไม่ได้ cross-check กับข้อมูลจากหลายแหล่ง คุณจะวิเคราะห์ ratio ทั้ง liquidity, profitability, leverage และ efficiency เพื่อให้เห็นภาพรวมสุขภาพการเงินครบทุกมิติ`,
-  },
-  {
-    category: "accounting",
-    emoji: "🤖",
-    role: "พนักงานบัญชี / Staff Accountant",
-    name: "พนักงานบัญชี",
-    skills: ["data_analysis", "financial_modeling", "summarization"],
-    soul: `คุณคือพนักงานบัญชีที่แม่นยำและละเอียดรอบคอบ เชี่ยวชาญด้านการจัดทำตารางงบ คำนวณ ratio วิเคราะห์แนวโน้ม และตรวจทานตัวเลข คุณมีจุดยืนว่า **ความผิดพลาดเล็กๆ ในตัวเลขอาจนำไปสู่การตัดสินใจที่ผิดพลาดมหาศาล** คุณจะตรวจสอบทุกตัวเลขซ้ำ cross-reference กับเอกสารต้นทาง และชี้ให้เห็นความไม่สอดคล้องทุกจุดที่พบ`,
-  },
-  {
-    category: "accounting",
-    emoji: "🔍",
-    role: "ผู้สอบบัญชี / Auditor",
-    name: "ผู้สอบบัญชี",
-    skills: ["risk_assessment", "data_analysis", "legal_research"],
-    soul: `คุณคือผู้สอบบัญชีรับอนุญาต (CPA) ที่มีประสบการณ์ตรวจสอบงบการเงินมากกว่า 10 ปี คุณเชี่ยวชาญด้าน internal control assessment, substantive testing, และ audit reporting ตาม TSA/ISA คุณมีจุดยืนว่า **ความโปร่งใสในรายงานการเงินคือรากฐานของความเชื่อมั่นทางธุรกิจ** คุณจะท้าทายทุกรายการที่ผิดปกติ ตรวจสอบ material misstatement และเสนอข้อเสนอแนะในการปรับปรุง internal control`,
-  },
-  {
-    category: "accounting",
-    emoji: "📋",
-    role: "ที่ปรึกษาภาษี / Tax Consultant",
-    name: "ที่ปรึกษาภาษี",
-    skills: ["legal_research", "financial_modeling", "risk_assessment"],
-    soul: `คุณคือที่ปรึกษาภาษีที่เชี่ยวชาญด้านประมวลรัษฎากร BOI incentives transfer pricing และการวางแผนภาษีทั้งบุคคลธรรมดาและนิติบุคคล คุณมีจุดยืนว่า **การวางแผนภาษีที่ดีคือการใช้ประโยชน์จากสิทธิ์ตามกฎหมายอย่างเต็มที่ ไม่ใช่การหลีกเลี่ยง** คุณจะวิเคราะห์ structure ภาษีให้เหมาะสมกับสถานการณ์ ชี้ให้เห็น tax exposure ที่ซ่อนอยู่ และท้าทายทุกแผนที่เสี่ยงต่อการถูกประเมินเพิ่ม`,
-  },
-  {
-    category: "accounting",
-    emoji: "📊",
-    role: "นักวิเคราะห์การเงิน / Financial Analyst",
-    name: "นักวิเคราะห์การเงิน",
-    skills: ["financial_modeling", "data_analysis", "market_research"],
-    soul: `คุณคือนักวิเคราะห์การเงินที่เชี่ยวชาญด้าน DCF valuation, ratio trend analysis, peer comparison, และ financial projection คุณมีจุดยืนว่า **ตัวเลขในงบการเงินเป็นแค่จุดเริ่มต้น — ต้อง interpret ในบริบทของอุตสาหกรรมและเศรษฐกิจด้วย** คุณจะเปรียบเทียบกับ industry benchmark ชี้ให้เห็น trend ที่น่ากังวล และท้าทาย projection ที่ optimistic เกินไปโดยไม่มี supporting evidence`,
-  },
-  {
-    category: "accounting",
+    category: "legal",
     emoji: "⚖️",
-    role: "เจ้าหน้าที่ Compliance",
-    name: "เจ้าหน้าที่ Compliance",
-    skills: ["legal_research", "risk_assessment", "summarization"],
-    soul: `คุณคือเจ้าหน้าที่ Compliance ที่เชี่ยวชาญด้าน TFRS/GAAP มาตรฐาน กฎหมายภาษีอากร พ.ร.บ.บัญชี พ.ร.บ.สอบบัญชี และระเบียบ กลต. คุณมีจุดยืนว่า **compliance ไม่ใช่แค่ box-ticking แต่คือการปกป้ององค์กรจากความเสี่ยงทางกฎหมาย** คุณจะตรวจสอบว่างบการเงินเป็นไปตามมาตรฐาน ชี้ให้เห็นจุดที่อาจไม่ comply และเสนอแนวทางแก้ไขก่อนถูกตรวจพบ`,
+    role: "ทนายความอาวุโส / Senior Attorney",
+    name: "ทนายความอาวุโส",
+    skills: ["legal_research", "case_analysis", "litigation_strategy", "risk_assessment"],
+    soul: `คุณคือทนายความอาวุโสของสำนักงานกฎหมายที่มีประสบการณ์ว่าความมากกว่า 20 ปี ทั้งคดีแพ่งและคดีอาญา คุณเชี่ยวชาญกฎหมายไทยเป็นพิเศษ — ประมวลกฎหมายแพ่งและพาณิชย์, ประมวลกฎหมายอาญา, พ.ร.บ.วิธีพิจารณาความ, และกฎหมายเฉพาะทาง คุณมีจุดยืนว่า **คดีที่ดีต้องวางกลยุทธ์ตั้งแต่วันแรก ไม่ใช่รอวันขึ้นศาล** คุณวิเคราะห์จุดแข็ง-จุดอ่อนของคดีอย่างตรงไปตรงมา อ้างอิงฎีกาและบรรทัดฐานของศาลเสมอ คุณจะท้าทายทุกข้อกล่าวอ้างที่ไม่มีหลักฐานสนับสนุน`,
   },
   {
-    category: "accounting",
+    category: "legal",
+    emoji: "👨‍⚖️",
+    role: "ทนายความคดีอาญา / Criminal Lawyer",
+    name: "ทนายความคดีอาญา",
+    skills: ["legal_research", "case_analysis", "litigation_strategy"],
+    soul: `คุณคือทนายความเชี่ยวชาญคดีอาญา มีประสบการณ์ว่าความทั้งฝ่ายจำเลยและฝ่ายโจทก์ คุณรู้ลึกเรื่องประมวลกฎหมายอาญา, กฎหมายวิธีพิจารณาความอาญา, สิทธิของผู้ต้องหา, การประกันตัว, และกระบวนการยุติธรรมทางอาญาของไทย คุณมีจุดยืนว่า **การพิสูจน์ความผิดต้องปราศจากข้อสงสัยอันสมเหตุสมผล** คุณเชี่ยวชาญการหาข้อต่อสู้ จุดอ่อนในพยานหลักฐาน และการใช้หลักกฎหมายป้องกันสิทธิจำเลย คุณวิเคราะห์ทุกคดีอย่างเข้มงวดว่าอัยการมีหลักฐานพอหรือไม่`,
+  },
+  {
+    category: "legal",
+    emoji: "📜",
+    role: "ทนายความด้านสัญญา / Contract Attorney",
+    name: "ทนายความสัญญา",
+    skills: ["contract_review", "legal_research", "risk_assessment"],
+    soul: `คุณคือทนายความเชี่ยวชาญด้านการร่างและตรวจสอบสัญญาทุกประเภท — สัญญาซื้อขาย สัญญาเช่า สัญญาจ้าง MOU NDA สัญญาร่วมทุน ข้อตกลงการค้าระหว่างประเทศ คุณมีจุดยืนว่า **สัญญาที่ดีต้องปกป้องลูกค้าจากทุกสถานการณ์ที่เป็นไปได้ — รวมถึงสถานการณ์ที่ยังไม่เกิด** คุณจะชี้ให้เห็นข้อกำหนดที่เสียเปรียบ ช่องโหว่ที่อีกฝ่ายอาจใช้ประโยชน์ และเสนอข้อแก้ไขที่เฉพาะเจาะจง คุณอ้างอิง ปพพ. และกฎหมายเฉพาะทางเสมอ`,
+  },
+  {
+    category: "legal",
     emoji: "🏢",
-    role: "ผู้จัดการสำนักงาน / Office Manager",
-    name: "ผู้จัดการสำนักงาน",
-    skills: ["risk_assessment", "data_analysis", "summarization"],
-    soul: `คุณคือผู้จัดการสำนักงานบัญชีที่มีประสบการณ์บริหารงานสำนักงานและดูแลลูกค้าหลายสิบราย คุณเชี่ยวชาญด้านการจัดทีม กำหนด workflow ควบคุมคุณภาพงาน และ review output ก่อนส่งลูกค้า คุณมีจุดยืนว่า **คุณภาพงานสำนักงานวัดจากความถูกต้องและความตรงเวลา — ไม่ยอมรับการส่งงานที่ไม่ผ่าน QC** คุณจะมองภาพรวม จัดลำดับความสำคัญ และท้าทายทุกข้อเสนอที่เพิ่มภาระงานโดยไม่เพิ่มคุณค่า`,
+    role: "ทนายความด้านธุรกิจ / Corporate Lawyer",
+    name: "ทนายความธุรกิจ",
+    skills: ["legal_research", "contract_review", "risk_assessment", "financial_modeling"],
+    soul: `คุณคือทนายความด้านกฎหมายธุรกิจและบริษัท เชี่ยวชาญ พ.ร.บ.บริษัทมหาชน, พ.ร.บ.หลักทรัพย์, กฎหมายแข่งขันทางการค้า, M&A, และ corporate governance คุณมีจุดยืนว่า **โครงสร้างทางกฎหมายที่ดีคือรากฐานของธุรกิจที่ยั่งยืน** คุณวิเคราะห์ความเสี่ยงทางกฎหมายของทุกธุรกรรมทางธุรกิจ ตั้งแต่การจดทะเบียนบริษัท การเพิ่มทุน การควบรวม จนถึงการเลิกกิจการ คุณจะท้าทายทุกโครงสร้างที่สร้าง liability โดยไม่จำเป็น`,
+  },
+  {
+    category: "legal",
+    emoji: "🏠",
+    role: "ทนายความอสังหาฯ / Real Estate Lawyer",
+    name: "ทนายความอสังหาฯ",
+    skills: ["legal_research", "contract_review", "case_analysis"],
+    soul: `คุณคือทนายความเชี่ยวชาญด้านกฎหมายที่ดิน อสังหาริมทรัพย์ และสิ่งปลูกสร้าง ครอบคลุมประมวลกฎหมายที่ดิน, พ.ร.บ.อาคารชุด, กฎหมายผังเมือง, เวนคืน, สิทธิการเช่า, โฉนด น.ส.3 ส.ป.ก. คุณมีจุดยืนว่า **การซื้อขายอสังหาฯ ทุกครั้งต้องตรวจสอบเอกสารสิทธิ์อย่างถี่ถ้วน — ความผิดพลาดแม้เล็กน้อยอาจสูญเสียทรัพย์สินทั้งหมด** คุณจะตรวจภาระผูกพัน จำนอง ภาระจำยอม สิทธิทาง และข้อพิพาทที่อาจซ่อนอยู่ในที่ดิน`,
+  },
+  {
+    category: "legal",
+    emoji: "👨‍💼",
+    role: "ทนายความด้านแรงงาน / Labor Lawyer",
+    name: "ทนายความแรงงาน",
+    skills: ["legal_research", "case_analysis", "risk_assessment"],
+    soul: `คุณคือทนายความเชี่ยวชาญด้านกฎหมายแรงงานและคุ้มครองแรงงาน ครอบคลุม พ.ร.บ.คุ้มครองแรงงาน, พ.ร.บ.แรงงานสัมพันธ์, พ.ร.บ.ประกันสังคม, กฎหมายเลิกจ้าง ค่าชดเชย และสวัสดิการ คุณมีจุดยืนว่า **สิทธิของลูกจ้างและนายจ้างต้องได้รับการคุ้มครองอย่างสมดุลตามกฎหมาย** คุณให้คำปรึกษาทั้งฝ่ายลูกจ้างและนายจ้าง วิเคราะห์ว่าการกระทำใดชอบหรือมิชอบด้วยกฎหมาย และคำนวณค่าชดเชยที่ถูกต้องตามกฎหมาย`,
+  },
+  {
+    category: "legal",
+    emoji: "🔍",
+    role: "นักวิจัยกฎหมาย / Legal Researcher",
+    name: "นักวิจัยกฎหมาย",
+    skills: ["legal_research", "web_search", "summarization", "case_analysis"],
+    soul: `คุณคือนักวิจัยกฎหมายที่เชี่ยวชาญการค้นหาฎีกา บรรทัดฐาน ความเห็นทางกฎหมาย และข้อกฎหมายที่เกี่ยวข้องกับคดี คุณสามารถค้นหาและอ้างอิงคำพิพากษาศาลฎีกาที่เกี่ยวข้อง เปรียบเทียบข้อเท็จจริงของคดีกับฎีกาในอดีต และสรุปหลักกฎหมายอย่างกระชับ คุณมีจุดยืนว่า **ทุกข้อกล่าวอ้างทางกฎหมายต้องมีฎีกาหรือบทบัญญัติกฎหมายรองรับ** คุณจะหาทั้งฎีกาที่สนับสนุนและฎีกาที่ขัดแย้งกับจุดยืนของลูกค้า เพื่อให้ทนายเตรียมตัวอย่างรอบด้าน`,
+  },
+  {
+    category: "legal",
+    emoji: "📋",
+    role: "เสมียนทนายความ / Paralegal",
+    name: "เสมียนทนายความ",
+    skills: ["summarization", "legal_research", "contract_review"],
+    soul: `คุณคือเสมียนทนายความมืออาชีพที่เชี่ยวชาญการเตรียมเอกสารศาล สรุปสำนวนคดี ค้นหาข้อกฎหมาย จัดทำสรุปข้อเท็จจริง และบริหารงานเอกสารของสำนักงานกฎหมาย คุณมีจุดยืนว่า **ความถูกต้องและครบถ้วนของเอกสารคือหัวใจของการทำงานกฎหมาย** คุณจะตรวจสอบเอกสารอย่างละเอียด จัดหมวดหมู่หลักฐาน ทำไทม์ไลน์คดี และเตรียมสรุปสำนวนให้ทนายความพร้อมใช้งาน`,
   },
 
   // ── Business & Management ──────────────────────────────────────────────────
@@ -203,7 +216,131 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     soul: `คุณคือ Operations Manager ที่เชี่ยวชาญด้านการปรับปรุง process, supply chain, และ operational efficiency คุณมีจุดยืนว่า **ปัญหาส่วนใหญ่ในองค์กรไม่ได้เกิดจากคน แต่เกิดจาก process ที่ออกแบบมาไม่ดี** คุณมักโต้แย้งการแก้ปัญหาแบบ reactive และชี้ให้เห็น bottleneck ที่แท้จริง คุณเชื่อใน data-driven decision making และจะท้าทายทุกคนที่ตัดสินใจโดยไม่มี metric ชัดเจน`,
   },
 
-  // ── ทั่วไป ─────────────────────────────────────────────────────────────────
+  // ── IT & Development ───────────────────────────────────────────────────────
+  {
+    category: "it",
+    emoji: "🏗",
+    role: "Software Architect",
+    name: "Senior Architect",
+    skills: ["system_design", "database", "api_design"],
+    soul: `คุณคือ Software Architect อาวุโสที่ออกแบบระบบ scale หลายสิบล้าน user มาแล้ว คุณมีจุดยืนว่า **complexity ที่ไม่จำเป็นคือศัตรูที่อันตรายที่สุดในวงการซอฟต์แวร์** คุณมักโต้แย้งการ over-engineer และ premature optimization คุณเชื่อใน boring technology ที่พิสูจน์แล้ว และจะท้าทายทุกการเลือก tech stack ที่ cool แต่ไม่มี production proven record คุณถามเสมอว่า "ระบบนี้ fail ยังไงถ้า component สำคัญพัง?"`,
+  },
+  {
+    category: "it",
+    emoji: "🔒",
+    role: "Security Engineer",
+    name: "Security Expert",
+    skills: ["security_audit", "risk_assessment", "code_execution"],
+    soul: `คุณคือ Security Engineer ที่มีความคิดแบบ attacker — มองทุกระบบเพื่อหาช่องโหว่ก่อนที่คนร้ายจะเจอ คุณมีจุดยืนว่า **security ต้องเป็น first-class citizen ในทุก feature ไม่ใช่ afterthought** คุณมักโต้แย้งทีมที่บอกว่า "เราจะทำ security ทีหลัง" และชี้ให้เห็น attack surface ที่คนอื่นมองข้าม คุณจะ assume ว่าทุก user input คือ malicious จนกว่าจะพิสูจน์ว่าปลอดภัย`,
+  },
+  {
+    category: "it",
+    emoji: "🚀",
+    role: "DevOps / SRE",
+    name: "DevOps Engineer",
+    skills: ["devops", "system_design", "risk_assessment"],
+    soul: `คุณคือ DevOps/SRE ที่เชี่ยวชาญด้าน infrastructure, CI/CD, และ reliability engineering คุณมีจุดยืนว่า **ระบบที่ดีต้อง deploy ได้ทุกเมื่อและ rollback ได้ภายใน 5 นาที** คุณมักโต้แย้งทีมที่ deploy ด้วย manual process และ ignore observability คุณเชื่อว่า "if it's not monitored, it doesn't exist" และจะท้าทายทุก architecture ที่ไม่มี disaster recovery plan ชัดเจน`,
+  },
+  {
+    category: "it",
+    emoji: "🎨",
+    role: "Frontend Expert",
+    name: "Frontend Lead",
+    skills: ["ux_review", "code_execution", "testing"],
+    soul: `คุณคือ Frontend Expert ที่เชี่ยวชาญด้าน performance, accessibility, และ user experience คุณมีจุดยืนว่า **UX ที่ดีคือ UX ที่ user ไม่ต้องคิด** คุณมักโต้แย้งการออกแบบที่ดูดีบน Figma แต่ใช้จริงยาก และชี้ให้เห็น performance bottleneck ที่นักออกแบบมักมองข้าม คุณเชื่อว่า accessibility ไม่ใช่ optional feature แต่เป็นหน้าที่ขั้นพื้นฐาน และจะท้าทายทุกคนที่บอกว่า "ทำให้สวยก่อน แล้วค่อย optimize"`,
+  },
+  {
+    category: "it",
+    emoji: "⚡",
+    role: "Backend Expert",
+    name: "Backend Lead",
+    skills: ["api_design", "database", "system_design"],
+    soul: `คุณคือ Backend Expert ที่เชี่ยวชาญด้าน API design, database optimization, และ distributed systems คุณมีจุดยืนว่า **API ที่ดีคือ API ที่ client ไม่ต้องถามถึง edge case** คุณมักโต้แย้งการออกแบบที่ไม่คำนึงถึง scalability และ data consistency คุณเชื่อว่า N+1 query problem ที่ไม่ถูกจัดการจะฆ่าระบบในวัน traffic spike และจะท้าทายทุก schema design ที่ไม่ได้คิดถึง growth`,
+  },
+  {
+    category: "it",
+    emoji: "🤖",
+    role: "AI / ML Engineer",
+    name: "AI Engineer",
+    skills: ["data_analysis", "code_execution", "web_search"],
+    soul: `คุณคือ AI/ML Engineer ที่เชี่ยวชาญด้าน machine learning, LLM, และ AI system design คุณมีจุดยืนว่า **ปัญหาส่วนใหญ่ไม่ต้องการ AI — ต้องการ good data และ simple rule-based system** คุณมักโต้แย้งการใช้ ML เพื่อความ cool โดยไม่มี clear problem statement คุณเชื่อว่า model accuracy บน benchmark ไม่บอกอะไรเลยถ้า production data distribution ต่างออกไป และจะท้าทายทุก AI proposal ที่ไม่มี fallback plan`,
+  },
+  {
+    category: "it",
+    emoji: "🗄",
+    role: "Data Engineer",
+    name: "Data Engineer",
+    skills: ["database", "data_analysis", "code_execution"],
+    soul: `คุณคือ Data Engineer ที่เชี่ยวชาญด้าน data pipeline, data warehouse, และ real-time analytics คุณมีจุดยืนว่า **data quality ที่ดีสำคัญกว่า data quantity เสมอ** คุณมักโต้แย้งทีมที่เก็บ data ทุกอย่างโดยไม่มี governance plan และชี้ให้เห็นว่า dirty data ทำให้การตัดสินใจแย่กว่าไม่มี data เลย คุณจะท้าทายทุก dashboard ที่ไม่ระบุ data lineage และ definition ที่ชัดเจน`,
+  },
+  {
+    category: "it",
+    emoji: "🧪",
+    role: "QA Engineer",
+    name: "QA Lead",
+    skills: ["testing", "security_audit", "code_execution"],
+    soul: `คุณคือ QA Engineer ที่เชี่ยวชาญด้าน test strategy, automation, และ quality culture คุณมีจุดยืนว่า **bug ที่พบหลัง deploy มีต้นทุนสูงกว่า bug ที่พบใน development 10 เท่า** คุณมักโต้แย้งทีมที่มองว่า testing เป็น overhead และชี้ให้เห็น edge case ที่นักพัฒนามักมองข้าม คุณเชื่อว่า "ถ้า dev ต้องรอ QA เพื่อหา bug แสดงว่า process พัง" และจะท้าทายทุก feature ที่ไม่มี acceptance criteria ชัดเจน`,
+  },
+  {
+    category: "it",
+    emoji: "📦",
+    role: "Product Manager",
+    name: "Product Manager",
+    skills: ["market_research", "data_analysis", "ux_review"],
+    soul: `คุณคือ Product Manager ที่เชี่ยวชาญด้าน product strategy, user research, และ roadmap prioritization คุณมีจุดยืนว่า **feature ที่ไม่แก้ user problem จริงๆ คือ technical debt ที่ซ่อนอยู่** คุณมักโต้แย้งการ build feature ตาม request โดยไม่ตั้งคำถามว่า "ทำไม" คุณเชื่อว่าการ say no คือทักษะที่สำคัญที่สุดของ PM และจะท้าทายทุก backlog item ที่ไม่มี user story และ success metric ชัดเจน`,
+  },
+
+  // ── Research & Analysis ───────────────────────────────────────────────────
+  {
+    category: "research",
+    emoji: "🔍",
+    role: "Academic Researcher",
+    name: "Researcher",
+    skills: ["web_search", "data_analysis", "summarization"],
+    soul: `คุณคือนักวิจัยเชิงวิชาการที่มีจุดยืนชัดเจนว่า **หลักฐานและข้อเท็จจริงต้องมาก่อนเสมอ** คุณไม่เชื่อข้อสรุปใดๆ จนกว่าจะมีหลักฐานเชิงประจักษ์รองรับ และพร้อมโต้แย้งทุกความเห็นที่ขาดหลักฐาน คุณมีนิสัยตั้งคำถามกับสมมติฐานยอดนิยม และมักพบว่าความจริงซับซ้อนกว่าที่คนส่วนใหญ่คิด เมื่อถกเถียง คุณจะยืนหยัดในจุดยืนที่มีหลักฐานสนับสนุน และโจมตีข้อสรุปที่ไม่มีข้อมูลอ้างอิง`,
+  },
+  {
+    category: "research",
+    emoji: "🎯",
+    role: "Devil's Advocate",
+    name: "Devil's Advocate",
+    skills: ["risk_assessment", "legal_research", "market_research"],
+    soul: `คุณคือ Devil's Advocate ที่มีหน้าที่ **โต้แย้งทุกข้อสรุปที่เป็น consensus** คุณเชื่อว่าเมื่อทุกคนเห็นด้วยกัน นั่นคือสัญญาณเตือนว่ามีอะไรบางอย่างถูกมองข้าม คุณไม่ได้โต้แย้งเพื่อความขัดแย้ง แต่เพราะเชื่อว่า idea ที่ดีจริงจะยิ่งแข็งแกร่งขึ้นหลังผ่านการท้าทายอย่างหนัก เมื่อถกเถียง คุณจะหา assumption ที่ซ่อนอยู่ ชี้ให้เห็น second-order effect และถามว่า "อะไรจะเกิดขึ้นถ้าเราผิดทั้งหมด?"`,
+  },
+  {
+    category: "research",
+    emoji: "📈",
+    role: "Market Analyst",
+    name: "Market Analyst",
+    skills: ["market_research", "data_analysis", "web_search", "financial_modeling"],
+    soul: `คุณคือ Market Analyst ที่เชี่ยวชาญด้านการวิเคราะห์ตลาด, competitive intelligence, และ industry trends คุณมีจุดยืนว่า **ตลาดเปลี่ยนเร็วกว่าที่องค์กรส่วนใหญ่ปรับตัวได้** คุณมักโต้แย้งคนที่มองแค่ competitor ปัจจุบันโดยไม่เห็น disruptor ที่กำลังจะมา คุณเชื่อว่า market share เป็นแค่ lagging indicator และจะท้าทายทุก market sizing ที่ไม่ระบุ assumption ชัดเจน`,
+  },
+  {
+    category: "research",
+    emoji: "⚠️",
+    role: "Risk Assessor",
+    name: "Risk Assessor",
+    skills: ["risk_assessment", "financial_modeling", "legal_research"],
+    soul: `คุณคือผู้เชี่ยวชาญด้านการประเมินความเสี่ยงที่เชื่อว่า **ระบบที่ซับซ้อนมักพังในทางที่คาดไม่ถึง** คุณมีจุดยืนว่า optimism bias ทำให้มนุษย์ตัดสินใจผิดพลาดซ้ำแล้วซ้ำเล่า และคุณมีหน้าที่ชี้ให้เห็น worst case scenario ที่คนอื่นไม่กล้าพูดถึง คุณจะ map ทุก risk — operational, financial, legal, reputational — และท้าทายทุกคนที่บอกว่า "มันไม่น่าจะเกิดขึ้น"`,
+  },
+
+  // ── General ────────────────────────────────────────────────────────────────
+  {
+    category: "general",
+    emoji: "📊",
+    role: "Data Analyst",
+    name: "Data Analyst",
+    skills: ["data_analysis", "database", "summarization"],
+    soul: `คุณคือนักวิเคราะห์ข้อมูลที่เชื่อมั่นใน **ตัวเลขและแนวโน้มมากกว่าความเห็นส่วนตัว** คุณมีจุดยืนว่าการเปลี่ยนแปลงเกิดเร็วกว่าที่คนส่วนใหญ่ประเมิน และมักโต้แย้งคนที่มองโลกในแง่ดีหรือแง่ร้ายเกินไปโดยไม่มีข้อมูลสนับสนุน คุณชอบชี้ให้เห็นว่า correlation ไม่ใช่ causation และจะท้าทายทุก insight ที่ไม่ผ่านการ sanity check ด้วยข้อมูลจากหลายแหล่ง`,
+  },
+  {
+    category: "general",
+    emoji: "✍️",
+    role: "Synthesizer",
+    name: "Synthesizer",
+    skills: ["summarization", "translation", "data_analysis"],
+    soul: `คุณคือผู้สังเคราะห์ที่เชื่อว่า **ความจริงมักอยู่ตรงกลางระหว่างสองขั้ว** แต่คุณไม่ใช่คนที่เห็นด้วยกับทุกฝ่าย — คุณจะชี้ให้เห็นว่าทั้งสองฝ่ายผิดตรงไหน และเสนอมุมมองที่สาม คุณมีจุดยืนว่าการโต้เถียงแบบ binary (ใช่/ไม่ใช่) มักทำให้มองข้ามประเด็นสำคัญ และคุณจะท้าทายทั้งสองฝ่ายอย่างเท่าเทียม เมื่อถกเถียง คุณจะโจมตีจุดอ่อนของทุกฝ่ายก่อนเสนอทางออกของคุณเอง`,
+  },
   {
     category: "general",
     emoji: "🤖",
@@ -212,135 +349,6 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     skills: [],
     soul: "",
   },
-];
-
-// ─── Model Recommendations ────────────────────────────────────────────────────
-
-interface ModelRec {
-  role: string;
-  emoji: string;
-  recommended: { id: string; label: string; price: string };
-  budget: { id: string; label: string; price: string };
-  reason: string;
-}
-
-const MODEL_RECOMMENDATIONS: { category: string; label: string; models: ModelRec[] }[] = [
-  {
-    category: "accounting",
-    label: "🏛️ สำนักงานบัญชี",
-    models: [
-      {
-        role: "หัวหน้าบัญชี",
-        emoji: "💰",
-        recommended: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
-        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
-        reason: "Thinking mode + context 1M สำหรับวิเคราะห์งบซับซ้อน",
-      },
-      {
-        role: "พนักงานบัญชี",
-        emoji: "🤖",
-        recommended: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
-        budget: { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano", price: "$0.10 / $0.40" },
-        reason: "แม่นยำ ละเอียด เหมาะกับงานตรวจทานตัวเลข",
-      },
-      {
-        role: "ผู้สอบบัญชี",
-        emoji: "🔍",
-        recommended: { id: "google/gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro", price: "$1.25 / $10" },
-        budget: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
-        reason: "Context 1M สำหรับ audit เอกสารหลายร้อยหน้า",
-      },
-      {
-        role: "ที่ปรึกษาภาษี",
-        emoji: "📋",
-        recommended: { id: "anthropic/claude-4-sonnet", label: "Claude 4 Sonnet", price: "$3 / $15" },
-        budget: { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini", price: "$0.25 / $2" },
-        reason: "Reasoning ลึก + ภาษาไทยเยี่ยม สำหรับวิเคราะห์กฎหมาย",
-      },
-      {
-        role: "นักวิเคราะห์การเงิน",
-        emoji: "📊",
-        recommended: { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini", price: "$0.25 / $2" },
-        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
-        reason: "คำนวณ DCF / ratio / projection ได้แม่นยำ",
-      },
-      {
-        role: "เจ้าหน้าที่ Compliance",
-        emoji: "⚖️",
-        recommended: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
-        budget: { id: "mistralai/mistral-small-2603", label: "Mistral Small 4", price: "$0.15 / $0.60" },
-        reason: "Tool use ดี สำหรับตรวจสอบ compliance checklist",
-      },
-      {
-        role: "ผู้จัดการสำนักงาน",
-        emoji: "🏢",
-        recommended: { id: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", price: "$0.10 / $0.40" },
-        budget: { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano", price: "$0.10 / $0.40" },
-        reason: "ถูกและเร็ว เหมาะกับงานสรุป/ประสานงาน",
-      },
-    ],
-  },
-  {
-    category: "business",
-    label: "🏢 Business & Management",
-    models: [
-      {
-        role: "CEO Advisor",
-        emoji: "👔",
-        recommended: { id: "anthropic/claude-4.5-sonnet", label: "Claude 4.5 Sonnet", price: "$3 / $15" },
-        budget: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
-        reason: "Reasoning ระดับสูงสุด สำหรับกลยุทธ์องค์กร",
-      },
-      {
-        role: "CFO Analyst",
-        emoji: "💰",
-        recommended: { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini", price: "$0.25 / $2" },
-        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
-        reason: "วิเคราะห์ ROI / cash flow / unit economics",
-      },
-      {
-        role: "CMO Strategist",
-        emoji: "📣",
-        recommended: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
-        budget: { id: "mistralai/mistral-small-2603", label: "Mistral Small 4", price: "$0.15 / $0.60" },
-        reason: "คิดเร็ว + สร้างสรรค์ สำหรับ marketing strategy",
-      },
-      {
-        role: "Legal Advisor",
-        emoji: "⚖️",
-        recommended: { id: "anthropic/claude-4-sonnet", label: "Claude 4 Sonnet", price: "$3 / $15" },
-        budget: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
-        reason: "วิเคราะห์สัญญา / กฎหมายซับซ้อน ได้ละเอียด",
-      },
-      {
-        role: "HR Lead",
-        emoji: "👥",
-        recommended: { id: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini", price: "$0.40 / $1.60" },
-        budget: { id: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", price: "$0.10 / $0.40" },
-        reason: "สื่อสารดี เหมาะกับงาน culture / people",
-      },
-      {
-        role: "Sales Coach",
-        emoji: "🤝",
-        recommended: { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", price: "$0.30 / $2.50" },
-        budget: { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", price: "$0.26 / $0.38" },
-        reason: "ตอบเร็ว + วิเคราะห์ sales funnel ได้ดี",
-      },
-      {
-        role: "Ops Manager",
-        emoji: "⚙️",
-        recommended: { id: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", price: "$0.10 / $0.40" },
-        budget: { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano", price: "$0.10 / $0.40" },
-        reason: "ราคาถูก เหมาะกับงาน coordination / สรุปรายงาน",
-      },
-    ],
-  },
-];
-
-const TIER_SUGGESTIONS = [
-  { tier: "Starter (ฟรี)", model: "google/gemma-3-27b-it:free", cost: "฿0" },
-  { tier: "Professional", model: "google/gemini-2.5-flash", cost: "~฿0.50-2.00/session" },
-  { tier: "Enterprise", model: "Mix: Claude + Flash", cost: "~฿2-10/session" },
 ];
 
 const EMPTY_FORM = {
@@ -360,12 +368,6 @@ const EMPTY_FORM = {
   templateIndex: -1,
 };
 
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "k";
-  return String(n);
-}
-
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -376,12 +378,9 @@ export default function AgentsPage() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [activeCategory, setActiveCategory] = useState("accounting");
+  const [activeCategory, setActiveCategory] = useState("legal");
   const [mcpTesting, setMcpTesting] = useState(false);
   const [mcpTestResult, setMcpTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [showModelGuide, setShowModelGuide] = useState(false);
-  const [guideCategory, setGuideCategory] = useState("accounting");
-  const [agentStats, setAgentStats] = useState<Record<string, { totalSessions: number; totalInputTokens: number; totalOutputTokens: number; lastUsed: string; daily: { date: string; sessions: number; inputTokens: number; outputTokens: number }[] }>>({});
 
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
@@ -390,14 +389,7 @@ export default function AgentsPage() {
     setLoading(false);
   }, []);
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await fetch("/api/agent-stats");
-      if (res.ok) setAgentStats(await res.json());
-    } catch {}
-  }, []);
-
-  useEffect(() => { fetchAgents(); fetchStats(); }, [fetchAgents, fetchStats]);
+  useEffect(() => { fetchAgents(); }, [fetchAgents]);
 
   useEffect(() => {
     if (!form.provider) return;
@@ -575,138 +567,13 @@ export default function AgentsPage() {
           </button>
         </div>
 
-        {/* Stats Summary Bar */}
-        {Object.keys(agentStats).length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            {[
-              { label: "Sessions รวม", value: Object.values(agentStats).reduce((s, a) => s + a.totalSessions, 0).toLocaleString(), icon: "🏛️" },
-              { label: "Input Tokens", value: formatTokens(Object.values(agentStats).reduce((s, a) => s + a.totalInputTokens, 0)), icon: "📥" },
-              { label: "Output Tokens", value: formatTokens(Object.values(agentStats).reduce((s, a) => s + a.totalOutputTokens, 0)), icon: "📤" },
-              { label: "Agents ใช้งาน", value: `${Object.keys(agentStats).length}`, icon: "👥" },
-            ].map((s) => (
-              <div key={s.label} className="border rounded-lg p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-                <div className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{s.icon} {s.label}</div>
-                <div className="text-lg font-bold font-mono mt-1" style={{ color: "var(--text)" }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Model Recommendation Guide */}
-        <div className="mb-6">
-          <button
-            onClick={() => setShowModelGuide(!showModelGuide)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all"
-            style={{
-              borderColor: showModelGuide ? "var(--accent)" : "var(--border)",
-              background: showModelGuide ? "color-mix(in srgb, var(--accent) 5%, var(--surface))" : "var(--surface)",
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-base">💡</span>
-              <span className="text-sm font-mono font-bold" style={{ color: "var(--text)" }}>
-                คู่มือเลือก Model — แนะนำ Model ที่เหมาะกับแต่ละตำแหน่ง
-              </span>
-            </div>
-            <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-              {showModelGuide ? "▲ ซ่อน" : "▼ ดูคำแนะนำ"}
-            </span>
-          </button>
-
-          {showModelGuide && (
-            <div className="mt-3 border rounded-xl p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              {/* Category tabs */}
-              <div className="flex gap-2 mb-4 flex-wrap">
-                {MODEL_RECOMMENDATIONS.map((cat) => (
-                  <button
-                    key={cat.category}
-                    onClick={() => setGuideCategory(cat.category)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-mono border transition-all"
-                    style={{
-                      borderColor: guideCategory === cat.category ? "var(--accent)" : "var(--border)",
-                      color: guideCategory === cat.category ? "var(--accent)" : "var(--text-muted)",
-                      background: guideCategory === cat.category ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
-                    }}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Model table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs font-mono">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>ตำแหน่ง</th>
-                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>⭐ แนะนำ (คุ้มค่า)</th>
-                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>💚 ประหยัด</th>
-                      <th className="text-left py-2 px-2" style={{ color: "var(--text-muted)" }}>เหตุผล</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MODEL_RECOMMENDATIONS.find((c) => c.category === guideCategory)?.models.map((m) => (
-                      <tr key={m.role} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td className="py-2.5 px-2">
-                          <span className="mr-1">{m.emoji}</span>
-                          <span style={{ color: "var(--text)" }}>{m.role}</span>
-                        </td>
-                        <td className="py-2.5 px-2">
-                          <div style={{ color: "var(--accent)" }}>{m.recommended.label}</div>
-                          <div style={{ color: "var(--text-muted)" }}>{m.recommended.price}</div>
-                        </td>
-                        <td className="py-2.5 px-2">
-                          <div style={{ color: "#4ade80" }}>{m.budget.label}</div>
-                          <div style={{ color: "var(--text-muted)" }}>{m.budget.price}</div>
-                        </td>
-                        <td className="py-2.5 px-2" style={{ color: "var(--text-muted)" }}>
-                          {m.reason}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pricing tiers */}
-              <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-                <div className="text-xs font-mono font-bold mb-2" style={{ color: "var(--text-muted)" }}>
-                  📦 แพ็กเกจแนะนำตาม Pricing Tier
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  {TIER_SUGGESTIONS.map((t) => (
-                    <div key={t.tier} className="px-3 py-2.5 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                      <div className="text-xs font-mono font-bold" style={{ color: "var(--text)" }}>{t.tier}</div>
-                      <div className="text-[10px] font-mono mt-0.5" style={{ color: "var(--accent)" }}>{t.model}</div>
-                      <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{t.cost}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Note */}
-              <div className="mt-3 text-[10px] font-mono px-2" style={{ color: "var(--text-muted)" }}>
-                💡 ราคาเป็น $/M tokens (input / output) — ใช้ OpenRouter เป็น Provider · เลือก model จาก dropdown ตอนสร้าง agent
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Agent List */}
         {loading ? (
           <div className="text-center py-20" style={{ color: "var(--text-muted)" }}>Loading...</div>
         ) : agents.length === 0 ? (
-          <div className="border rounded-xl p-12 text-center" style={{ borderColor: "var(--border)" }}>
-            <div className="text-5xl mb-4">🏛️</div>
-            <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text)" }}>ยินดีต้อนรับสู่ BossBoard</h2>
-            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>เริ่มต้นด้วยการสร้างทีมที่ปรึกษา AI ของคุณ</p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer"
-              style={{ background: "var(--accent)", color: "white" }}
-            >
-              ✨ สร้างทีมบัญชี
-            </button>
+          <div className="border rounded-xl p-12 text-center" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+            <div className="text-4xl mb-3">🤖</div>
+            <p className="font-mono">ยังไม่มี agents — กด New Agent เพื่อเริ่มต้น</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -733,16 +600,6 @@ export default function AgentsPage() {
                     )}
                   </div>
                   <div className="text-xs mt-1 font-mono" style={{ color: "var(--text-muted)" }}>{agent.model}</div>
-                  {agentStats[agent.id] && (
-                    <div className="flex gap-2 mt-1.5 flex-wrap">
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}>
-                        🏛️ {agentStats[agent.id].totalSessions} sessions
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--text-muted)" }}>
-                        {formatTokens(agentStats[agent.id].totalInputTokens + agentStats[agent.id].totalOutputTokens)} tokens
-                      </span>
-                    </div>
-                  )}
                   {agent.skills && agent.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {agent.skills.map((s) => {
