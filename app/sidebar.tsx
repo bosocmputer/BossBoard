@@ -8,7 +8,6 @@ import { ThemeSwitcher } from "@/lib/theme";
 import {
   Home,
   MessageSquare,
-  Scale,
   Users,
   UsersRound,
   Settings,
@@ -42,7 +41,6 @@ const NAV_ITEMS: NavGroup[] = [
     group: "AI Tools",
     items: [
       { href: "/research", icon: MessageSquare, labelKey: "nav.research" },
-      { href: "/mock-trial", icon: Scale, labelKey: "nav.mockTrial" },
     ],
   },
   {

@@ -593,6 +593,292 @@ export default function ResearchPage() {
   const displayRounds = rounds;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  const renderSidebarContent = (onNavigate?: () => void) => (
+    <>
+      {/* Agent selector */}
+      <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+        <div className="flex items-center justify-between">
+          <div className="text-xs mb-2 font-bold" style={{ color: "var(--text-muted)" }}>
+            สมาชิกที่ประชุม ({selectedIds.size}/{agents.length})
+          </div>
+          {agents.length > 0 && (
+            <button
+              onClick={() => {
+                if (selectedIds.size === agents.length) setSelectedIds(new Set());
+                else setSelectedIds(new Set(agents.map(a => a.id)));
+              }}
+              className="text-[10px] px-2 py-0.5 rounded border transition-all mb-2"
+              style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+            >
+              {selectedIds.size === agents.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
+            </button>
+          )}
+        </div>
+        {agents.length === 0 ? (
+          <div className="text-center py-6 px-3">
+            <div className="text-2xl mb-2">🏛️</div>
+            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>ยังไม่มี agent — สร้างทีมก่อนเพื่อเริ่มประชุม</p>
+            <a href="/agents" className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-block" style={{ background: "var(--accent)", color: "white", textDecoration: "none" }}>ไปสร้างทีม →</a>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {agents.map((agent) => {
+              const tokens = agentTokens[agent.id];
+              const isChairman = agent.id === chairmanId;
+              const isSearching = searchingAgents.has(agent.id);
+              return (
+                <button
+                  key={agent.id}
+                  onClick={() => toggleAgent(agent.id)}
+                  className="w-full text-left p-2 rounded-lg border transition-all"
+                  style={{
+                    borderColor: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)",
+                    background: selectedIds.has(agent.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                  }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">{agent.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{agent.name}</div>
+                        {isChairman && <span className="text-[9px] px-1 rounded" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>}
+                        {agent.useWebSearch && <span className="text-[9px]" title="Web Search">🔍</span>}
+                      </div>
+                      <div className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{agent.role}</div>
+                    </div>
+                    {isSearching ? (
+                      <span className="text-[9px] animate-pulse" style={{ color: "var(--accent)" }}>ค้นหา...</span>
+                    ) : (
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)" }} />
+                    )}
+                  </div>
+                  {tokens && (
+                    <div className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                      {tokens.totalTokens.toLocaleString()} tokens
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Advanced: History Mode + Data Source */}
+      <button
+        onClick={() => setShowAdvanced(v => !v)}
+        className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all"
+        style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
+      >
+        {showAdvanced ? "▾" : "▸"} ตั้งค่าขั้นสูง
+      </button>
+      {showAdvanced && (
+      <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+        <div className="text-xs mb-1 font-bold" style={{ color: "var(--text-muted)" }}>🧠 Context Memory</div>
+        <select
+          value={historyMode}
+          onChange={(e) => setHistoryMode(e.target.value as typeof historyMode)}
+          className="w-full px-2 py-1.5 rounded-lg border text-xs mb-2"
+          style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+        >
+          {HISTORY_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+        </select>
+
+        <div className="text-xs mb-1.5 font-bold" style={{ color: "var(--text-muted)" }}>Data Source</div>
+        <div className="flex flex-col gap-1.5">
+          {/* File toggle */}
+          <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useFileContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
+            <span className="text-xs" style={{ color: useFileContext ? "var(--text)" : "var(--text-muted)" }}>📎 เอกสารที่แนบ</span>
+            <div onClick={() => setUseFileContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useFileContext ? "var(--accent)" : "var(--border)" }}>
+              <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useFileContext ? "17px" : "2px" }} />
+            </div>
+          </label>
+          {/* MCP toggle */}
+          <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useMcpContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
+            <span className="text-xs" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}>🔌 MCP ตาม Agent</span>
+            <div onClick={() => setUseMcpContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useMcpContext ? "var(--accent)" : "var(--border)" }}>
+              <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useMcpContext ? "17px" : "2px" }} />
+            </div>
+          </label>
+        </div>
+      </div>
+      )}
+      {showAdvanced && (
+      <div
+        className="border rounded-xl p-3"
+        style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
+            📎 เอกสารอ้างอิง ({attachedFiles.length})
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile}
+            className="text-xs px-2 py-1 rounded-lg border transition-all disabled:opacity-40"
+            style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+          >
+            {uploadingFile ? "⏳" : "+ แนบ"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={SUPPORTED_EXTENSIONS.join(",")}
+            onChange={handleFileInput}
+            className="hidden"
+            aria-label="แนบไฟล์อ้างอิง"
+          />
+        </div>
+
+        {attachedFiles.length === 0 && !uploadingFile && (
+          <div
+            className="border-2 border-dashed rounded-lg p-3 text-center text-xs transition-all"
+            style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", color: "var(--text-muted)", background: isDragOver ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "transparent" }}
+          >
+            {isDragOver ? "ปล่อยไฟล์เลย!" : "Drag & Drop หรือกด + แนบ"}
+            <div className="mt-1 opacity-60">xlsx · pdf · docx · csv · json · txt</div>
+          </div>
+        )}
+
+        {uploadError && <div className="mt-1 text-xs text-red-400">{uploadError}</div>}
+
+        {attachedFiles.length > 0 && (
+          <div className="space-y-2 mt-1">
+            {attachedFiles.map((f, i) => (
+              <div key={i} className="p-2 rounded-lg border" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm flex-shrink-0">
+                    {f.filename.endsWith(".xlsx") || f.filename.endsWith(".xls") || f.filename.endsWith(".csv") ? "📊" :
+                     f.filename.endsWith(".pdf") ? "📄" :
+                     f.filename.endsWith(".docx") || f.filename.endsWith(".doc") ? "📝" : "📋"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{f.filename}</div>
+                    <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                      {formatBytes(f.size)} · {f.chars.toLocaleString()} chars
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
+                    className="text-xs opacity-40 hover:opacity-100 flex-shrink-0"
+                    aria-label="ลบไฟล์"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {/* Sheet selector for Excel */}
+                {f.sheets && f.sheets.length > 1 && (
+                  <div className="mt-2">
+                    <div className="text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>เลือก Sheet:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {f.sheets.map((sheet) => {
+                        const selected = f.selectedSheets?.includes(sheet) ?? true;
+                        return (
+                          <button
+                            key={sheet}
+                            onClick={() => toggleSheet(i, sheet)}
+                            className="text-[10px] px-1.5 py-0.5 rounded border transition-all"
+                            style={{
+                              borderColor: selected ? "var(--accent)" : "var(--border)",
+                              background: selected ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
+                              color: selected ? "var(--accent)" : "var(--text-muted)",
+                            }}
+                          >
+                            {sheet}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={() => setAttachedFiles([])}
+              className="w-full text-[10px] py-1 rounded border"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+            >
+              ลบทั้งหมด
+            </button>
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* History panel */}
+      <div className="border rounded-xl flex-1 flex flex-col overflow-hidden" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+        <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+          <button
+            onClick={() => { setHistoryTab("current"); setViewingSession(null); }}
+            className="flex-1 py-2 text-xs transition-all"
+            style={{ color: historyTab === "current" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "current" ? "2px solid var(--accent)" : "2px solid transparent" }}
+          >
+            💬 วาระ ({rounds.length})
+          </button>
+          <button
+            onClick={() => setHistoryTab("history")}
+            className="flex-1 py-2 text-xs transition-all"
+            style={{ color: historyTab === "history" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "history" ? "2px solid var(--accent)" : "2px solid transparent" }}
+          >
+            📋 ประวัติ ({serverSessions.length})
+          </button>
+        </div>
+
+        {historyTab === "current" ? (
+          <div className="p-3 flex-1 overflow-y-auto">
+            {rounds.length === 0 ? (
+              <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ยังไม่มีวาระ</div>
+            ) : (
+              <div className="space-y-2">
+                {rounds.map((r, i) => (
+                  <div key={i} className="text-xs p-2 rounded-lg border" style={{ borderColor: "var(--border)" }}>
+                    <div className="font-bold mb-0.5" style={{ color: "var(--text)" }}>วาระที่ {i + 1}</div>
+                    <div className="line-clamp-2" style={{ color: "var(--text-muted)" }}>{r.question}</div>
+                  </div>
+                ))}
+                <button onClick={clearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                  🗑 เริ่มการประชุมใหม่
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-3 flex-1 overflow-y-auto">
+            {serverSessions.length === 0 ? (
+              <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ไม่มีประวัติ</div>
+            ) : (
+              <div className="space-y-2">
+                {serverSessions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => { loadServerSession(s); onNavigate?.(); }}
+                    className="w-full text-left p-2 rounded-lg border transition-all"
+                    style={{
+                      borderColor: viewingSession?.id === s.id ? "var(--accent)" : "var(--border)",
+                      background: viewingSession?.id === s.id ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                    }}
+                  >
+                    <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
+                    <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+                      {s.status === "completed" ? "✅" : s.status === "error" ? "❌" : "⏳"}{" "}
+                      {new Date(s.startedAt).toLocaleDateString("th")}
+                      {s.totalTokens > 0 && ` · ${s.totalTokens.toLocaleString()} tokens`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col p-3 sm:p-6 gap-3 sm:gap-6">
@@ -639,248 +925,7 @@ export default function ResearchPage() {
                   >×</button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-
-            {/* Agent selector */}
-            <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="flex items-center justify-between">
-                <div className="text-xs mb-2 font-bold" style={{ color: "var(--text-muted)" }}>
-                  สมาชิกที่ประชุม ({selectedIds.size}/{agents.length})
-                </div>
-                {agents.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (selectedIds.size === agents.length) setSelectedIds(new Set());
-                      else setSelectedIds(new Set(agents.map(a => a.id)));
-                    }}
-                    className="text-[10px] px-2 py-0.5 rounded border transition-all mb-2"
-                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                  >
-                    {selectedIds.size === agents.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
-                  </button>
-                )}
-              </div>
-              {agents.length === 0 ? (
-                <div className="text-center py-6 px-3">
-                  <div className="text-2xl mb-2">🏛️</div>
-                  <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>ยังไม่มี agent — สร้างทีมก่อนเพื่อเริ่มประชุม</p>
-                  <a href="/agents" className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-block" style={{ background: "var(--accent)", color: "white", textDecoration: "none" }}>ไปสร้างทีม →</a>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {agents.map((agent) => {
-                    const tokens = agentTokens[agent.id];
-                    const isChairman = agent.id === chairmanId;
-                    const isSearching = searchingAgents.has(agent.id);
-                    return (
-                      <button
-                        key={agent.id}
-                        onClick={() => toggleAgent(agent.id)}
-                        className="w-full text-left p-2 rounded-lg border transition-all"
-                        style={{
-                          borderColor: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)",
-                          background: selectedIds.has(agent.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-                        }}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm">{agent.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1">
-                              <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{agent.name}</div>
-                              {isChairman && <span className="text-[9px] px-1 rounded" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>}
-                              {agent.useWebSearch && <span className="text-[9px]" title="Web Search">🔍</span>}
-                            </div>
-                            <div className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{agent.role}</div>
-                          </div>
-                          {isSearching ? (
-                            <span className="text-[9px] animate-pulse" style={{ color: "var(--accent)" }}>ค้นหา...</span>
-                          ) : (
-                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)" }} />
-                          )}
-                        </div>
-                        {tokens && (
-                          <div className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
-                            {tokens.totalTokens.toLocaleString()} tokens
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Advanced: History Mode + Data Source */}
-            <button
-              onClick={() => setShowAdvanced(v => !v)}
-              className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
-            >
-              {showAdvanced ? "▾" : "▸"} ตั้งค่าขั้นสูง
-            </button>
-            {showAdvanced && (
-            <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="text-xs mb-1 font-bold" style={{ color: "var(--text-muted)" }}>🧠 Context Memory</div>
-              <select
-                value={historyMode}
-                onChange={(e) => setHistoryMode(e.target.value as typeof historyMode)}
-                className="w-full px-2 py-1.5 rounded-lg border text-xs mb-2"
-                style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-              >
-                {HISTORY_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-              </select>
-              <div className="text-xs mb-1.5 font-bold" style={{ color: "var(--text-muted)" }}>Data Source</div>
-              <div className="flex flex-col gap-1.5">
-                <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useFileContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-                  <span className="text-xs" style={{ color: useFileContext ? "var(--text)" : "var(--text-muted)" }}>📎 เอกสารที่แนบ</span>
-                  <div onClick={() => setUseFileContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useFileContext ? "var(--accent)" : "var(--border)" }}>
-                    <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useFileContext ? "17px" : "2px" }} />
-                  </div>
-                </label>
-                <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useMcpContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-                  <span className="text-xs" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}>🔌 MCP ตาม Agent</span>
-                  <div onClick={() => setUseMcpContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useMcpContext ? "var(--accent)" : "var(--border)" }}>
-                    <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useMcpContext ? "17px" : "2px" }} />
-                  </div>
-                </label>
-              </div>
-            </div>
-            )}
-            {showAdvanced && (
-            <div
-              className="border rounded-xl p-3"
-              style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleDrop}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
-                  📎 เอกสารอ้างอิง ({attachedFiles.length})
-                </div>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile}
-                  className="text-xs px-2 py-1 rounded-lg border transition-all disabled:opacity-40"
-                  style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                >
-                  {uploadingFile ? "⏳" : "+ แนบ"}
-                </button>
-              </div>
-              {attachedFiles.length === 0 && !uploadingFile && (
-                <div
-                  className="border-2 border-dashed rounded-lg p-3 text-center text-xs transition-all"
-                  style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", color: "var(--text-muted)", background: isDragOver ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "transparent" }}
-                >
-                  กด + แนบ เพื่อเพิ่มไฟล์
-                  <div className="mt-1 opacity-60">xlsx · pdf · docx · csv · json · txt</div>
-                </div>
-              )}
-              {uploadError && <div className="mt-1 text-xs text-red-400">{uploadError}</div>}
-              {attachedFiles.length > 0 && (
-                <div className="space-y-2 mt-1">
-                  {attachedFiles.map((f, i) => (
-                    <div key={i} className="p-2 rounded-lg border" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm flex-shrink-0">
-                          {f.filename.endsWith(".xlsx") || f.filename.endsWith(".xls") || f.filename.endsWith(".csv") ? "📊" :
-                           f.filename.endsWith(".pdf") ? "📄" :
-                           f.filename.endsWith(".docx") || f.filename.endsWith(".doc") ? "📝" : "📋"}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{f.filename}</div>
-                          <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                            {formatBytes(f.size)} · {f.chars.toLocaleString()} chars
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
-                          className="text-xs opacity-40 hover:opacity-100 flex-shrink-0"
-                          aria-label="ลบไฟล์"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setAttachedFiles([])}
-                    className="w-full text-[10px] py-1 rounded border"
-                    style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-                  >
-                    ลบทั้งหมด
-                  </button>
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* History panel (mobile) */}
-            <div className="border rounded-xl flex-1 flex flex-col overflow-hidden min-h-[200px]" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-                <button
-                  onClick={() => { setHistoryTab("current"); setViewingSession(null); }}
-                  className="flex-1 py-2 text-xs transition-all"
-                  style={{ color: historyTab === "current" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "current" ? "2px solid var(--accent)" : "2px solid transparent" }}
-                >
-                  💬 วาระ ({rounds.length})
-                </button>
-                <button
-                  onClick={() => setHistoryTab("history")}
-                  className="flex-1 py-2 text-xs transition-all"
-                  style={{ color: historyTab === "history" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "history" ? "2px solid var(--accent)" : "2px solid transparent" }}
-                >
-                  📋 ประวัติ ({serverSessions.length})
-                </button>
-              </div>
-              {historyTab === "current" ? (
-                <div className="p-3 flex-1 overflow-y-auto">
-                  {rounds.length === 0 ? (
-                    <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ยังไม่มีวาระ</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {rounds.map((r, i) => (
-                        <div key={i} className="text-xs p-2 rounded-lg border" style={{ borderColor: "var(--border)" }}>
-                          <div className="font-bold mb-0.5" style={{ color: "var(--text)" }}>วาระที่ {i + 1}</div>
-                          <div className="line-clamp-2" style={{ color: "var(--text-muted)" }}>{r.question}</div>
-                        </div>
-                      ))}
-                      <button onClick={clearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                        🗑 เริ่มการประชุมใหม่
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-3 flex-1 overflow-y-auto">
-                  {serverSessions.length === 0 ? (
-                    <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ไม่มีประวัติ</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {serverSessions.map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => { loadServerSession(s); setMobileSidebarOpen(false); }}
-                          className="w-full text-left p-2 rounded-lg border transition-all"
-                          style={{
-                            borderColor: viewingSession?.id === s.id ? "var(--accent)" : "var(--border)",
-                            background: viewingSession?.id === s.id ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-                          }}
-                        >
-                          <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
-                          <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-                            {s.status === "completed" ? "✅" : s.status === "error" ? "❌" : "⏳"}{" "}
-                            {new Date(s.startedAt).toLocaleDateString("th")}
-                            {s.totalTokens > 0 && ` · ${s.totalTokens.toLocaleString()} tokens`}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
+                  {renderSidebarContent(() => setMobileSidebarOpen(false))}
                 </div>
               </aside>
             </div>
@@ -888,288 +933,7 @@ export default function ResearchPage() {
 
           {/* ── Left sidebar (desktop) ── */}
           <div className="hidden md:flex flex-col gap-3 w-64 flex-shrink-0">
-
-            {/* Agent selector */}
-            <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="flex items-center justify-between">
-                <div className="text-xs mb-2 font-bold" style={{ color: "var(--text-muted)" }}>
-                  สมาชิกที่ประชุม ({selectedIds.size}/{agents.length})
-                </div>
-                {agents.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (selectedIds.size === agents.length) setSelectedIds(new Set());
-                      else setSelectedIds(new Set(agents.map(a => a.id)));
-                    }}
-                    className="text-[10px] px-2 py-0.5 rounded border transition-all mb-2"
-                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                  >
-                    {selectedIds.size === agents.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
-                  </button>
-                )}
-              </div>
-              {agents.length === 0 ? (
-                <div className="text-center py-6 px-3">
-                  <div className="text-2xl mb-2">🏛️</div>
-                  <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>ยังไม่มี agent — สร้างทีมก่อนเพื่อเริ่มประชุม</p>
-                  <a href="/agents" className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-block" style={{ background: "var(--accent)", color: "white", textDecoration: "none" }}>ไปสร้างทีม →</a>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {agents.map((agent) => {
-                    const tokens = agentTokens[agent.id];
-                    const isChairman = agent.id === chairmanId;
-                    const isSearching = searchingAgents.has(agent.id);
-                    return (
-                      <button
-                        key={agent.id}
-                        onClick={() => toggleAgent(agent.id)}
-                        className="w-full text-left p-2 rounded-lg border transition-all"
-                        style={{
-                          borderColor: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)",
-                          background: selectedIds.has(agent.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-                        }}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm">{agent.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1">
-                              <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{agent.name}</div>
-                              {isChairman && <span className="text-[9px] px-1 rounded" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>}
-                              {agent.useWebSearch && <span className="text-[9px]" title="Web Search">🔍</span>}
-                            </div>
-                            <div className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{agent.role}</div>
-                          </div>
-                          {isSearching ? (
-                            <span className="text-[9px] animate-pulse" style={{ color: "var(--accent)" }}>ค้นหา...</span>
-                          ) : (
-                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)" }} />
-                          )}
-                        </div>
-                        {tokens && (
-                          <div className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
-                            {tokens.totalTokens.toLocaleString()} tokens
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Advanced: History Mode + Data Source */}
-            <button
-              onClick={() => setShowAdvanced(v => !v)}
-              className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
-            >
-              {showAdvanced ? "▾" : "▸"} ตั้งค่าขั้นสูง
-            </button>
-            {showAdvanced && (
-            <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="text-xs mb-1 font-bold" style={{ color: "var(--text-muted)" }}>🧠 Context Memory</div>
-              <select
-                value={historyMode}
-                onChange={(e) => setHistoryMode(e.target.value as typeof historyMode)}
-                className="w-full px-2 py-1.5 rounded-lg border text-xs mb-2"
-                style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-              >
-                {HISTORY_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-              </select>
-
-              <div className="text-xs mb-1.5 font-bold" style={{ color: "var(--text-muted)" }}>Data Source</div>
-              <div className="flex flex-col gap-1.5">
-                {/* File toggle */}
-                <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useFileContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-                  <span className="text-xs" style={{ color: useFileContext ? "var(--text)" : "var(--text-muted)" }}>📎 เอกสารที่แนบ</span>
-                  <div onClick={() => setUseFileContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useFileContext ? "var(--accent)" : "var(--border)" }}>
-                    <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useFileContext ? "17px" : "2px" }} />
-                  </div>
-                </label>
-                {/* MCP toggle */}
-                <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useMcpContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-                  <span className="text-xs" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}>🔌 MCP ตาม Agent</span>
-                  <div onClick={() => setUseMcpContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useMcpContext ? "var(--accent)" : "var(--border)" }}>
-                    <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useMcpContext ? "17px" : "2px" }} />
-                  </div>
-                </label>
-              </div>
-            </div>
-            )}
-            {showAdvanced && (
-            <div
-              className="border rounded-xl p-3"
-              style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleDrop}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
-                  📎 เอกสารอ้างอิง ({attachedFiles.length})
-                </div>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile}
-                  className="text-xs px-2 py-1 rounded-lg border transition-all disabled:opacity-40"
-                  style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                >
-                  {uploadingFile ? "⏳" : "+ แนบ"}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept={SUPPORTED_EXTENSIONS.join(",")}
-                  onChange={handleFileInput}
-                  className="hidden"
-                  aria-label="แนบไฟล์อ้างอิง"
-                />
-              </div>
-
-              {attachedFiles.length === 0 && !uploadingFile && (
-                <div
-                  className="border-2 border-dashed rounded-lg p-3 text-center text-xs transition-all"
-                  style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", color: "var(--text-muted)", background: isDragOver ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "transparent" }}
-                >
-                  {isDragOver ? "ปล่อยไฟล์เลย!" : "Drag & Drop หรือกด + แนบ"}
-                  <div className="mt-1 opacity-60">xlsx · pdf · docx · csv · json · txt</div>
-                </div>
-              )}
-
-              {uploadError && <div className="mt-1 text-xs text-red-400">{uploadError}</div>}
-
-              {attachedFiles.length > 0 && (
-                <div className="space-y-2 mt-1">
-                  {attachedFiles.map((f, i) => (
-                    <div key={i} className="p-2 rounded-lg border" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm flex-shrink-0">
-                          {f.filename.endsWith(".xlsx") || f.filename.endsWith(".xls") || f.filename.endsWith(".csv") ? "📊" :
-                           f.filename.endsWith(".pdf") ? "📄" :
-                           f.filename.endsWith(".docx") || f.filename.endsWith(".doc") ? "📝" : "📋"}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{f.filename}</div>
-                          <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                            {formatBytes(f.size)} · {f.chars.toLocaleString()} chars
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
-                          className="text-xs opacity-40 hover:opacity-100 flex-shrink-0"
-                          aria-label="ลบไฟล์"
-                          style={{ color: "var(--text-muted)" }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      {/* Sheet selector for Excel */}
-                      {f.sheets && f.sheets.length > 1 && (
-                        <div className="mt-2">
-                          <div className="text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>เลือก Sheet:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {f.sheets.map((sheet) => {
-                              const selected = f.selectedSheets?.includes(sheet) ?? true;
-                              return (
-                                <button
-                                  key={sheet}
-                                  onClick={() => toggleSheet(i, sheet)}
-                                  className="text-[10px] px-1.5 py-0.5 rounded border transition-all"
-                                  style={{
-                                    borderColor: selected ? "var(--accent)" : "var(--border)",
-                                    background: selected ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
-                                    color: selected ? "var(--accent)" : "var(--text-muted)",
-                                  }}
-                                >
-                                  {sheet}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setAttachedFiles([])}
-                    className="w-full text-[10px] py-1 rounded border"
-                    style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-                  >
-                    ลบทั้งหมด
-                  </button>
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* History panel */}
-            <div className="border rounded-xl flex-1 flex flex-col overflow-hidden" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-                <button
-                  onClick={() => { setHistoryTab("current"); setViewingSession(null); }}
-                  className="flex-1 py-2 text-xs transition-all"
-                  style={{ color: historyTab === "current" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "current" ? "2px solid var(--accent)" : "2px solid transparent" }}
-                >
-                  💬 วาระ ({rounds.length})
-                </button>
-                <button
-                  onClick={() => setHistoryTab("history")}
-                  className="flex-1 py-2 text-xs transition-all"
-                  style={{ color: historyTab === "history" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "history" ? "2px solid var(--accent)" : "2px solid transparent" }}
-                >
-                  📋 ประวัติ ({serverSessions.length})
-                </button>
-              </div>
-
-              {historyTab === "current" ? (
-                <div className="p-3 flex-1 overflow-y-auto">
-                  {rounds.length === 0 ? (
-                    <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ยังไม่มีวาระ</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {rounds.map((r, i) => (
-                        <div key={i} className="text-xs p-2 rounded-lg border" style={{ borderColor: "var(--border)" }}>
-                          <div className="font-bold mb-0.5" style={{ color: "var(--text)" }}>วาระที่ {i + 1}</div>
-                          <div className="line-clamp-2" style={{ color: "var(--text-muted)" }}>{r.question}</div>
-                        </div>
-                      ))}
-                      <button onClick={clearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                        🗑 เริ่มการประชุมใหม่
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-3 flex-1 overflow-y-auto">
-                  {serverSessions.length === 0 ? (
-                    <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ไม่มีประวัติ</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {serverSessions.map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => loadServerSession(s)}
-                          className="w-full text-left p-2 rounded-lg border transition-all"
-                          style={{
-                            borderColor: viewingSession?.id === s.id ? "var(--accent)" : "var(--border)",
-                            background: viewingSession?.id === s.id ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-                          }}
-                        >
-                          <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
-                          <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-                            {s.status === "completed" ? "✅" : s.status === "error" ? "❌" : "⏳"}{" "}
-                            {new Date(s.startedAt).toLocaleDateString("th")}
-                            {s.totalTokens > 0 && ` · ${s.totalTokens.toLocaleString()} tokens`}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {renderSidebarContent()}
           </div>
 
           {/* ── Main panel ── */}
@@ -1381,39 +1145,67 @@ export default function ResearchPage() {
               )}
             </div>
 
-            {/* Input box */}
+            {/* Input box — ChatGPT-style sticky bottom */}
             {!viewingSession && (
-              <div className="border rounded-xl p-3 sm:p-4 flex-shrink-0" style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}>
-                <textarea
-                  ref={textareaRef}
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                  disabled={running}
-                  rows={2}
-                  placeholder={rounds.length > 0 ? "พิมพ์วาระต่อไป..." : "พิมพ์วาระแรก..."}
-                  className="w-full bg-transparent text-sm resize-none outline-none"
-                  style={{ color: "var(--text)" }}
-                />
-                <div className="flex items-center justify-between mt-2 gap-2">
-                  <div className="text-[10px] sm:text-xs min-w-0 truncate" style={{ color: "var(--text-muted)" }}>
-                    {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
-                    {selectedIds.size} สมาชิก
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    {running && (
-                      <button onClick={handleStop} className="px-3 sm:px-4 py-2 rounded-lg text-xs border border-red-500/30 text-red-400">
-                        ⏹ หยุด
+              <div className="sticky bottom-0 flex-shrink-0 pt-2" style={{ background: "var(--bg)" }}>
+                <div
+                  className="border rounded-2xl overflow-hidden transition-colors"
+                  style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
+                >
+                  <textarea
+                    ref={textareaRef}
+                    value={question}
+                    onChange={(e) => {
+                      setQuestion(e.target.value);
+                      // Auto-resize
+                      e.target.style.height = "auto";
+                      e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+                    }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleRun(); } }}
+                    disabled={running}
+                    rows={1}
+                    placeholder={rounds.length > 0 ? "พิมพ์วาระต่อไป... (⌘+Enter ส่ง)" : "พิมพ์วาระแรกเพื่อเริ่มประชุม... (⌘+Enter ส่ง)"}
+                    className="w-full bg-transparent text-sm resize-none outline-none px-4 pt-3 pb-1"
+                    style={{ color: "var(--text)", minHeight: 36, maxHeight: 160 }}
+                  />
+                  <div className="flex items-center justify-between px-3 pb-2 gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        onClick={() => setShowAdvanced(v => !v)}
+                        className="text-xs px-2 py-1 rounded-lg transition-all hover:bg-[var(--bg)]"
+                        style={{ color: showAdvanced ? "var(--accent)" : "var(--text-muted)" }}
+                        title="ตั้งค่าขั้นสูง"
+                      >
+                        ⚙️
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleRun()}
-                      disabled={!question.trim() || selectedIds.size === 0 || running}
-                      className="px-4 sm:px-5 py-2 rounded-lg text-xs font-bold disabled:opacity-40 transition-all"
-                      style={{ background: "var(--accent)", color: "#000" }}
-                    >
-                      {running ? "กำลังประชุม..." : "🏛️ เปิดวาระ"}
-                    </button>
+                      <div className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                        {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
+                        {selectedIds.size}/{agents.length} สมาชิก
+                        {attachedFiles.length > 0 && <span> · 📎 {attachedFiles.length}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {running ? (
+                        <button
+                          onClick={handleStop}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center border transition-all"
+                          style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                          title="หยุด"
+                        >
+                          ⏹
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleRun()}
+                          disabled={!question.trim() || selectedIds.size === 0}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all"
+                          style={{ background: "var(--accent)", color: "#000" }}
+                          title="เปิดวาระ (⌘+Enter)"
+                        >
+                          ▶
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

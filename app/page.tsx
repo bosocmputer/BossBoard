@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import {
   Users,
+  UsersRound,
   MessageSquare,
-  Scale,
   Zap,
   ArrowRight,
   Activity,
@@ -130,8 +130,8 @@ export default function DashboardPage() {
 
   const quickActions = [
     { href: "/research", icon: MessageSquare, label: t("nav.research"), desc: "เริ่มการประชุม AI", color: "var(--accent)" },
-    { href: "/mock-trial", icon: Scale, label: t("nav.mockTrial"), desc: "ซ้อมว่าความ", color: "var(--purple)" },
     { href: "/agents", icon: Users, label: t("nav.teamAgents"), desc: "จัดการเอเจนต์", color: "var(--info)" },
+    { href: "/teams", icon: UsersRound, label: t("nav.teams"), desc: "จัดการทีม", color: "var(--purple)" },
   ];
 
   return (

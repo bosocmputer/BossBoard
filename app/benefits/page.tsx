@@ -42,7 +42,7 @@ export default function BenefitsPage() {
         "File upload (Excel/PDF/DOCX)",
         "Stats + กราฟวิเคราะห์",
         "Email support",
-        "Template บัญชีครบ 7 ตัว",
+        "Template บัญชีครบ 10 ตัว",
       ],
       excluded: [],
       cta: "เลือกแพ็กเกจนี้",

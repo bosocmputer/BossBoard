@@ -61,16 +61,6 @@
 - **Follow-up Suggestions** จาก AI
 - **Export**: Meeting Minutes เป็น Markdown
 
-### ⚖️ Mock Trial (`/mock-trial`)
-ศาลจำลอง — จำลองคดีไทยด้วย AI วิเคราะห์จาก 4 มุมมอง
-
-- **5 ประเภทคดี:** แพ่ง, อาญา, แรงงาน, ครอบครัว, ปกครอง
-- เลือกฝั่ง: โจทก์ หรือ จำเลย
-- Input: ชื่อคดี, เรื่องราว, พยานหลักฐาน, ข้อมูลฝ่ายตรงข้าม, กฎหมายที่เกี่ยวข้อง
-- AI วิเคราะห์ 4 บทบาท: นักวิเคราะห์, อัยการ, ทนายจำเลย, ผู้พิพากษา
-- ผลลัพธ์: **โอกาสชนะ (0–100%)**, จุดแข็ง, จุดอ่อน, คำแนะนำ
-- อ้างอิงกฎหมายไทยจริง (มาตรา, พ.ร.บ., ฎีกา)
-
 ### 📋 Teams (`/teams`)
 จัดกลุ่ม agents เป็น teams เพื่อเลือกใช้ใน Research — เปิด meeting room พร้อมทีมที่เลือกได้ทันที
 
@@ -90,7 +80,8 @@
 
 ### 🌐 i18n & Theme
 - **2 ภาษา:** ไทย / English
-- **2 ธีม:** Dark / Light (CSS variables, `data-theme` attribute)
+- **3 โหมด:** Auto (ตามระบบ/เวลา) / Dark / Light
+- Auto ใช้ `prefers-color-scheme` + fallback ตามเวลา (06:00–18:00 = light)
 - เก็บค่าใน localStorage
 
 ### 🧩 Shared UI Components (`app/components/`)
@@ -105,12 +96,14 @@
 | `EmptyState` | Icon / emoji + title + description + optional action |
 | `Toast` | `showToast(type, message)` auto-dismiss 4s, success / error / warning / info |
 | `Skeleton` | Loading placeholders — `Skeleton`, `SkeletonCard`, `SkeletonList` |
+| `KeyboardShortcuts` | `?` เปิด shortcuts, ⌘+1–5 สลับหน้า, ⌘+Shift+N ประชุมใหม่ |
+| `Onboarding` | Welcome overlay 4 steps — แสดงครั้งแรกที่ user ใหม่เข้าใช้ |
 
 ### 🧭 Navigation (Sidebar)
 - **Icons:** Lucide React (ไม่ใช้ pixel art แล้ว)
 - **Desktop:** Collapsible sidebar (224px ↔ 64px)
 - **Mobile:** Header + slide-out drawer
-- **Groups:** Dashboard → AI Tools (Research, Mock Trial) → Management (Agents, Teams) → System (Settings)
+- **Groups:** Dashboard → AI Tools (Research) → Management (Agents, Teams) → System (Settings)
 
 ---
 
@@ -181,7 +174,6 @@ AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
 | `/api/team-research/[id]` | GET | Get specific session |
 | `/api/team-research/stream` | POST | SSE streaming multi-agent research |
 | `/api/team-research/upload` | POST | Parse uploaded files to text context |
-| `/api/mock-trial` | POST | Mock trial simulation |
 | `/api/team-settings` | GET, POST | Web search API keys |
 | `/api/team-websearch` | POST | Perform web search |
 | `/api/agent-stats` | GET | Agent usage statistics |
