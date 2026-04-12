@@ -135,39 +135,30 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto animate-in">
+    <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto">
       {/* Greeting */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>
-          {t("nav.dashboard")} 👋
+          {t("nav.dashboard")}
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-          ภาพรวมของระบบ BossBoard
-        </p>
       </div>
 
-      {/* Hero CTA: Start Meeting */}
+      {/* Hero CTA: Start Meeting — compact banner */}
       <Link href="/research">
-        <Card padding="lg" hover>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}>
-              🏛️
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-lg font-bold" style={{ color: "var(--text)" }}>เริ่มประชุม AI</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                พิมพ์วาระ → AI ทีมประชุม → สรุปมติอัตโนมัติ
-              </p>
-            </div>
-            <ArrowRight size={20} style={{ color: "var(--accent)" }} />
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border mb-4 transition-colors hover:border-[var(--accent)]/50" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <MessageSquare size={18} style={{ color: "var(--accent)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--text)" }}>เปิดห้องประชุม</span>
+            <span className="text-xs hidden sm:inline" style={{ color: "var(--text-muted)" }}>พิมพ์วาระ แล้ว AI ทีมจะถกเถียงและสรุปมติให้</span>
           </div>
-        </Card>
+          <ArrowRight size={16} style={{ color: "var(--accent)" }} />
+        </div>
       </Link>
 
       {/* Quick meeting templates */}
-      <div className="mt-4 mb-8">
+      <div className="mb-6">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs font-medium flex-shrink-0" style={{ color: "var(--text-muted)" }}>📋 ลองวาระ:</span>
+          <span className="text-xs font-medium flex-shrink-0" style={{ color: "var(--text-muted)" }}>วาระตัวอย่าง</span>
           {[
             "วิเคราะห์งบการเงินไตรมาส 1/2568",
             "วางแผนภาษีนิติบุคคลปลายปี",
@@ -204,9 +195,7 @@ export default function DashboardPage() {
                     <p className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>{stat.value}</p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{stat.sub}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: stat.color + "18" }}>
-                    <stat.icon size={20} style={{ color: stat.color }} />
-                  </div>
+                  <stat.icon size={18} style={{ color: "var(--text-muted)" }} />
                 </div>
               </Card>
             );
@@ -215,24 +204,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Quick actions */}
-      <div className="mb-8">
-        <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text)" }}>Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Quick actions — compact links */}
+      <div className="mb-6">
+        <div className="flex items-center gap-4 flex-wrap">
           {quickActions.map((action) => (
-            <Link key={action.href} href={action.href}>
-              <Card hover padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: action.color + "18" }}>
-                    <action.icon size={20} style={{ color: action.color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>{action.label}</p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{action.desc}</p>
-                  </div>
-                  <ArrowRight size={16} style={{ color: "var(--text-muted)" }} />
-                </div>
-              </Card>
+            <Link key={action.href} href={action.href} className="flex items-center gap-2 text-sm transition-colors hover:opacity-80" style={{ color: "var(--accent)" }}>
+              <action.icon size={16} />
+              <span>{action.label}</span>
             </Link>
           ))}
         </div>

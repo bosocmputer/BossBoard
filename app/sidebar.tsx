@@ -148,7 +148,7 @@ export function Sidebar() {
               <Menu size={18} />
             </button>
             <Link href="/" className="flex items-center gap-2 min-w-0">
-              <span className="text-2xl leading-none">🏛️</span>
+              <span className="text-lg font-black tracking-tighter" style={{ color: "var(--accent)" }}>BB</span>
               <div className="min-w-0">
                 <div className="text-xs font-bold tracking-wide truncate" style={{ color: "var(--text)" }}>BOSSBOARD</div>
                 <div className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
@@ -209,7 +209,7 @@ export function Sidebar() {
           {collapsed ? (
             <div className="flex flex-col items-center gap-3">
               <Link href="/">
-                <span className="text-3xl leading-none">🏛️</span>
+                <span className="text-xl font-black tracking-tighter" style={{ color: "var(--accent)" }}>BB</span>
               </Link>
               <button
                 onClick={() => setCollapsed(false)}
@@ -224,7 +224,7 @@ export function Sidebar() {
             <div>
               <div className="flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2.5">
-                  <span className="text-3xl leading-none">🏛️</span>
+                  <span className="text-xl font-black tracking-tighter" style={{ color: "var(--accent)" }}>BB</span>
                   <div>
                     <div className="text-sm font-bold tracking-wide" style={{ color: "var(--text)" }}>BOSSBOARD</div>
                     <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>ห้องประชุม AI</div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { Users, UsersRound, FlaskConical } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -126,7 +127,7 @@ export default function TeamsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
-            📋 Teams
+            Teams
           </h1>
           <p className="mt-1 text-sm opacity-55">จัดกลุ่ม agents เพื่อใช้งานใน Research ร่วมกัน</p>
         </div>
@@ -160,7 +161,7 @@ export default function TeamsPage() {
       {/* Empty state */}
       {!loading && teams.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-16 opacity-40">
-          <span className="text-4xl">👥</span>
+          <UsersRound size={36} style={{ color: "var(--text-muted)" }} />
           <p className="text-sm">ยังไม่มี Team — กดปุ่ม &ldquo;สร้าง Team ใหม่&rdquo; เพื่อเริ่มต้น</p>
         </div>
       )}
@@ -236,7 +237,7 @@ export default function TeamsPage() {
                   background: "color-mix(in srgb, var(--accent) 7%, transparent)",
                 }}
               >
-                🔬 Research กับ Team นี้
+                Research กับ Team นี้
               </Link>
             </div>
           ))}

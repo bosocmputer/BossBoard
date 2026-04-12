@@ -28,7 +28,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "secondary", size = "md", icon, children, className = "", ...rest }, ref) => (
     <button
       ref={ref}
-      className={`inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97] ${styles[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:pointer-events-none ${styles[variant]} ${sizes[size]} ${className}`}
       {...rest}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}

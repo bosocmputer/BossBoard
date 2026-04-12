@@ -1,36 +1,38 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Building2, Users, MessageSquare, Command } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface OnboardingStep {
   id: string;
   title: string;
   description: string;
-  emoji: string;
+  icon: LucideIcon;
 }
 
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "welcome",
-    emoji: "🏛️",
-    title: "ยินดีต้อนรับสู่ BossBoard!",
+    icon: Building2,
+    title: "ยินดีต้อนรับสู่ BossBoard",
     description: "ห้องประชุม AI สำหรับสำนักงานบัญชี — สร้างทีม AI หลายตัว ถกเถียงและสรุปมติร่วมกัน",
   },
   {
     id: "agents",
-    emoji: "👥",
+    icon: Users,
     title: "สร้างทีมเอเจนต์",
     description: "ไปที่ 'เอเจนต์' เพื่อสร้าง AI agents — เลือก template สำเร็จรูป 10 แบบสำหรับงานบัญชี",
   },
   {
     id: "research",
-    emoji: "💬",
+    icon: MessageSquare,
     title: "เริ่มการประชุม",
     description: "ไปที่ 'วิจัย' พิมพ์คำถาม แล้ว AI ทั้งทีมจะถกเถียงและสรุปมติให้",
   },
   {
     id: "shortcuts",
-    emoji: "⌨️",
+    icon: Command,
     title: "Keyboard Shortcuts",
     description: "กด ? เพื่อดู shortcuts ทั้งหมด — ⌘+1–5 สลับหน้า, ⌘+Shift+N ประชุมใหม่",
   },
@@ -91,9 +93,9 @@ export function OnboardingOverlay({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-md mx-4 rounded-2xl border shadow-2xl overflow-hidden animate-in"
+        className="relative w-full max-w-md mx-4 rounded-xl border shadow-lg overflow-hidden"
         style={{ background: "var(--card)", borderColor: "var(--border)" }}
       >
         {/* Progress dots */}
@@ -113,7 +115,9 @@ export function OnboardingOverlay({
 
         {/* Content */}
         <div className="px-6 py-6 text-center">
-          <div className="text-4xl mb-4">{current.emoji}</div>
+          <div className="w-12 h-12 rounded-lg mx-auto mb-4 flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}>
+            <current.icon size={24} style={{ color: "var(--accent)" }} />
+          </div>
           <h2 className="text-lg font-bold mb-2" style={{ color: "var(--text)" }}>
             {current.title}
           </h2>

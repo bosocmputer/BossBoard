@@ -95,11 +95,11 @@ function formatBytes(bytes: number) {
 const STORAGE_KEY = "research_conversation_v1";
 
 const ROLE_LABEL: Record<string, string> = {
-  thinking: "💭 กำลังคิด",
-  finding: "📋 นำเสนอ",
-  analysis: "📊 วิเคราะห์",
-  synthesis: "🏛️ มติประธาน",
-  chat: "💬 อภิปราย",
+  thinking: "กำลังคิด",
+  finding: "นำเสนอ",
+  analysis: "วิเคราะห์",
+  synthesis: "มติประธาน",
+  chat: "อภิปราย",
 };
 
 const ROLE_COLOR: Record<string, string> = {
@@ -1326,7 +1326,7 @@ export default function ResearchPage() {
                         ⚙️
                       </button>
                       <div className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
-                        {meetingSessionId && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />🟢 ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
+                        {meetingSessionId && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
                         {selectedIds.size}/{agents.length} สมาชิก
                         {attachedFiles.length > 0 && <span> · 📎 {attachedFiles.length}</span>}

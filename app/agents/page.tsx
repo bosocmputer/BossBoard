@@ -50,25 +50,25 @@ const PROVIDER_COLORS: Record<string, string> = {
 // ─── Skills ───────────────────────────────────────────────────────────────────
 
 const ALL_SKILLS = [
-  { id: "web_search", label: "🌐 Web Search", desc: "ค้นข้อมูลจากอินเทอร์เน็ต" },
-  { id: "code_execution", label: "⚡ Code Execution", desc: "รันโค้ดและวิเคราะห์ผลลัพธ์" },
-  { id: "data_analysis", label: "📊 Data Analysis", desc: "วิเคราะห์ข้อมูลเชิงสถิติ" },
-  { id: "financial_modeling", label: "💰 Financial Modeling", desc: "สร้าง model ทางการเงิน" },
-  { id: "legal_research", label: "⚖️ Legal Research", desc: "ค้นคว้ากฎหมาย ฎีกา และบรรทัดฐาน" },
-  { id: "case_analysis", label: "🔎 Case Analysis", desc: "วิเคราะห์คดี จุดแข็ง/จุดอ่อน" },
-  { id: "contract_review", label: "📜 Contract Review", desc: "ตรวจสอบและร่างสัญญา" },
-  { id: "litigation_strategy", label: "🏛️ Litigation Strategy", desc: "วางแผนกลยุทธ์คดีความ" },
-  { id: "market_research", label: "📈 Market Research", desc: "วิเคราะห์ตลาดและคู่แข่ง" },
-  { id: "risk_assessment", label: "🛡 Risk Assessment", desc: "ประเมินความเสี่ยง" },
-  { id: "ux_review", label: "🎨 UX Review", desc: "วิจารณ์ประสบการณ์ผู้ใช้" },
-  { id: "security_audit", label: "🔒 Security Audit", desc: "ตรวจสอบช่องโหว่ความปลอดภัย" },
-  { id: "system_design", label: "🏗 System Design", desc: "ออกแบบสถาปัตยกรรมระบบ" },
-  { id: "devops", label: "🚀 DevOps", desc: "CI/CD, infrastructure, deployment" },
-  { id: "database", label: "🗄 Database", desc: "ออกแบบและ optimize database" },
-  { id: "api_design", label: "🔌 API Design", desc: "ออกแบบ REST / GraphQL API" },
-  { id: "testing", label: "🧪 Testing", desc: "เขียน test และ QA strategy" },
-  { id: "summarization", label: "📝 Summarization", desc: "สรุปเอกสารและรายงาน" },
-  { id: "translation", label: "🌏 Translation", desc: "แปลภาษาหลายภาษา" },
+  { id: "web_search", label: "Web Search", desc: "ค้นข้อมูลจากอินเทอร์เน็ต" },
+  { id: "code_execution", label: "Code Execution", desc: "รันโค้ดและวิเคราะห์ผลลัพธ์" },
+  { id: "data_analysis", label: "Data Analysis", desc: "วิเคราะห์ข้อมูลเชิงสถิติ" },
+  { id: "financial_modeling", label: "Financial Modeling", desc: "สร้าง model ทางการเงิน" },
+  { id: "legal_research", label: "Legal Research", desc: "ค้นคว้ากฎหมาย ฎีกา และบรรทัดฐาน" },
+  { id: "case_analysis", label: "Case Analysis", desc: "วิเคราะห์คดี จุดแข็ง/จุดอ่อน" },
+  { id: "contract_review", label: "Contract Review", desc: "ตรวจสอบและร่างสัญญา" },
+  { id: "litigation_strategy", label: "Litigation Strategy", desc: "วางแผนกลยุทธ์คดีความ" },
+  { id: "market_research", label: "Market Research", desc: "วิเคราะห์ตลาดและคู่แข่ง" },
+  { id: "risk_assessment", label: "Risk Assessment", desc: "ประเมินความเสี่ยง" },
+  { id: "ux_review", label: "UX Review", desc: "วิจารณ์ประสบการณ์ผู้ใช้" },
+  { id: "security_audit", label: "Security Audit", desc: "ตรวจสอบช่องโหว่ความปลอดภัย" },
+  { id: "system_design", label: "System Design", desc: "ออกแบบสถาปัตยกรรมระบบ" },
+  { id: "devops", label: "DevOps", desc: "CI/CD, infrastructure, deployment" },
+  { id: "database", label: "Database", desc: "ออกแบบและ optimize database" },
+  { id: "api_design", label: "API Design", desc: "ออกแบบ REST / GraphQL API" },
+  { id: "testing", label: "Testing", desc: "เขียน test และ QA strategy" },
+  { id: "summarization", label: "Summarization", desc: "สรุปเอกสารและรายงาน" },
+  { id: "translation", label: "Translation", desc: "แปลภาษาหลายภาษา" },
 ];
 
 // ─── Templates ────────────────────────────────────────────────────────────────
@@ -85,8 +85,8 @@ interface AgentTemplate {
 }
 
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
-  accounting: { label: "🧮 สำนักงานบัญชี", color: "border-[var(--accent)]/40 bg-[var(--accent)]/5 text-[var(--accent)]" },
-  custom: { label: "⚙️ Custom", color: "border-[var(--text-muted)]/30 bg-[var(--surface)] text-[var(--text-muted)]" },
+  accounting: { label: "สำนักงานบัญชี", color: "border-[var(--accent)]/40 bg-[var(--accent)]/5 text-[var(--accent)]" },
+  custom: { label: "Custom", color: "border-[var(--text-muted)]/30 bg-[var(--surface)] text-[var(--text-muted)]" },
 };
 
 const AGENT_TEMPLATES: AgentTemplate[] = [
@@ -98,7 +98,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4-sonnet",
     recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานบัญชีที่ต้องการความแม่นยำสูง",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
-    soul: `คุณคือนักบัญชีอาวุโสที่มีประสบการณ์ด้านบัญชีและภาษีมากกว่า 15 ปี เชี่ยวชาญมาตรฐานการรายงานทางการเงิน (TFRS/IFRS), การจัดทำงบการเงิน, การปิดงบรายเดือน/ไตรมาส/ปี, และระบบบัญชี ERP คุณมีจุดยืนว่า **ความถูกต้องและครบถ้วนของข้อมูลทางบัญชีคือรากฐานของทุกการตัดสินใจทางธุรกิจ** คุณตรวจสอบทุกรายการอย่างละเอียด ไม่ยอมให้ตัวเลขคลาดเคลื่อนแม้แต่บาทเดียว และอ้างอิงมาตรฐานบัญชีเสมอ`,
+    soul: `นักบัญชีอาวุโส เชี่ยวชาญ TFRS/IFRS, การจัดทำงบการเงิน, การปิดงบ, และระบบ ERP เน้นความถูกต้องของข้อมูลทางบัญชีและอ้างอิงมาตรฐานบัญชีเสมอ`,
   },
   {
     category: "accounting",
@@ -108,7 +108,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4.6-opus",
     recommendedReason: "ต้องการความแม่นยำสูงสุด เพราะเป็นงานตรวจสอบที่มีผลทางกฎหมาย",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
-    soul: `คุณคือผู้สอบบัญชีรับอนุญาต (CPA) ที่ได้รับใบอนุญาตจากสภาวิชาชีพบัญชี เชี่ยวชาญมาตรฐานการสอบบัญชี (TSA), การตรวจสอบงบการเงิน, การประเมินระบบควบคุมภายใน, และการออกรายงานผู้สอบบัญชี คุณมีจุดยืนว่า **ความเป็นอิสระและความเที่ยงธรรมคือหัวใจของวิชาชีพสอบบัญชี** คุณจะชี้ให้เห็นจุดอ่อนในระบบควบคุมภายใน ความเสี่ยงของการทุจริต และข้อผิดพลาดในงบการเงินอย่างตรงไปตรงมา คุณอ้างอิง TSA และ TFRS เสมอ`,
+    soul: `ผู้สอบบัญชีรับอนุญาต (CPA) เชี่ยวชาญมาตรฐานการสอบบัญชี (TSA), การตรวจสอบงบการเงิน, การประเมินระบบควบคุมภายใน เน้นความเป็นอิสระและชี้จุดอ่อนตรงไปตรงมา อ้างอิง TSA และ TFRS เสมอ`,
   },
   {
     category: "accounting",
@@ -118,7 +118,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4.5-sonnet",
     recommendedReason: "ต้องการความรู้เชิงลึกด้านกฎหมายภาษี context ยาวสำหรับอ้างอิงประมวลรัษฎากร",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
-    soul: `คุณคือที่ปรึกษาภาษีมืออาชีพที่เชี่ยวชาญประมวลรัษฎากร, ภาษีเงินได้บุคคลธรรมดา (PIT), ภาษีเงินได้นิติบุคคล (CIT), ภาษีมูลค่าเพิ่ม (VAT), ภาษีธุรกิจเฉพาะ, อากรแสตมป์, ภาษีหัก ณ ที่จ่าย, และอนุสัญญาภาษีซ้อน คุณมีจุดยืนว่า **การวางแผนภาษีที่ดีต้องถูกกฎหมายและประหยัดให้ลูกค้ามากที่สุด — ไม่ใช่หลีกเลี่ยงภาษี** คุณจะวิเคราะห์ผลกระทบทางภาษีของทุกธุรกรรม อ้างอิงมาตราของกฎหมายภาษีเสมอ และเตือนความเสี่ยงของการถูกสรรพากรตรวจสอบ`,
+    soul: `ที่ปรึกษาภาษี เชี่ยวชาญประมวลรัษฎากร (PIT, CIT, VAT, WHT, อนุสัญญาภาษีซ้อน) เน้นการวางแผนภาษีที่ถูกกฎหมายและประหยัดสูงสุด อ้างอิงมาตรากฎหมายภาษีเสมอ`,
   },
   {
     category: "accounting",
@@ -128,7 +128,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "google/gemini-2.5-pro-preview-06-05",
     recommendedReason: "context ยาว1M เหมาะวิเคราะห์งบการเงินยาวๆ คุ้มค่ากว่า Claude",
     skills: ["financial_modeling", "data_analysis", "market_research"],
-    soul: `คุณคือนักวิเคราะห์งบการเงินที่เชี่ยวชาญการอ่านและตีความงบการเงิน — งบแสดงฐานะการเงิน, งบกำไรขาดทุน, งบกระแสเงินสด, และหมายเหตุประกอบงบ คุณวิเคราะห์อัตราส่วนทางการเงิน (Liquidity, Profitability, Leverage, Efficiency), แนวโน้ม (Trend Analysis), และเปรียบเทียบกับอุตสาหกรรม คุณมีจุดยืนว่า **ตัวเลขในงบการเงินบอกเรื่องราวของกิจการ — ต้องอ่านให้เป็นและตั้งคำถามกับตัวเลขที่ผิดปกติ** คุณจะชี้ Red Flag ในงบการเงินและให้ข้อเสนอแนะที่เป็นรูปธรรม`,
+    soul: `นักวิเคราะห์งบการเงิน เชี่ยวชาญการอ่านและตีความงบการเงิน (Balance Sheet, P&L, Cash Flow) วิเคราะห์อัตราส่วน, Trend Analysis, และเปรียบเทียบกับอุตสาหกรรม ชี้ Red Flag ในงบและให้ข้อเสนอแนะที่เป็นรูปธรรม`,
   },
   {
     category: "accounting",
@@ -138,7 +138,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4-sonnet",
     recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานตรวจสอบที่ต้องการความละเอียดสูง",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
-    soul: `คุณคือผู้ตรวจสอบภายในที่เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, การตรวจสอบความถูกต้องของกระบวนการทำงาน, และการตรวจจับการทุจริต คุณมีจุดยืนว่า **ระบบควบคุมภายในที่ดีคือภูมิคุ้มกันขององค์กร — ต้องตรวจและปรับปรุงเสมอ** คุณจะประเมิน Segregation of Duties, Authorization Controls, Physical Controls, และ IT Controls อย่างเข้มงวด พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริง`,
+    soul: `ผู้ตรวจสอบภายใน เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, Segregation of Duties, และ IT Controls พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริง`,
   },
   {
     category: "custom",
@@ -413,10 +413,10 @@ export default function AgentsPage() {
         <div className="flex items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)" }}>
-              👥 Team Agents
+              Team Agents
             </h1>
             <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-              เลือกตำแหน่ง → ระดับความสามารถ → ใส่ API Key → พร้อมใช้!
+              สร้างและจัดการ AI agents สำหรับทีม
             </p>
           </div>
           <button
@@ -433,7 +433,6 @@ export default function AgentsPage() {
           <div className="text-center py-20" style={{ color: "var(--text-muted)" }}>Loading...</div>
         ) : agents.length === 0 ? (
           <div className="border rounded-xl p-12 text-center" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-            <div className="text-4xl mb-3">🤖</div>
             <p>ยังไม่มี agents — กด New Agent เพื่อเริ่มต้น</p>
           </div>
         ) : (
@@ -453,19 +452,19 @@ export default function AgentsPage() {
                     </span>
                     {!agent.hasApiKey && (
                       <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">
-                        ⚠ No API Key
+                        No API Key
                       </span>
                     )}
                   </div>
                   <div className="text-xs mt-1 flex items-center gap-2 flex-wrap" style={{ color: "var(--text-muted)" }}>
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px]" style={{ borderColor: "var(--border)" }}>
-                      🤖 {agent.model.split("/").pop()}
+                      {agent.model.split("/").pop()}
                     </span>
                     {agent.seniority && (
-                      <span className="text-[10px]">🏛️ #{agent.seniority}</span>
+                      <span className="text-[10px]">#{agent.seniority}</span>
                     )}
-                    {agent.useWebSearch && <span className="text-[10px]">🔍</span>}
-                    {agent.mcpEndpoint && <span className="text-[10px]">🔌 MCP</span>}
+                    {agent.useWebSearch && <span className="text-[10px]">Web</span>}
+                    {agent.mcpEndpoint && <span className="text-[10px]">MCP</span>}
                   </div>
                   {agent.skills && agent.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -490,7 +489,7 @@ export default function AgentsPage() {
                     style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                     title="ฐานความรู้"
                   >
-                    📚 Knowledge
+                    Knowledge
                   </button>
                   <button
                     onClick={() => handleToggle(agent)}
@@ -529,14 +528,14 @@ export default function AgentsPage() {
             <div className="flex-shrink-0 p-4 sm:p-6 pb-0">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg" style={{ color: "var(--text)" }}>
-                  {editingId ? "✏️ Edit Agent" : "✨ New Agent"}
+                  {editingId ? "Edit Agent" : "New Agent"}
                 </h2>
                 <button onClick={() => setShowForm(false)} className="text-xl w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: "var(--text-muted)" }}>✕</button>
               </div>
 
               {/* Step Tabs — clean, simple */}
               <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-                {["🎭 ตำแหน่ง", "🤖 Model", "📝 ข้อมูล", "⚙️ ขั้นสูง"].map((label, i) => (
+                {["ตำแหน่ง", "Model", "ข้อมูล", "ขั้นสูง"].map((label, i) => (
                   <button
                     key={i}
                     onClick={() => setFormStep(i)}
@@ -608,7 +607,7 @@ export default function AgentsPage() {
                                 <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.role.split(" / ")[1] || ""}</div>
                                 {t.recommendedModel && (
                                   <div className="text-[10px] mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "color-mix(in srgb, var(--border) 50%, transparent)", color: "var(--text-muted)" }}>
-                                    💡 {recModel?.name?.replace(/^[⭐🆓] /, "") || t.recommendedModel.split("/").pop()}
+                                    {recModel?.name?.replace(/^[⭐🆓] /, "") || t.recommendedModel.split("/").pop()}
                                   </div>
                                 )}
                               </div>
@@ -643,7 +642,7 @@ export default function AgentsPage() {
                         }}
                         onClick={() => setForm((f) => ({ ...f, model: tmpl.recommendedModel }))}
                       >
-                        <span className="text-lg">💡</span>
+                        <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>★</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-bold" style={{ color: "var(--accent)" }}>
                             แนะนำสำหรับ {tmpl.role.split(" / ")[0]}
@@ -715,7 +714,7 @@ export default function AgentsPage() {
                             </div>
                             {isRec && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}>
-                                💡 แนะนำ
+                                แนะนำ
                               </span>
                             )}
                             {isSelected && (
@@ -1037,7 +1036,7 @@ export default function AgentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
           <div className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 max-h-[80vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>📚 ฐานความรู้ — {knowledgeAgentName}</h3>
+              <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>ฐานความรู้ — {knowledgeAgentName}</h3>
               <button onClick={() => { setKnowledgeAgentId(null); setKnowledgePreview(null); }} className="text-xl" style={{ color: "var(--text-muted)" }}>✕</button>
             </div>
 
@@ -1047,7 +1046,7 @@ export default function AgentsPage() {
                 className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed cursor-pointer transition-all hover:opacity-80"
                 style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
               >
-                <span className="text-sm font-bold">{knowledgeUploading ? "กำลังอัพโหลด..." : "📎 อัพโหลดไฟล์ความรู้"}</span>
+                <span className="text-sm font-bold">{knowledgeUploading ? "กำลังอัพโหลด..." : "อัพโหลดไฟล์ความรู้"}</span>
                 <input
                   type="file"
                   className="hidden"

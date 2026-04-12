@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Settings, Building2, Search, Save, FlaskConical } from "lucide-react";
 
 interface CompanyInfo {
   name?: string;
@@ -110,12 +111,12 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.results && data.results.length > 0) {
-        setTestResult({ ok: true, message: `✅ ค้นหาสำเร็จ! ได้ ${data.results.length} ผลลัพธ์ (ใช้ ${data.source})` });
+        setTestResult({ ok: true, message: `ค้นหาสำเร็จ — ${data.results.length} ผลลัพธ์ (ใช้ ${data.source})` });
       } else {
-        setTestResult({ ok: false, message: `⚠️ ${data.error ?? "ไม่พบผลลัพธ์ — ตรวจสอบ API key"}` });
+        setTestResult({ ok: false, message: `${data.error ?? "ไม่พบผลลัพธ์ — ตรวจสอบ API key"}` });
       }
     } catch {
-      setTestResult({ ok: false, message: "❌ เกิดข้อผิดพลาด ไม่สามารถเชื่อมต่อได้" });
+      setTestResult({ ok: false, message: "เกิดข้อผิดพลาด ไม่สามารถเชื่อมต่อได้" });
     }
     setTesting(false);
   };
@@ -147,13 +148,16 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-2xl mx-auto">
-      <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: "var(--accent)" }}>⚙️ Settings</h1>
+      <div className="flex items-center gap-2 mb-1">
+        <Settings size={20} style={{ color: "var(--accent)" }} />
+        <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)" }}>Settings</h1>
+      </div>
       <p className="text-sm mb-6 sm:mb-8" style={{ color: "var(--text-muted)" }}>ตั้งค่าระบบและข้อมูลบริษัท</p>
 
       {/* Company Info Section */}
       <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg">🏢</span>
+          <Building2 size={18} style={{ color: "var(--text-muted)" }} />
           <h2 className="text-base font-semibold">ข้อมูลบริษัท</h2>
         </div>
         <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
@@ -264,14 +268,14 @@ export default function SettingsPage() {
               cursor: companySaving ? "not-allowed" : "pointer",
             }}
           >
-            {companySaving ? "กำลังบันทึก..." : "💾 บันทึกข้อมูลบริษัท"}
+            {companySaving ? "กำลังบันทึก..." : "บันทึกข้อมูลบริษัท"}
           </button>
-          {companySaved && <span className="text-sm" style={{ color: "var(--success)" }}>✅ บันทึกสำเร็จ!</span>}
+          {companySaved && <span className="text-sm" style={{ color: "var(--success)" }}>บันทึกสำเร็จ</span>}
         </div>
 
         {state.companyInfo?.name && (
           <div className="mt-4 px-3 py-2.5 rounded-lg text-xs" style={{ background: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" }}>
-            <span className="font-medium" style={{ color: "var(--accent)" }}>💡 ตัวอย่าง Context ที่ AI จะเห็น:</span>
+            <span className="font-medium" style={{ color: "var(--accent)" }}>ตัวอย่าง Context ที่ AI จะเห็น:</span>
             <p className="mt-1" style={{ color: "var(--text-muted)" }}>
               &quot;บริษัท: {state.companyInfo.name}
               {state.companyInfo.businessType ? ` | ธุรกิจ: ${state.companyInfo.businessType}` : ""}
@@ -285,7 +289,7 @@ export default function SettingsPage() {
       {/* Web Search Section */}
       <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg">🔍</span>
+          <Search size={18} style={{ color: "var(--text-muted)" }} />
           <h2 className="text-base font-semibold">Web Search API Keys</h2>
         </div>
         <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
@@ -361,7 +365,7 @@ export default function SettingsPage() {
               cursor: saving || (!serperKey && !serpApiKey) ? "not-allowed" : "pointer",
             }}
           >
-            {saving ? "กำลังบันทึก..." : "💾 บันทึก"}
+            {saving ? "กำลังบันทึก..." : "บันทึก"}
           </button>
 
           <button
@@ -376,10 +380,10 @@ export default function SettingsPage() {
               cursor: testing || (!state.hasSerperKey && !state.hasSerpApiKey) ? "not-allowed" : "pointer",
             }}
           >
-            {testing ? "กำลังทดสอบ..." : "🧪 ทดสอบ"}
+            {testing ? "กำลังทดสอบ..." : "ทดสอบ"}
           </button>
 
-          {saved && <span className="text-sm" style={{ color: "var(--success)" }}>✅ บันทึกสำเร็จ!</span>}
+          {saved && <span className="text-sm" style={{ color: "var(--success)" }}>บันทึกสำเร็จ</span>}
         </div>
 
         {testResult && (
@@ -401,7 +405,7 @@ export default function SettingsPage() {
 
       {/* Info box */}
       <div className="rounded-xl border p-4 sm:p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-        <h3 className="text-sm font-semibold mb-3">📋 วิธีใช้งาน Web Search</h3>
+        <h3 className="text-sm font-semibold mb-3">วิธีใช้งาน Web Search</h3>
         <ol className="text-xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
           <li>1. บันทึก API Key อย่างน้อย 1 อัน (Serper แนะนำ)</li>
           <li>2. ไปที่ <span style={{ color: "var(--accent)" }}>/agents</span> → แก้ไข Agent → เปิด <strong>Web Search</strong></li>
