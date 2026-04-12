@@ -17,6 +17,7 @@ import {
   X,
   Award,
   PieChart,
+  BookOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -56,6 +57,7 @@ const NAV_ITEMS: NavGroup[] = [
     group: "nav.config",
     items: [
       { href: "/settings", icon: Settings, labelKey: "nav.settings" },
+      { href: "/guide", icon: BookOpen, labelKey: "nav.guide" },
     ],
   },
 ];
