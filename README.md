@@ -1,6 +1,10 @@
-# BossBoard — ห้องประชุม AI
+# LEDGIO AI — ห้องประชุม AI
 
-ห้องประชุม AI สำหรับสำนักงานบัญชี — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time
+> **From Ledger to Intelligence** — AI Financial & Tax Advisor for Modern Business
+
+LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่วมกัน เพื่อวิเคราะห์และให้คำตอบด้านบัญชีและภาษี — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time
+
+> **Project repo:** BossBoard | **Brand name:** LEDGIO AI
 
 > **Forked and extended from** [xmanrui/OpenClaw-bot-review](https://github.com/xmanrui/OpenClaw-bot-review)
 
@@ -79,11 +83,20 @@
 
 | Plan | ราคา | รายละเอียด |
 |------|------|------------|
-| Starter | ฟรี | 3 agents, 10 sessions/เดือน, 1 user |
-| Professional | ฿1,990/เดือน | Unlimited agents/sessions, 5 users, file upload |
+| Solo | ฟรี 14 วัน | 3 agents, 10 sessions, 1 user |
+| Starter | ฿790/เดือน | 5 agents, ประชุมไม่จำกัด, file upload, 1 user |
+| Professional | ฿1,990/เดือน | Unlimited agents/sessions, 5 users, web search |
 | Enterprise | ฿4,990/เดือน | Unlimited users, custom templates, MCP, white-label |
 
-> ค่า LLM API แยกต่างหาก (~0.50–2 บาท/session)
+**บริการเสริม:**
+| บริการ | ราคา |
+|---------|------|
+| Setup & Agent Config | 3,000–5,000 บาท/ครั้ง |
+| Custom Agent Template | 2,000 บาท/ตัว |
+| Training Workshop (2 ชม.) | 3,000 บาท/ครั้ง |
+| Self-hosted License | 29,000 บาท/ปี |
+
+> ค่า LLM API แยกต่างหาก (~0.50–5 บาท/session) — ลูกค้าใช้ API key ของตัวเอง (BYOK)
 
 ### ⚙️ Settings (`/settings`)
 ตั้งค่า Web Search API keys (Serper / SerpAPI) พร้อมทดสอบ

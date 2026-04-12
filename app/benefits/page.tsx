@@ -198,6 +198,32 @@ export default function BenefitsPage() {
         </div>
       </div>
 
+      {/* Add-on Services */}
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text)" }}>
+          บริการเสริม
+        </h2>
+        <p className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>
+          ให้ทีมงานช่วย setup ระบบ สร้าง Agent ที่เหมาะกับงานของคุณ พร้อมสอนใช้จนคล่อง
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { title: "🛠 Setup & Agent Config", price: "3,000 – 5,000", unit: "บาท/ครั้ง", desc: "ช่วยสร้าง Agent ตามประเภทลูกค้า ตั้งค่าทีม Soul Prompt และทดสอบจนใช้งานได้จริง" },
+            { title: "🤖 Custom Agent Template", price: "2,000", unit: "บาท/ตัว", desc: "ออกแบบ Agent เฉพาะทาง เช่น ที่ปรึกษา BOI ผู้เชี่ยวชาญ Transfer Pricing หรือตาม scope งานที่ต้องการ" },
+            { title: "🎓 Training Workshop", price: "3,000", unit: "บาท/ครั้ง (2 ชม.)", desc: "สอนทีมงานใช้ระบบ ตั้งแต่สร้าง Agent จัดประชุม วิเคราะห์ผล จนถึงเทคนิคการตั้งคำถามให้ได้คำตอบที่ดี" },
+          ].map((s) => (
+            <div key={s.title} className="rounded-xl p-4 flex flex-col" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+              <h3 className="font-bold text-sm mb-1" style={{ color: "var(--text)" }}>{s.title}</h3>
+              <div className="mb-2">
+                <span className="text-lg font-bold" style={{ color: "var(--accent)" }}>{s.price}</span>
+                <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>{s.unit}</span>
+              </div>
+              <p className="text-xs leading-relaxed flex-1" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* CTA */}
       <div className="max-w-3xl mx-auto px-4 py-12 text-center">
         <h2 className="text-xl font-bold mb-3" style={{ color: "var(--text)" }}>
