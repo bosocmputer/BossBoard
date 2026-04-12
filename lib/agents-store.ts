@@ -10,6 +10,15 @@ const IV_LENGTH = 16;
 
 export type AgentProvider = "anthropic" | "openai" | "gemini" | "ollama" | "openrouter" | "custom";
 
+export interface KnowledgeFile {
+  id: string;
+  filename: string;
+  meta: string;
+  content: string; // parsed text content
+  tokens: number; // estimated token count
+  uploadedAt: string;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -25,12 +34,22 @@ export interface Agent {
   seniority?: number; // 1=highest (Chairman), higher number=lower seniority
   mcpEndpoint?: string; // MCP server endpoint URL
   mcpAccessMode?: string; // admin|sales|purchase|stock|general
+  knowledge?: KnowledgeFile[]; // agent-specific knowledge base
   createdAt: string;
   updatedAt: string;
 }
 
 export interface AgentPublic extends Omit<Agent, "apiKeyEncrypted"> {
   hasApiKey: boolean;
+}
+
+export interface KnowledgePublic {
+  id: string;
+  filename: string;
+  meta: string;
+  tokens: number;
+  uploadedAt: string;
+  preview: string; // first 200 chars
 }
 
 export interface ResearchSession {
@@ -277,9 +296,20 @@ export function completeResearchSession(sessionId: string, finalAnswer: string, 
 
 const SETTINGS_FILE = path.join(process.env.HOME || "", ".bossboard", "settings.json");
 
+export interface CompanyInfo {
+  name?: string;
+  businessType?: string;
+  registrationNumber?: string;
+  accountingStandard?: string; // "PAEs" | "NPAEs"
+  fiscalYear?: string; // e.g. "มกราคม - ธันวาคม"
+  employeeCount?: string;
+  notes?: string;
+}
+
 export interface AppSettings {
   serperApiKey?: string;
   serpApiKey?: string;
+  companyInfo?: CompanyInfo;
   updatedAt?: string;
 }
 
@@ -299,11 +329,12 @@ export function getSettings(): AppSettings {
   return {
     serperApiKey: s.serperApiKey ? decrypt(s.serperApiKey) : undefined,
     serpApiKey: s.serpApiKey ? decrypt(s.serpApiKey) : undefined,
+    companyInfo: s.companyInfo,
     updatedAt: s.updatedAt,
   };
 }
 
-export function saveSettings(data: { serperApiKey?: string; serpApiKey?: string }): AppSettings {
+export function saveSettings(data: { serperApiKey?: string; serpApiKey?: string; companyInfo?: CompanyInfo }): AppSettings {
   ensureDir(SETTINGS_FILE);
   const now = new Date().toISOString();
   const existing = readSettings();
@@ -314,12 +345,14 @@ export function saveSettings(data: { serperApiKey?: string; serpApiKey?: string 
     serpApiKey: data.serpApiKey !== undefined
       ? (data.serpApiKey ? encrypt(data.serpApiKey) : "")
       : existing.serpApiKey,
+    companyInfo: data.companyInfo !== undefined ? data.companyInfo : existing.companyInfo,
     updatedAt: now,
   };
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2));
   return {
     serperApiKey: data.serperApiKey !== undefined ? data.serperApiKey : (existing.serperApiKey ? decrypt(existing.serperApiKey) : undefined),
     serpApiKey: data.serpApiKey !== undefined ? data.serpApiKey : (existing.serpApiKey ? decrypt(existing.serpApiKey) : undefined),
+    companyInfo: updated.companyInfo,
     updatedAt: now,
   };
 }
@@ -495,4 +528,79 @@ export function incrementAgentSessionCount(agentId: string) {
   dayStat.sessions += 1;
 
   writeAllStats(all);
+}
+
+// --- Agent Knowledge Base ---
+
+export function estimateTokens(text: string): number {
+  // Rough estimate: ~4 chars per token for mixed Thai/English
+  return Math.ceil(text.length / 4);
+}
+
+export function addAgentKnowledge(agentId: string, file: KnowledgeFile): KnowledgeFile | null {
+  const agents = readAgents();
+  const idx = agents.findIndex((a) => a.id === agentId);
+  if (idx === -1) return null;
+  if (!agents[idx].knowledge) agents[idx].knowledge = [];
+  agents[idx].knowledge!.push(file);
+  agents[idx].updatedAt = new Date().toISOString();
+  writeAgents(agents);
+  return file;
+}
+
+export function listAgentKnowledge(agentId: string): KnowledgePublic[] {
+  const agents = readAgents();
+  const agent = agents.find((a) => a.id === agentId);
+  if (!agent?.knowledge) return [];
+  return agent.knowledge.map((k) => ({
+    id: k.id,
+    filename: k.filename,
+    meta: k.meta,
+    tokens: k.tokens,
+    uploadedAt: k.uploadedAt,
+    preview: k.content.slice(0, 200),
+  }));
+}
+
+export function getAgentKnowledgeContent(agentId: string): string {
+  const agents = readAgents();
+  const agent = agents.find((a) => a.id === agentId);
+  if (!agent?.knowledge || agent.knowledge.length === 0) return "";
+  const MAX_KNOWLEDGE_CHARS = 50000; // ~12,500 tokens
+  let total = 0;
+  const parts: string[] = [];
+  for (const k of agent.knowledge) {
+    if (total + k.content.length > MAX_KNOWLEDGE_CHARS) break;
+    parts.push(`[📄 ${k.filename}]\n${k.content}`);
+    total += k.content.length;
+  }
+  return parts.length > 0
+    ? `\n\n---\n📚 ฐานความรู้ (Knowledge Base):\n${parts.join("\n\n---\n")}\n---\n`
+    : "";
+}
+
+export function deleteAgentKnowledge(agentId: string, knowledgeId: string): boolean {
+  const agents = readAgents();
+  const idx = agents.findIndex((a) => a.id === agentId);
+  if (idx === -1 || !agents[idx].knowledge) return false;
+  const before = agents[idx].knowledge!.length;
+  agents[idx].knowledge = agents[idx].knowledge!.filter((k) => k.id !== knowledgeId);
+  if (agents[idx].knowledge!.length === before) return false;
+  agents[idx].updatedAt = new Date().toISOString();
+  writeAgents(agents);
+  return true;
+}
+
+export function getCompanyInfoContext(): string {
+  const settings = getSettings();
+  const c = settings.companyInfo;
+  if (!c || !c.name) return "";
+  const parts = [`บริษัท: ${c.name}`];
+  if (c.businessType) parts.push(`ประเภทธุรกิจ: ${c.businessType}`);
+  if (c.registrationNumber) parts.push(`เลขทะเบียน: ${c.registrationNumber}`);
+  if (c.accountingStandard) parts.push(`มาตรฐานบัญชี: ${c.accountingStandard}`);
+  if (c.fiscalYear) parts.push(`ปีการเงิน: ${c.fiscalYear}`);
+  if (c.employeeCount) parts.push(`จำนวนพนักงาน: ${c.employeeCount}`);
+  if (c.notes) parts.push(`หมายเหตุ: ${c.notes}`);
+  return `\n\n---\n🏢 ข้อมูลบริษัท:\n${parts.join("\n")}\n---\n`;
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSettings, saveSettings } from "@/lib/agents-store";
+import { getSettings, saveSettings, CompanyInfo } from "@/lib/agents-store";
 
 export async function GET() {
   const settings = getSettings();
@@ -9,17 +9,19 @@ export async function GET() {
     hasSerpApiKey: !!settings.serpApiKey,
     serperKeyPreview: settings.serperApiKey ? `...${settings.serperApiKey.slice(-6)}` : null,
     serpApiKeyPreview: settings.serpApiKey ? `...${settings.serpApiKey.slice(-6)}` : null,
+    companyInfo: settings.companyInfo ?? null,
     updatedAt: settings.updatedAt,
   });
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { serperApiKey, serpApiKey } = body as { serperApiKey?: string; serpApiKey?: string };
-  const result = saveSettings({ serperApiKey, serpApiKey });
+  const { serperApiKey, serpApiKey, companyInfo } = body as { serperApiKey?: string; serpApiKey?: string; companyInfo?: CompanyInfo };
+  const result = saveSettings({ serperApiKey, serpApiKey, companyInfo });
   return NextResponse.json({
     hasSerperKey: !!result.serperApiKey,
     hasSerpApiKey: !!result.serpApiKey,
+    companyInfo: result.companyInfo ?? null,
     updatedAt: result.updatedAt,
   });
 }

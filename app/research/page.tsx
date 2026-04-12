@@ -291,6 +291,7 @@ export default function ResearchPage() {
   const [serverSessions, setServerSessions] = useState<ServerSession[]>([]);
   const [viewingSession, setViewingSession] = useState<ServerSession | null>(null);
   const [historyTab, setHistoryTab] = useState<"current" | "history">("current");
+  const [companyName, setCompanyName] = useState("");
 
   const [autoScroll, setAutoScroll] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -352,6 +353,7 @@ export default function ResearchPage() {
   useEffect(() => {
     fetchAgents();
     fetchServerHistory();
+    fetch("/api/team-settings").then(r => r.json()).then(d => { if (d.settings?.companyInfo?.name) setCompanyName(d.settings.companyInfo.name); }).catch(() => {});
   }, [fetchAgents, fetchServerHistory]);
 
   useEffect(() => {
@@ -955,7 +957,7 @@ export default function ResearchPage() {
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold" style={{ color: "var(--text)" }}>🏛️ Meeting Room</h1>
+            <h1 className="text-lg sm:text-2xl font-bold" style={{ color: "var(--text)" }}>🏛️ Meeting Room{companyName ? ` — ${companyName}` : ""}</h1>
             <p className="text-xs sm:text-sm mt-1 hidden sm:block" style={{ color: "var(--text-muted)" }}>
               ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
             </p>

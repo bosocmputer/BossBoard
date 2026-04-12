@@ -10,6 +10,8 @@ import {
   AgentPublic,
   updateAgentStats,
   incrementAgentSessionCount,
+  getCompanyInfoContext,
+  getAgentKnowledgeContent,
 } from "@/lib/agents-store";
 import crypto from "crypto";
 
@@ -492,6 +494,9 @@ export async function POST(req: NextRequest) {
   const chairman = detectChairman(selectedAgents);
   const orderedAgents = sortBySeniority(selectedAgents, chairman);
 
+  // Company & knowledge context
+  const companyContext = getCompanyInfoContext();
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -520,7 +525,7 @@ export async function POST(req: NextRequest) {
             const openingResult = await callLLM(chairman.provider, chairman.model, apiKey, chairman.baseUrl, [
               {
                 role: "system",
-                content: `${chairman.soul}${dataSourceContext}${historyContext}${fileContext}\n\nคุณเป็นประธานการประชุม มีหน้าที่เปิดประชุม กำหนดวาระ และนำทีมหาข้อสรุป`,
+                content: `${companyContext}${chairman.soul}${dataSourceContext}${historyContext}${fileContext}\n\nคุณเป็นประธานการประชุม มีหน้าที่เปิดประชุม กำหนดวาระ และนำทีมหาข้อสรุป`,
               },
               {
                 role: "user",
@@ -592,10 +597,11 @@ export async function POST(req: NextRequest) {
             ? `คุณเป็นประธานการประชุม นำเสนอมุมมองจากตำแหน่ง ${agent.role} ของคุณ`
             : `นำเสนอมุมมองจากมุมมองของ ${agent.role} อย่างชัดเจนและตรงประเด็น`;
 
+          const knowledgeContext = getAgentKnowledgeContent(agent.id);
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${agent.soul}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}`,
+              content: `${companyContext}${agent.soul}${knowledgeContext}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}`,
             },
             {
               role: "user",
@@ -660,10 +666,11 @@ export async function POST(req: NextRequest) {
           if (!myFinding) continue;
 
           try {
+            const knowledgeCtx = getAgentKnowledgeContent(agent.id);
             const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
               {
                 role: "system",
-                content: `${agent.soul}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา หากเห็นด้วยให้ระบุว่าเห็นด้วยในประเด็นใด หากไม่เห็นด้วยให้ระบุชัดเจนว่าทำไมและเสนอมุมมองของคุณแทน ห้ามเออออกับทุกคนโดยไม่มีจุดยืน`,
+                content: `${companyContext}${agent.soul}${knowledgeCtx}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา หากเห็นด้วยให้ระบุว่าเห็นด้วยในประเด็นใด หากไม่เห็นด้วยให้ระบุชัดเจนว่าทำไมและเสนอมุมมองของคุณแทน ห้ามเออออกับทุกคนโดยไม่มีจุดยืน`,
               },
               {
                 role: "user",
@@ -734,7 +741,7 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
             {
               role: "system",
-              content: `คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}`,
+              content: `${companyContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}`,
             },
             {
               role: "user",

@@ -177,6 +177,13 @@ export default function AgentsPage() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [modelSearch, setModelSearch] = useState("");
 
+  // Knowledge base state
+  const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
+  const [knowledgeAgentName, setKnowledgeAgentName] = useState("");
+  const [knowledgeFiles, setKnowledgeFiles] = useState<{ id: string; filename: string; meta: string; tokens: number; uploadedAt: string; preview: string }[]>([]);
+  const [knowledgeUploading, setKnowledgeUploading] = useState(false);
+  const [knowledgePreview, setKnowledgePreview] = useState<{ filename: string; tokens: number; preview?: string } | null>(null);
+
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
     const data = await res.json();
@@ -302,6 +309,52 @@ export default function AgentsPage() {
     fetchAgents();
   };
 
+  // Knowledge base functions
+  const openKnowledge = async (agent: Agent) => {
+    setKnowledgeAgentId(agent.id);
+    setKnowledgeAgentName(`${agent.emoji} ${agent.name}`);
+    setKnowledgePreview(null);
+    try {
+      const res = await fetch(`/api/team-agents/${agent.id}/knowledge`);
+      const data = await res.json();
+      setKnowledgeFiles(data.knowledge ?? []);
+    } catch { setKnowledgeFiles([]); }
+  };
+
+  const handleKnowledgeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !knowledgeAgentId) return;
+    setKnowledgeUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/team-agents/${knowledgeAgentId}/knowledge`, { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setKnowledgeFiles((prev) => [...prev, data.knowledge]);
+        setKnowledgePreview({ filename: data.knowledge.filename, tokens: data.knowledge.tokens, preview: data.knowledge.preview });
+      } else {
+        const err = await res.json();
+        alert(err.error || "Upload failed");
+      }
+    } catch { alert("Upload failed"); }
+    setKnowledgeUploading(false);
+    e.target.value = "";
+  };
+
+  const handleKnowledgeDelete = async (knowledgeId: string) => {
+    if (!knowledgeAgentId) return;
+    const res = await fetch(`/api/team-agents/${knowledgeAgentId}/knowledge`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ knowledgeId }),
+    });
+    if (res.ok) {
+      setKnowledgeFiles((prev) => prev.filter((k) => k.id !== knowledgeId));
+      setKnowledgePreview(null);
+    }
+  };
+
   const toggleSkill = (skillId: string) => {
     setForm((f) => ({
       ...f,
@@ -407,6 +460,14 @@ export default function AgentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                  <button
+                    onClick={() => openKnowledge(agent)}
+                    className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
+                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                    title="ฐานความรู้"
+                  >
+                    📚 Knowledge
+                  </button>
                   <button
                     onClick={() => handleToggle(agent)}
                     className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
@@ -876,6 +937,85 @@ export default function AgentsPage() {
                 style={{ background: "var(--accent)", color: "#000" }}
               >
                 {saving ? "Saving..." : editingId ? "Update Agent" : "Create Agent"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Knowledge Modal ─── */}
+      {knowledgeAgentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 max-h-[80vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>📚 ฐานความรู้ — {knowledgeAgentName}</h3>
+              <button onClick={() => { setKnowledgeAgentId(null); setKnowledgePreview(null); }} className="text-xl" style={{ color: "var(--text-muted)" }}>✕</button>
+            </div>
+
+            {/* Upload */}
+            <div className="mb-4">
+              <label
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed cursor-pointer transition-all hover:opacity-80"
+                style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+              >
+                <span className="text-sm font-bold">{knowledgeUploading ? "กำลังอัพโหลด..." : "📎 อัพโหลดไฟล์ความรู้"}</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".xlsx,.xls,.pdf,.docx,.txt,.md,.csv,.json"
+                  disabled={knowledgeUploading}
+                  onChange={handleKnowledgeUpload}
+                />
+              </label>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>รองรับ: xlsx, pdf, docx, txt, md, csv, json (สูงสุด 10MB)</p>
+            </div>
+
+            {/* Preview after upload */}
+            {knowledgePreview && (
+              <div className="mb-4 p-3 rounded-lg border text-xs" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)", color: "var(--text-muted)" }}>
+                <div className="font-bold mb-1" style={{ color: "var(--accent)" }}>✅ อัพโหลดสำเร็จ: {knowledgePreview.filename}</div>
+                <div>ขนาดโดยประมาณ: ~{knowledgePreview.tokens.toLocaleString()} tokens</div>
+                {knowledgePreview.preview && <div className="mt-2 whitespace-pre-wrap line-clamp-4">{knowledgePreview.preview}</div>}
+              </div>
+            )}
+
+            {/* File List */}
+            {knowledgeFiles.length === 0 ? (
+              <div className="text-center py-8 text-sm" style={{ color: "var(--text-muted)" }}>
+                ยังไม่มีไฟล์ความรู้ — อัพโหลดไฟล์เพื่อให้ Agent มีบริบทเฉพาะทาง
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-xs font-bold mb-2" style={{ color: "var(--text-muted)" }}>
+                  ไฟล์ทั้งหมด {knowledgeFiles.length} ไฟล์ · ~{knowledgeFiles.reduce((s: number, f: any) => s + (f.tokens || 0), 0).toLocaleString()} tokens
+                </div>
+                {knowledgeFiles.map((f: any) => (
+                  <div key={f.id} className="flex items-center justify-between p-3 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate" style={{ color: "var(--text)" }}>{f.filename}</div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        ~{(f.tokens || 0).toLocaleString()} tokens · {new Date(f.uploadedAt).toLocaleDateString("th-TH")}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleKnowledgeDelete(f.id)}
+                      className="ml-3 px-2 py-1 rounded text-xs border transition-all hover:opacity-80"
+                      style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => { setKnowledgeAgentId(null); setKnowledgePreview(null); }}
+                className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={{ background: "var(--accent)", color: "#000" }}
+              >
+                ปิด
               </button>
             </div>
           </div>

@@ -2,11 +2,22 @@
 
 import { useEffect, useState, useCallback } from "react";
 
+interface CompanyInfo {
+  name?: string;
+  businessType?: string;
+  registrationNumber?: string;
+  accountingStandard?: string;
+  fiscalYear?: string;
+  employeeCount?: string;
+  notes?: string;
+}
+
 interface SettingsState {
   hasSerperKey: boolean;
   hasSerpApiKey: boolean;
   serperKeyPreview: string | null;
   serpApiKeyPreview: string | null;
+  companyInfo: CompanyInfo | null;
   updatedAt: string | null;
 }
 
@@ -16,6 +27,7 @@ export default function SettingsPage() {
     hasSerpApiKey: false,
     serperKeyPreview: null,
     serpApiKeyPreview: null,
+    companyInfo: null,
     updatedAt: null,
   });
   const [serperKey, setSerperKey] = useState("");
@@ -25,11 +37,32 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
+  // Company info form
+  const [companyName, setCompanyName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [regNumber, setRegNumber] = useState("");
+  const [accStandard, setAccStandard] = useState("");
+  const [fiscalYear, setFiscalYear] = useState("");
+  const [empCount, setEmpCount] = useState("");
+  const [companyNotes, setCompanyNotes] = useState("");
+  const [companySaving, setCompanySaving] = useState(false);
+  const [companySaved, setCompanySaved] = useState(false);
+
   const loadSettings = useCallback(async () => {
     const res = await fetch("/api/team-settings");
     if (res.ok) {
       const data = await res.json();
       setState(data);
+      // Populate company info form
+      if (data.companyInfo) {
+        setCompanyName(data.companyInfo.name || "");
+        setBusinessType(data.companyInfo.businessType || "");
+        setRegNumber(data.companyInfo.registrationNumber || "");
+        setAccStandard(data.companyInfo.accountingStandard || "");
+        setFiscalYear(data.companyInfo.fiscalYear || "");
+        setEmpCount(data.companyInfo.employeeCount || "");
+        setCompanyNotes(data.companyInfo.notes || "");
+      }
     }
   }, []);
 
@@ -87,10 +120,167 @@ export default function SettingsPage() {
     setTesting(false);
   };
 
+  const handleCompanySave = async () => {
+    setCompanySaving(true);
+    setCompanySaved(false);
+    const companyInfo: CompanyInfo = {
+      name: companyName || undefined,
+      businessType: businessType || undefined,
+      registrationNumber: regNumber || undefined,
+      accountingStandard: accStandard || undefined,
+      fiscalYear: fiscalYear || undefined,
+      employeeCount: empCount || undefined,
+      notes: companyNotes || undefined,
+    };
+    const res = await fetch("/api/team-settings", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ companyInfo }),
+    });
+    setCompanySaving(false);
+    if (res.ok) {
+      setCompanySaved(true);
+      await loadSettings();
+      setTimeout(() => setCompanySaved(false), 3000);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-8 max-w-2xl mx-auto">
       <h1 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: "var(--accent)" }}>⚙️ Settings</h1>
-      <p className="text-sm mb-6 sm:mb-8" style={{ color: "var(--text-muted)" }}>ตั้งค่า API Keys สำหรับฟีเจอร์ต่างๆ</p>
+      <p className="text-sm mb-6 sm:mb-8" style={{ color: "var(--text-muted)" }}>ตั้งค่าระบบและข้อมูลบริษัท</p>
+
+      {/* Company Info Section */}
+      <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-lg">🏢</span>
+          <h2 className="text-base font-semibold">ข้อมูลบริษัท</h2>
+        </div>
+        <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
+          AI Agents จะใช้ข้อมูลนี้ประกอบการวิเคราะห์ทุกครั้งที่เริ่มประชุม
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="text-sm font-medium block mb-1">ชื่อบริษัท <span style={{ color: "var(--danger)" }}>*</span></label>
+            <input
+              type="text"
+              placeholder="เช่น บริษัท ABC จำกัด"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">ประเภทธุรกิจ</label>
+            <input
+              type="text"
+              placeholder="เช่น ผลิตและจำหน่ายอาหาร"
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">เลขทะเบียนนิติบุคคล</label>
+            <input
+              type="text"
+              placeholder="เช่น 0105555000001"
+              value={regNumber}
+              onChange={(e) => setRegNumber(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">มาตรฐานบัญชี</label>
+            <select
+              value={accStandard}
+              onChange={(e) => setAccStandard(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+            >
+              <option value="">— เลือก —</option>
+              <option value="NPAEs">NPAEs (กิจการไม่มีส่วนได้เสียสาธารณะ)</option>
+              <option value="PAEs">PAEs (กิจการมีส่วนได้เสียสาธารณะ)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">ปีการเงิน</label>
+            <select
+              value={fiscalYear}
+              onChange={(e) => setFiscalYear(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+            >
+              <option value="">— เลือก —</option>
+              <option value="มกราคม - ธันวาคม">มกราคม - ธันวาคม</option>
+              <option value="เมษายน - มีนาคม">เมษายน - มีนาคม</option>
+              <option value="กรกฎาคม - มิถุนายน">กรกฎาคม - มิถุนายน</option>
+              <option value="ตุลาคม - กันยายน">ตุลาคม - กันยายน</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">จำนวนพนักงาน</label>
+            <select
+              value={empCount}
+              onChange={(e) => setEmpCount(e.target.value)}
+              className="w-full text-sm px-3 py-2 rounded-lg"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+            >
+              <option value="">— เลือก —</option>
+              <option value="1-10 คน">1-10 คน</option>
+              <option value="11-50 คน">11-50 คน</option>
+              <option value="51-200 คน">51-200 คน</option>
+              <option value="201-500 คน">201-500 คน</option>
+              <option value="500+ คน">500+ คน</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="text-sm font-medium block mb-1">หมายเหตุเพิ่มเติม</label>
+          <textarea
+            placeholder="ข้อมูลเฉพาะที่ต้องการให้ AI รู้ เช่น ได้รับสิทธิ BOI, มีสาขา 3 แห่ง, ใช้ระบบ SAP..."
+            value={companyNotes}
+            onChange={(e) => setCompanyNotes(e.target.value)}
+            rows={3}
+            className="w-full text-sm px-3 py-2 rounded-lg resize-none"
+            style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCompanySave}
+            disabled={companySaving}
+            className="px-4 py-2 rounded-lg text-sm font-medium"
+            style={{
+              background: "var(--accent)",
+              color: "white",
+              opacity: companySaving ? 0.5 : 1,
+              cursor: companySaving ? "not-allowed" : "pointer",
+            }}
+          >
+            {companySaving ? "กำลังบันทึก..." : "💾 บันทึกข้อมูลบริษัท"}
+          </button>
+          {companySaved && <span className="text-sm" style={{ color: "var(--success)" }}>✅ บันทึกสำเร็จ!</span>}
+        </div>
+
+        {state.companyInfo?.name && (
+          <div className="mt-4 px-3 py-2.5 rounded-lg text-xs" style={{ background: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" }}>
+            <span className="font-medium" style={{ color: "var(--accent)" }}>💡 ตัวอย่าง Context ที่ AI จะเห็น:</span>
+            <p className="mt-1" style={{ color: "var(--text-muted)" }}>
+              &quot;บริษัท: {state.companyInfo.name}
+              {state.companyInfo.businessType ? ` | ธุรกิจ: ${state.companyInfo.businessType}` : ""}
+              {state.companyInfo.accountingStandard ? ` | มาตรฐาน: ${state.companyInfo.accountingStandard}` : ""}
+              {state.companyInfo.fiscalYear ? ` | ปีการเงิน: ${state.companyInfo.fiscalYear}` : ""}&quot;
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Web Search Section */}
       <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
