@@ -870,7 +870,7 @@ export async function POST(req: NextRequest) {
             },
             {
               role: "user",
-              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานการประชุมที่มี:\n1. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n2. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n3. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n4. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n5. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ สำคัญ: ข้อมูลตัวเลขทุกตัวที่อ้างอิงในรายงานต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
+              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n2. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n3. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n4. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n5. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ สำคัญ: ข้อมูลตัวเลขทุกตัวที่อ้างอิงต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
             },
           ]);
 
@@ -880,15 +880,15 @@ export async function POST(req: NextRequest) {
             agentName: chairman.name,
             agentEmoji: chairman.emoji,
             role: "synthesis",
-            content: result.content,
+            content: result.content.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(),
             tokensUsed: result.inputTokens + result.outputTokens,
             timestamp: new Date().toISOString(),
           };
           appendResearchMessage(sessionId, synthMsg);
           send("message", synthMsg);
 
-          // Parse chart data from synthesis
-          const chartMatch = result.content.match(/```chart\n([\s\S]*?)\n```/);
+          // Parse chart data from synthesis (LLM may use ```chart or ```json)
+          const chartMatch = result.content.match(/```(?:chart|json)\n([\s\S]*?)\n```/);
           if (chartMatch) {
             try {
               const chartData = JSON.parse(chartMatch[1]);
@@ -898,8 +898,11 @@ export async function POST(req: NextRequest) {
             } catch { /* ignore chart parse error */ }
           }
 
-          send("final_answer", { content: result.content });
-          completeResearchSession(sessionId, result.content, "completed");
+          // Strip chart/json code blocks from final content
+          const cleanContent = result.content.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim();
+
+          send("final_answer", { content: cleanContent });
+          completeResearchSession(sessionId, cleanContent, "completed");
 
           // Update chairman tokens
           const prevTokens = agentTokens[chairman.id] ?? { input: 0, output: 0 };

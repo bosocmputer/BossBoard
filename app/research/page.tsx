@@ -180,7 +180,7 @@ const COLLAPSE_LINE_LIMIT = 8;
 
 function MessageContent({ content }: { content: string }) {
   const [expanded, setExpanded] = useState(false);
-  const stripped = content.replace(/```chart\n[\s\S]*?\n```/g, "").trim();
+  const stripped = content.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim();
   const lines = stripped.split("\n");
   const isLong = lines.length > COLLAPSE_LINE_LIMIT;
   const displayText = !expanded && isLong ? lines.slice(0, COLLAPSE_LINE_LIMIT).join("\n") : stripped;
@@ -246,7 +246,7 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
 
     // Phase 3 — synthesis/resolution
     if (round.finalAnswer) {
-      lines.push("### 🏛️ มติที่ประชุม", round.finalAnswer.replace(/```chart\n[\s\S]*?\n```/g, "").trim(), "");
+      lines.push("### 🏛️ มติที่ประชุม", round.finalAnswer.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(), "");
     }
   });
 
