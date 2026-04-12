@@ -124,7 +124,7 @@ export default function DashboardPage() {
         { label: "Agents", value: data.totalAgents, sub: `${data.activeAgents} active`, icon: Users, color: "var(--accent)" },
         { label: "Teams", value: data.totalTeams, sub: "configured", icon: Zap, color: "var(--info)" },
         { label: "Sessions", value: data.totalSessions, sub: data.runningSessions > 0 ? `${data.runningSessions} running` : "total", icon: MessageSquare, color: "var(--purple)" },
-        { label: "Tokens", value: formatTokens(data.totalTokens), sub: "total used", icon: TrendingUp, color: "var(--success)" },
+        { label: "Tokens", value: formatTokens(data.totalTokens), sub: "total used", icon: TrendingUp, color: "var(--success)", href: "/tokens" },
       ]
     : [];
 
@@ -155,20 +155,23 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-          {statCards.map((stat) => (
-            <Card key={stat.label} padding="md">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
-                  <p className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>{stat.value}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{stat.sub}</p>
+          {statCards.map((stat) => {
+            const inner = (
+              <Card key={stat.label} padding="md" hover={!!stat.href}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                    <p className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>{stat.value}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{stat.sub}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: stat.color + "18" }}>
+                    <stat.icon size={20} style={{ color: stat.color }} />
+                  </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: stat.color + "18" }}>
-                  <stat.icon size={20} style={{ color: stat.color }} />
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+            return stat.href ? <Link key={stat.label} href={stat.href}>{inner}</Link> : <div key={stat.label}>{inner}</div>;
+          })}
         </div>
       )}
 
