@@ -146,6 +146,46 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Hero CTA: Start Meeting */}
+      <Link href="/research">
+        <Card padding="lg" hover>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}>
+              🏛️
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold" style={{ color: "var(--text)" }}>เริ่มประชุม AI</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                พิมพ์วาระ → AI ทีมประชุม → สรุปมติอัตโนมัติ
+              </p>
+            </div>
+            <ArrowRight size={20} style={{ color: "var(--accent)" }} />
+          </div>
+        </Card>
+      </Link>
+
+      {/* Quick meeting templates */}
+      <div className="mt-4 mb-8">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-medium flex-shrink-0" style={{ color: "var(--text-muted)" }}>📋 ลองวาระ:</span>
+          {[
+            "วิเคราะห์งบการเงินไตรมาส 1/2568",
+            "วางแผนภาษีนิติบุคคลปลายปี",
+            "ประเมินความเสี่ยง Internal Control",
+            "วิเคราะห์ต้นทุนและจุดคุ้มทุน",
+          ].map((q) => (
+            <Link
+              key={q}
+              href={`/research?q=${encodeURIComponent(q)}`}
+              className="text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap transition-all hover:opacity-80 flex-shrink-0"
+              style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+            >
+              {q}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Stat cards */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">

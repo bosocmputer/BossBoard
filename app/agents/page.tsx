@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { showToast } from "../components/Toast";
 
 type Provider = "anthropic" | "openai" | "gemini" | "ollama" | "openrouter" | "custom";
+
+// ─── Emoji Picker data ────────────────────────────────────────────────────────
+const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
+  { label: "👤 คน", emojis: ["👨‍💼", "👩‍💼", "🧑‍💻", "👨‍⚖️", "👩‍⚖️", "👨‍🔬", "👩‍🔬", "👨‍🏫", "👩‍🏫", "🧑‍🎓", "👨‍💻", "👩‍💻", "🧑‍💼", "🤵", "💂", "🕵️", "👷", "🦸", "🧙", "🤖"] },
+  { label: "💼 ธุรกิจ", emojis: ["📊", "📈", "📉", "💰", "💵", "🏦", "🧮", "📋", "📑", "🗂️", "💡", "🎯", "🏆", "⚡", "🔥", "💎", "🛡️", "🔑", "🏛️", "🌟"] },
+  { label: "🔍 วิเคราะห์", emojis: ["🔍", "🔎", "📐", "🧪", "⚗️", "🔬", "📏", "🧩", "🎲", "📊", "🗃️", "📂", "🗄️", "💻", "🖥️", "⌨️", "🖨️", "📡", "🌐", "🔌"] },
+  { label: "⚖️ กฎหมาย", emojis: ["⚖️", "📜", "🔏", "📝", "✍️", "🏛️", "🪧", "📌", "🔒", "🗝️", "🎖️", "🏅", "👨‍⚖️", "👩‍⚖️", "📚", "🗳️", "📒", "📕", "📖", "🧾"] },
+];
 
 interface Agent {
   id: string;
@@ -177,6 +186,7 @@ export default function AgentsPage() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [modelSearch, setModelSearch] = useState("");
   const [formStep, setFormStep] = useState(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Knowledge base state
   const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
@@ -291,6 +301,7 @@ export default function AgentsPage() {
       setShowForm(false);
       setEditingId(null);
       fetchAgents();
+      showToast("success", editingId ? "อัปเดต Agent สำเร็จ" : "สร้าง Agent สำเร็จ");
     } catch (e) {
       setError(String(e));
     } finally {
@@ -300,7 +311,7 @@ export default function AgentsPage() {
 
   const handleDelete = async (id: string) => {
     const res = await fetch(`/api/team-agents/${id}`, { method: "DELETE" });
-    if (res.ok) { setDeleteConfirm(null); fetchAgents(); }
+    if (res.ok) { setDeleteConfirm(null); fetchAgents(); showToast("success", "ลบ Agent แล้ว"); }
   };
 
   const handleToggle = async (agent: Agent) => {
@@ -310,6 +321,7 @@ export default function AgentsPage() {
       body: JSON.stringify({ active: !agent.active }),
     });
     fetchAgents();
+    showToast("info", `${agent.emoji} ${agent.name} — ${agent.active ? "ปิด" : "เปิด"}แล้ว`);
   };
 
   // Knowledge base functions
@@ -445,7 +457,16 @@ export default function AgentsPage() {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{agent.model}</div>
+                  <div className="text-xs mt-1 flex items-center gap-2 flex-wrap" style={{ color: "var(--text-muted)" }}>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px]" style={{ borderColor: "var(--border)" }}>
+                      🤖 {agent.model.split("/").pop()}
+                    </span>
+                    {agent.seniority && (
+                      <span className="text-[10px]">🏛️ #{agent.seniority}</span>
+                    )}
+                    {agent.useWebSearch && <span className="text-[10px]">🔍</span>}
+                    {agent.mcpEndpoint && <span className="text-[10px]">🔌 MCP</span>}
+                  </div>
                   {agent.skills && agent.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {agent.skills.map((s) => {
@@ -513,34 +534,23 @@ export default function AgentsPage() {
                 <button onClick={() => setShowForm(false)} className="text-xl w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: "var(--text-muted)" }}>✕</button>
               </div>
 
-              {/* Step Progress */}
-              <div className="flex items-center gap-1 mb-4">
-                {[
-                  { label: "ตำแหน่ง", icon: "🎭" },
-                  { label: "Model", icon: "🤖" },
-                  { label: "ข้อมูล", icon: "📝" },
-                  { label: "ขั้นสูง", icon: "⚙️" },
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center flex-1">
-                    <button
-                      onClick={() => setFormStep(i)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-all w-full"
-                      style={{
-                        background: formStep === i ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
-                        color: formStep === i ? "var(--accent)" : formStep > i ? "var(--success, var(--green))" : "var(--text-muted)",
-                      }}
-                    >
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{
-                        background: formStep === i ? "var(--accent)" : formStep > i ? "var(--success, var(--green))" : "var(--border)",
-                        color: formStep === i || formStep > i ? "#000" : "var(--text-muted)",
-                      }}>
-                        {formStep > i ? "✓" : i + 1}
-                      </span>
-                      <span className="hidden sm:inline truncate">{s.label}</span>
-                      <span className="sm:hidden">{s.icon}</span>
-                    </button>
-                    {i < 3 && <div className="w-4 h-px flex-shrink-0" style={{ background: formStep > i ? "var(--success, var(--green))" : "var(--border)" }} />}
-                  </div>
+              {/* Step Tabs — clean, simple */}
+              <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+                {["🎭 ตำแหน่ง", "🤖 Model", "📝 ข้อมูล", "⚙️ ขั้นสูง"].map((label, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setFormStep(i)}
+                    className="flex-1 py-2.5 text-xs font-medium transition-all relative"
+                    style={{ color: formStep === i ? "var(--accent)" : "var(--text-muted)" }}
+                  >
+                    {label}
+                    {formStep === i && (
+                      <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full" style={{ background: "var(--accent)" }} />
+                    )}
+                    {formStep > i && (
+                      <span className="absolute top-1 right-1 text-[8px]" style={{ color: "var(--success, #22c55e)" }}>✓</span>
+                    )}
+                  </button>
                 ))}
               </div>
             </div>
@@ -763,15 +773,38 @@ export default function AgentsPage() {
                   {/* Name + Emoji + Role */}
                   <div className="flex flex-col gap-3">
                     <div className="flex gap-3">
-                      <div className="w-20">
+                      <div className="w-20 relative">
                         <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Emoji</label>
-                        <input
-                          value={form.emoji}
-                          onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-lg border text-center text-xl"
-                          style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                          maxLength={2}
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="w-full px-3 py-2 rounded-lg border text-center text-xl cursor-pointer"
+                          style={{ background: "var(--bg)", borderColor: showEmojiPicker ? "var(--accent)" : "var(--border)", color: "var(--text)" }}
+                        >
+                          {form.emoji || "😀"}
+                        </button>
+                        {showEmojiPicker && (
+                          <div className="absolute top-full left-0 mt-1 z-50 w-72 rounded-xl border shadow-2xl p-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                            {EMOJI_GROUPS.map((group) => (
+                              <div key={group.label} className="mb-2">
+                                <div className="text-[10px] font-bold mb-1" style={{ color: "var(--text-muted)" }}>{group.label}</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {group.emojis.map((e) => (
+                                    <button
+                                      key={e}
+                                      type="button"
+                                      onClick={() => { setForm((f) => ({ ...f, emoji: e })); setShowEmojiPicker(false); }}
+                                      className="w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all hover:scale-110"
+                                      style={{ background: form.emoji === e ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "transparent" }}
+                                    >
+                                      {e}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1">
                         <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Name *</label>

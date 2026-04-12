@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { showToast } from "../components/Toast";
 
 interface Agent {
   id: string;
@@ -272,6 +273,10 @@ export default function ResearchPage() {
   const [chairmanId, setChairmanId] = useState<string | null>(null);
   const [searchingAgents, setSearchingAgents] = useState<Set<string>>(new Set());
 
+  // Meeting timer
+  const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
   // Conversation state (persisted in localStorage)
   const [rounds, setRounds] = useState<ConversationRound[]>([]);
   const [meetingSessionId, setMeetingSessionId] = useState<string | null>(null);
@@ -355,6 +360,20 @@ export default function ResearchPage() {
     fetchServerHistory();
     fetch("/api/team-settings").then(r => r.json()).then(d => { if (d.settings?.companyInfo?.name) setCompanyName(d.settings.companyInfo.name); }).catch(() => {});
   }, [fetchAgents, fetchServerHistory]);
+
+  // Handle ?q= from dashboard quick-start templates
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) setQuestion(q);
+  }, []);
+
+  // Meeting timer
+  useEffect(() => {
+    if (!meetingStartTime) return;
+    const interval = setInterval(() => setElapsedTime(Math.floor((Date.now() - meetingStartTime) / 1000)), 1000);
+    return () => clearInterval(interval);
+  }, [meetingStartTime]);
 
   useEffect(() => {
     if (autoScroll) {
@@ -478,6 +497,7 @@ export default function ResearchPage() {
     setRunning(true);
     setCurrentMessages([]);
     setCurrentFinalAnswer("");
+    if (!meetingStartTime) setMeetingStartTime(Date.now());
     setCurrentSuggestions([]);
     setCurrentChartData(null);
     setAgentTokens({});
@@ -593,6 +613,9 @@ export default function ResearchPage() {
         // Meeting closed — clear session
         setMeetingSessionId(null);
         meetingSessionIdRef.current = null;
+        setMeetingStartTime(null);
+        setElapsedTime(0);
+        showToast("success", "ปิดประชุมแล้ว — สรุปมติพร้อม");
       }
       setCurrentMessages([]);
       setCurrentFinalAnswer("");
@@ -1303,10 +1326,18 @@ export default function ResearchPage() {
                         ⚙️
                       </button>
                       <div className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
-                        {meetingSessionId && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />🟢 ประชุมอยู่ · </span>}
+                        {meetingSessionId && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />🟢 ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
                         {selectedIds.size}/{agents.length} สมาชิก
                         {attachedFiles.length > 0 && <span> · 📎 {attachedFiles.length}</span>}
+                        {(() => {
+                          const totalTk = rounds.reduce((s, r) => s + Object.values(r.agentTokens).reduce((a, t) => a + t.totalTokens, 0), 0);
+                          if (totalTk > 0) {
+                            const costEst = totalTk * 0.000003; // rough average $/token
+                            return <span> · 🪙 {totalTk > 1000 ? (totalTk / 1000).toFixed(1) + "K" : totalTk} tokens {costEst > 0.001 && `(~$${costEst.toFixed(3)})`}</span>;
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
