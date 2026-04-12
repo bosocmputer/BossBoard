@@ -12,18 +12,17 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    id: "api-key",
-    title: "ตั้งค่า API Key",
-    desc: "เชื่อมต่อ OpenRouter เพื่อให้ Agent ใช้งาน AI ได้",
+    id: "get-started",
+    title: "เริ่มต้นใช้งาน",
+    desc: "ติดต่อทีมงานเพื่อเปิดใช้งานระบบ",
     details: [
-      "ไปที่หน้า Settings",
-      "สมัครบัญชี OpenRouter ที่ openrouter.ai แล้วสร้าง API Key",
-      'วาง API Key ในช่อง "OpenRouter API Key" แล้วกด บันทึก',
-      "ทดสอบโดยดูว่า status แสดง เชื่อมต่อสำเร็จ",
+      "ติดต่อ Line @ledgio หรือ info@ledgio.ai",
+      "ทีมงานจะช่วย setup ระบบและตั้งค่าเบื้องต้นให้",
+      "เมื่อพร้อมแล้ว เข้าใช้งานได้ทันที ไม่ต้องตั้งค่าอะไรเพิ่มเติม",
     ],
     tips: [
-      "OpenRouter ให้เลือก AI model ได้กว่า 40+ ตัว เช่น GPT-4o, Claude, Gemini",
-      "เติมเงินเริ่มต้น $5 (≈175 บาท) ใช้ได้หลายร้อย sessions",
+      "ทดลองใช้ฟรี 14 วัน ไม่มีข้อผูกมัด",
+      "รองรับแพ็กเกจตั้งแต่ Starter 790 บาท/เดือน ถึง Enterprise 4,990 บาท/เดือน",
     ],
   },
   {
@@ -69,12 +68,12 @@ const STEPS: Step[] = [
       'ในหน้า Team Agents กดปุ่ม "Knowledge" ที่ Agent ที่ต้องการ',
       'กด "อัพโหลดไฟล์ความรู้"',
       "เลือกไฟล์ที่ต้องการ — รองรับ xlsx, pdf, docx, txt, md, csv, json",
-      "ระบบจะอ่านเนื้อหาและแสดง preview + จำนวน tokens โดยประมาณ",
+      "ระบบจะอ่านเนื้อหาและแสดง preview + ขนาดโดยประมาณ",
       "ความรู้จะถูกส่งให้เฉพาะ Agent ที่เป็นเจ้าของเท่านั้น",
     ],
     tips: [
       "ตัวอย่างไฟล์: มาตรฐานบัญชี, ระเบียบสรรพากร, ข้อมูลลูกค้า, ตัวอย่างสัญญา",
-      "แต่ละไฟล์รองรับเนื้อหาสูงสุด 50,000 ตัวอักษร (~12,500 tokens)",
+      "แต่ละไฟล์รองรับเนื้อหาสูงสุด 50,000 ตัวอักษร",
       "สามารถลบไฟล์ที่ไม่ใช้แล้วได้ตลอดเวลา",
     ],
   },
@@ -127,19 +126,18 @@ const STEPS: Step[] = [
     ],
   },
   {
-    id: "tokens",
-    title: "ดูการใช้ Token",
-    desc: "ติดตามต้นทุนและปริมาณการใช้งาน AI",
+    id: "usage",
+    title: "ดูสถิติการใช้งาน",
+    desc: "ติดตามปริมาณการใช้งานและต้นทุน AI",
     details: [
-      "ไปที่หน้า Token Usage",
-      "ดูกราฟการใช้ token รายวัน",
-      "ดูว่า Agent ตัวไหนใช้ token มากที่สุด",
-      "ดูรายละเอียดแต่ละ session — คำถาม + จำนวน tokens",
+      "ไปที่หน้า สถิติการใช้งาน",
+      "ดูกราฟการใช้งานรายวัน",
+      "ดูว่าที่ปรึกษาตัวไหนใช้งานมากที่สุด",
+      "ดูรายละเอียดแต่ละครั้งประชุม — วาระ + มูลค่าการใช้งาน",
     ],
     tips: [
-      "ค่า token โดยเฉลี่ย: ~0.50-2 บาท/session (ขึ้นกับ model ที่ใช้)",
-      "เลือก model ที่ถูกกว่า (เช่น GPT-4o-mini) เพื่อประหยัดต้นทุน",
-      "model แพงกว่า (เช่น Claude Opus) ให้คำตอบดีกว่าแต่ใช้ token มากกว่า",
+      "ค่า AI โดยเฉลี่ย: ~0.50-5 บาท/ครั้งประชุม",
+      "รายละเอียดค่าใช้จ่ายดูได้ใน Dashboard",
     ],
   },
 ];
@@ -165,8 +163,8 @@ export default function GuidePage() {
           <h2 className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>เริ่มต้นเร็ว (3 นาที)</h2>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {[
-              { step: "1", label: "ใส่ API Key", link: "/settings" },
-              { step: "2", label: "สร้าง Agent 3 ตัว", link: "/agents" },
+              { step: "1", label: "กรอกข้อมูลบริษัท", link: "/settings" },
+              { step: "2", label: "ดูทีมที่ปรึกษา", link: "/agents" },
               { step: "3", label: "เปิดห้องประชุม", link: "/research" },
               { step: "4", label: "พิมพ์วาระ แล้วส่ง", link: "/research" },
             ].map((s) => (
@@ -250,12 +248,12 @@ export default function GuidePage() {
           <h2 className="text-xl font-bold mb-6 text-center" style={{ color: "var(--text)" }}>คำถามที่พบบ่อย</h2>
           <div className="space-y-3">
             {[
-              { q: "ต้องเสียเงินเท่าไหร่?", a: "ค่า AI ต่อ session อยู่ที่ ~0.50-2 บาท (ขึ้นกับ model) คุณจ่ายเฉพาะที่ใช้จริงผ่าน OpenRouter ไม่มีค่าแรกเข้า" },
+              { q: "ต้องเสียเงินเท่าไหร่?", a: "เริ่มต้นที่แพ็กเกจ Starter 790 บาท/เดือน พร้อมค่า AI เริ่มต้นไม่ถึง 5 บาท/ครั้งประชุม ดูรายละเอียดที่หน้าแพ็กเกจ หรือติดต่อเรา" },
               { q: "ข้อมูลลูกค้าจะหลุดไหม?", a: "ข้อมูลเก็บในเซิร์ฟเวอร์ของคุณเอง เข้ารหัส AES-256 ไม่ส่งขึ้น cloud ไม่แชร์กับบุคคลที่สาม" },
               { q: "ต้องเก่งคอมพิวเตอร์ไหม?", a: "ไม่ต้องเลย — แค่พิมพ์คำถามเป็นภาษาไทยธรรมดา AI จะเข้าใจบริบทบัญชีและตอบให้" },
               { q: "ใช้กับลูกค้าหลายรายได้ไหม?", a: "ได้ — สร้าง Agent set ต่างกันตาม scope งาน หรือตั้งค่าข้อมูลบริษัทใหม่ได้เสมอ" },
               { q: "รองรับไฟล์อะไรบ้าง?", a: "Excel (.xlsx/.xls), PDF, Word (.docx), Text (.txt/.md), CSV, JSON — อัพโหลดได้ทั้งในห้องประชุมและฐานความรู้ Agent" },
-              { q: "เลือก AI Model ตัวไหนดี?", a: "งานทั่วไป: GPT-4o-mini (ถูก เร็ว) · งานซับซ้อน: Claude Sonnet หรือ GPT-4o · งานต้องการคุณภาพสูงสุด: Claude Opus" },
+              { q: "เลือก AI ระดับไหนดี?", a: "ระบบจะเลือกระดับที่เหมาะสมตามประเภทงาน งานทั่วไปใช้ระดับเร็วและประหยัด ส่วนงานซับซ้อนใช้ระดับละเอียดและแม่นยำกว่า" },
             ].map((faq, i) => (
               <div key={i} className="rounded-xl p-4 border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
                 <p className="font-bold text-sm mb-1" style={{ color: "var(--text)" }}>{faq.q}</p>
@@ -267,8 +265,8 @@ export default function GuidePage() {
 
         {/* CTA */}
         <div className="mt-12 text-center">
-          <a href="/research" className="inline-block px-8 py-3 rounded-lg font-bold text-sm transition-colors" style={{ background: "var(--accent)", color: "#000" }}>
-            เข้าห้องประชุม AI
+          <a href="https://line.me/ti/p/@ledgio" target="_blank" rel="noopener noreferrer" className="inline-block px-8 py-3 rounded-lg font-bold text-sm transition-colors" style={{ background: "var(--accent)", color: "#000" }}>
+            ติดต่อนัดทดลองใช้
           </a>
           <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>
             มีปัญหาหรือข้อสงสัย? ติดต่อ Line @ledgio

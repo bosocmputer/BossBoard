@@ -113,10 +113,10 @@ const ROLE_COLOR: Record<string, string> = {
 // Data Source = file attachments only (MCP moved to per-agent config)
 
 const HISTORY_MODES = [
-  { id: "full", label: "Full — จำทุกรอบ" },
-  { id: "last3", label: "Last 3 — จำ 3 รอบล่าสุด" },
-  { id: "summary", label: "Summary — สรุปย่อ (ประหยัด token)" },
-  { id: "none", label: "None — ไม่จำ (ประหยัดสุด)" },
+  { id: "full", label: "จำทั้งหมด — จำทุกรอบ" },
+  { id: "last3", label: "จำ 3 รอบล่าสุด" },
+  { id: "summary", label: "สรุปย่อ (ประหยัด)" },
+  { id: "none", label: "ไม่จำ (ประหยัดสุด)" },
 ];
 
 // Simple bar chart renderer (no external lib)
@@ -247,12 +247,6 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
     // Phase 3 — synthesis/resolution
     if (round.finalAnswer) {
       lines.push("### 🏛️ มติที่ประชุม", round.finalAnswer.replace(/```chart\n[\s\S]*?\n```/g, "").trim(), "");
-    }
-
-    // Token summary
-    const totalTokens = Object.values(round.agentTokens).reduce((s, t) => s + t.totalTokens, 0);
-    if (totalTokens > 0) {
-      lines.push(`> Token รวม: ${totalTokens.toLocaleString()}`, "");
     }
   });
 
@@ -772,7 +766,7 @@ export default function ResearchPage() {
       </button>
       {showAdvanced && (
       <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <div className="text-xs mb-1 font-bold" style={{ color: "var(--text-muted)" }}>🧠 Context Memory</div>
+        <div className="text-xs mb-1 font-bold" style={{ color: "var(--text-muted)" }}>🧠 ความจำการประชุม</div>
         <select
           value={historyMode}
           onChange={(e) => setHistoryMode(e.target.value as typeof historyMode)}
@@ -793,7 +787,7 @@ export default function ResearchPage() {
           </label>
           {/* MCP toggle */}
           <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useMcpContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-            <span className="text-xs" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}>🔌 MCP ตาม Agent</span>
+            <span className="text-xs" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}>🔌 เชื่อมต่อระบบ ERP</span>
             <div onClick={() => setUseMcpContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useMcpContext ? "var(--accent)" : "var(--border)" }}>
               <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useMcpContext ? "17px" : "2px" }} />
             </div>

@@ -150,9 +150,9 @@ export default function SettingsPage() {
     <div className="p-4 sm:p-8 max-w-2xl mx-auto">
       <div className="flex items-center gap-2 mb-1">
         <Settings size={20} style={{ color: "var(--accent)" }} />
-        <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)" }}>Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)" }}>ตั้งค่าระบบ</h1>
       </div>
-      <p className="text-sm mb-6 sm:mb-8" style={{ color: "var(--text-muted)" }}>ตั้งค่าระบบและข้อมูลบริษัท</p>
+      <p className="text-sm mb-6 sm:mb-8" style={{ color: "var(--text-muted)" }}>เพิ่มข้อมูลบริษัทเพื่อให้ AI ให้คำแนะนำที่ถูกต้อง</p>
 
       {/* Company Info Section */}
       <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
@@ -290,7 +290,7 @@ export default function SettingsPage() {
       <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2 mb-1">
           <Search size={18} style={{ color: "var(--text-muted)" }} />
-          <h2 className="text-base font-semibold">Web Search API Keys</h2>
+          <h2 className="text-base font-semibold">ค้นหาข้อมูลออนไลน์</h2>
         </div>
         <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
           ใช้ค้นหาข้อมูลจากอินเทอร์เน็ตประกอบการวิเคราะห์ของ Agents ที่เปิดใช้งาน Web Search

@@ -40,13 +40,13 @@ const NAV_ITEMS: NavGroup[] = [
     ],
   },
   {
-    group: "AI Tools",
+    group: "ห้องประชุม",
     items: [
       { href: "/research", icon: MessageSquare, labelKey: "nav.research" },
     ],
   },
   {
-    group: "Management",
+    group: "จัดการ",
     items: [
       { href: "/agents", icon: Users, labelKey: "nav.teamAgents" },
       { href: "/teams", icon: UsersRound, labelKey: "nav.teams" },
@@ -54,7 +54,7 @@ const NAV_ITEMS: NavGroup[] = [
     ],
   },
   {
-    group: "nav.config",
+    group: "ตั้งค่า",
     items: [
       { href: "/settings", icon: Settings, labelKey: "nav.settings" },
       { href: "/guide", icon: BookOpen, labelKey: "nav.guide" },

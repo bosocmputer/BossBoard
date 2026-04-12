@@ -12,10 +12,10 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // nav sidebar
     "nav.dashboard": "หน้าหลัก",
-    "nav.teamAgents": "ทีม Agents",
-    "nav.research": "วิจัย",
+    "nav.teamAgents": "ทีมที่ปรึกษา",
+    "nav.research": "ห้องประชุม",
     "nav.teams": "ทีม",
-    "nav.tokens": "Token Usage",
+    "nav.tokens": "สถิติการใช้งาน",
     "nav.meetingRoom": "ห้องประชุม",
     "nav.mockTrial": "ศาลจำลอง",
     "nav.agents": "เอเจนต์",

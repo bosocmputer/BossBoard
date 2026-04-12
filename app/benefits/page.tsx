@@ -6,9 +6,9 @@ import type { LucideIcon } from "lucide-react";
 export default function BenefitsPage() {
   const benefits: { icon: LucideIcon; title: string; desc: string }[] = [
     { icon: Users, title: "ห้องประชุม AI", desc: "สร้างทีมที่ปรึกษาเฉพาะทางหลายตำแหน่ง ให้ถกเถียงและสรุปมติในแต่ละวาระประชุม" },
-    { icon: DollarSign, title: "ควบคุมต้นทุนได้", desc: "ใช้ API key ของคุณเอง (BYOK) จ่ายตามใช้จริง ดูต้นทุนต่อ session ได้ตลอด" },
+    { icon: DollarSign, title: "ควบคุมต้นทุนได้", desc: "ค่า AI คิดตามใช้งานจริง เริ่มต้นไม่ถึง 5 บาท/ครั้ง ดูต้นทุนต่อ session ได้ตลอด" },
     { icon: Zap, title: "ตอบลูกค้าได้เร็วขึ้น", desc: "ส่งคำถามเข้าประชุม ได้รายงานพร้อมข้อมูลอ้างอิงในไม่กี่นาที" },
-    { icon: BarChart3, title: "Dashboard ค่าใช้จ่าย", desc: "แสดง token usage, กราฟแนวโน้ม, ต้นทุนต่อ session แบบ realtime" },
+    { icon: BarChart3, title: "Dashboard ค่าใช้จ่าย", desc: "แสดงมูลค่าการใช้งาน กราฟแนวโน้ม และต้นทุนต่อครั้งแบบ realtime" },
     { icon: Shield, title: "ข้อมูลอยู่ในมือคุณ", desc: "ติดตั้งบนเซิร์ฟเวอร์ส่วนตัว ข้อมูลลูกค้าไม่ถูกส่งออกภายนอก" },
     { icon: Settings2, title: "ปรับแต่งตาม scope งาน", desc: "สร้างทีม Agent ตามประเภทลูกค้า — ร้านค้า, โรงงาน, นิติบุคคลหมู่บ้าน" },
     { icon: BookOpen, title: "ฐานความรู้เฉพาะทาง", desc: "แนบไฟล์ให้แต่ละ Agent เช่น มาตรฐานบัญชี ระเบียบสรรพากร เอกสารภายใน" },
@@ -30,9 +30,9 @@ export default function BenefitsPage() {
       price: "ฟรี",
       period: "ทดลอง 14 วัน",
       target: "ลองใช้ดูก่อนตัดสินใจ",
-      features: ["Agent ได้ 3 ตัว", "ประชุมได้ 10 sessions", "1 ผู้ใช้", "Export รายงาน", "ใช้ API key ของตัวเอง"],
+      features: ["Agent ได้ 3 ตัว", "ประชุมได้ 10 sessions", "1 ผู้ใช้", "Export รายงาน", "ค่า AI ตามใช้จริง"],
       excluded: ["File upload", "ฐานความรู้ Agent"],
-      cta: "ทดลองใช้ฟรี 14 วัน",
+      cta: "ติดต่อทดลองใช้",
       highlight: false,
       color: "var(--text-muted)",
     },
@@ -41,9 +41,9 @@ export default function BenefitsPage() {
       price: "790",
       period: "บาท/เดือน",
       target: "นักบัญชีอิสระ / Freelance",
-      features: ["Agent ได้ 5 ตัว", "ประชุมไม่จำกัด", "1 ผู้ใช้", "Upload ไฟล์ (Excel/PDF)", "ฐานความรู้ Agent", "ข้อมูลบริษัท", "Line support"],
+      features: ["ที่ปรึกษา AI ได้ 5 ตัว", "ประชุมไม่จำกัด", "1 ผู้ใช้", "Upload ไฟล์ (Excel/PDF)", "ฐานความรู้เฉพาะทาง", "ข้อมูลบริษัท", "Line support"],
       excluded: [],
-      cta: "เริ่มต้น 790 บาท",
+      cta: "ติดต่อทีมงาน",
       highlight: false,
       color: "var(--accent)",
     },
@@ -52,9 +52,9 @@ export default function BenefitsPage() {
       price: "1,990",
       period: "บาท/เดือน",
       target: "สำนักงานบัญชี 1-5 คน",
-      features: ["Agent ไม่จำกัด", "ประชุมไม่จำกัด", "5 ผู้ใช้", "Upload ไฟล์ทุกประเภท", "ฐานความรู้ไม่จำกัด", "Stats + กราฟวิเคราะห์", "Template บัญชี 10+ ตัว", "Web Search", "Priority support"],
+      features: ["ที่ปรึกษา AI ไม่จำกัด", "ประชุมไม่จำกัด", "5 ผู้ใช้", "Upload ไฟล์ทุกประเภท", "ฐานความรู้ไม่จำกัด", "กราฟวิเคราะห์การใช้งาน", "Template บัญชี 10+ แบบ", "ค้นข้อมูลออนไลน์", "Priority support"],
       excluded: [],
-      cta: "เลือก Professional",
+      cta: "ติดต่อทีมงาน",
       highlight: true,
       color: "var(--accent)",
     },
@@ -63,7 +63,7 @@ export default function BenefitsPage() {
       price: "4,990",
       period: "บาท/เดือน",
       target: "สำนักงานใหญ่ / หลายสาขา",
-      features: ["ทุกอย่างใน Professional", "ผู้ใช้ไม่จำกัด", "Custom AI Templates", "MCP Integration (เชื่อมระบบ ERP)", "Onboarding + ช่วย setup", "White-label (ใส่ logo สำนักงาน)", "SLA + Dedicated support"],
+      features: ["ทุกอย่างใน Professional", "ผู้ใช้ไม่จำกัด", "ออกแบบ AI Template ตาม scope งาน", "เชื่อมต่อระบบ ERP ที่มีอยู่", "Onboarding + ช่วย setup", "White-label (ใส่ logo สำนักงาน)", "SLA + Dedicated support"],
       excluded: [],
       cta: "ติดต่อทีมงาน",
       highlight: false,
@@ -82,8 +82,8 @@ export default function BenefitsPage() {
           สร้างทีมที่ปรึกษา AI เฉพาะทาง ให้ถกเถียงและสรุปมติเหมือนประชุมจริง ตอบคำถามลูกค้าได้เร็วขึ้น ควบคุมต้นทุนได้
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <a href="/research" className="px-6 py-2.5 rounded-lg font-bold text-sm transition-colors" style={{ background: "var(--accent)", color: "#000" }}>
-            เข้าห้องประชุม
+          <a href="https://line.me/ti/p/@ledgio" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 rounded-lg font-bold text-sm transition-colors" style={{ background: "var(--accent)", color: "#000" }}>
+            นัดทดลองใช้ฟรี
           </a>
           <a href="#pricing" className="px-6 py-2.5 rounded-lg font-bold text-sm border transition-colors" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
             ดูแพ็กเกจราคา
@@ -134,7 +134,7 @@ export default function BenefitsPage() {
           แพ็กเกจราคา
         </h2>
         <p className="text-xs mb-8" style={{ color: "var(--text-muted)" }}>
-          ค่า LLM API (~0.50-5 บาท/session) คิดตามการใช้งานจริง ผ่าน API key ของคุณเอง
+          ค่า AI เริ่มต้นไม่ถึง 5 บาท/ครั้ง คิดตามการใช้งานจริง — ไม่มีค่าแอบแฝง
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -227,13 +227,13 @@ export default function BenefitsPage() {
       {/* CTA */}
       <div className="max-w-3xl mx-auto px-4 py-12 text-center">
         <h2 className="text-xl font-bold mb-3" style={{ color: "var(--text)" }}>
-          พร้อมลองใช้งานแล้วหรือยัง?
+          สนใจทดลองใช้งาน?
         </h2>
         <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
-          เริ่มใช้ฟรี ไม่ต้องผูกบัตร — เปิดห้องประชุม AI แล้วลองถามสิ่งที่อยากรู้
+          ทดลองใช้ฟรี 14 วัน พร้อมให้คำปรึกษาและช่วย setup — ติดต่อเราได้เลย
         </p>
-        <a href="/research" className="inline-block px-8 py-2.5 rounded-lg font-bold text-sm transition-colors" style={{ background: "var(--accent)", color: "#000" }}>
-          เริ่มใช้งานฟรี
+        <a href="https://line.me/ti/p/@ledgio" target="_blank" rel="noopener noreferrer" className="inline-block px-8 py-2.5 rounded-lg font-bold text-sm transition-colors" style={{ background: "var(--accent)", color: "#000" }}>
+          ติดต่อนัดทดลองใช้
         </a>
         <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
           สอบถามเพิ่มเติม: Line @ledgio · info@ledgio.ai

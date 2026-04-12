@@ -6,7 +6,7 @@ import { ToastContainer } from "./components/Toast";
 
 export const metadata: Metadata = {
   title: "LEDGIO AI — ห้องประชุม AI",
-  description: "AI Financial & Tax Advisor for Modern Business | LEDGIO AI",
+  description: "ห้องประชุม AI สำหรับสำนักงานบัญชี — วิเคราะห์เร็ว ตัดสินใจเก่ง | LEDGIO AI",
 };
 
 export const viewport: Viewport = {

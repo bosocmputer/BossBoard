@@ -50,25 +50,16 @@ const PROVIDER_COLORS: Record<string, string> = {
 // ─── Skills ───────────────────────────────────────────────────────────────────
 
 const ALL_SKILLS = [
-  { id: "web_search", label: "Web Search", desc: "ค้นข้อมูลจากอินเทอร์เน็ต" },
-  { id: "code_execution", label: "Code Execution", desc: "รันโค้ดและวิเคราะห์ผลลัพธ์" },
-  { id: "data_analysis", label: "Data Analysis", desc: "วิเคราะห์ข้อมูลเชิงสถิติ" },
-  { id: "financial_modeling", label: "Financial Modeling", desc: "สร้าง model ทางการเงิน" },
-  { id: "legal_research", label: "Legal Research", desc: "ค้นคว้ากฎหมาย ฎีกา และบรรทัดฐาน" },
-  { id: "case_analysis", label: "Case Analysis", desc: "วิเคราะห์คดี จุดแข็ง/จุดอ่อน" },
-  { id: "contract_review", label: "Contract Review", desc: "ตรวจสอบและร่างสัญญา" },
-  { id: "litigation_strategy", label: "Litigation Strategy", desc: "วางแผนกลยุทธ์คดีความ" },
-  { id: "market_research", label: "Market Research", desc: "วิเคราะห์ตลาดและคู่แข่ง" },
-  { id: "risk_assessment", label: "Risk Assessment", desc: "ประเมินความเสี่ยง" },
-  { id: "ux_review", label: "UX Review", desc: "วิจารณ์ประสบการณ์ผู้ใช้" },
-  { id: "security_audit", label: "Security Audit", desc: "ตรวจสอบช่องโหว่ความปลอดภัย" },
-  { id: "system_design", label: "System Design", desc: "ออกแบบสถาปัตยกรรมระบบ" },
-  { id: "devops", label: "DevOps", desc: "CI/CD, infrastructure, deployment" },
-  { id: "database", label: "Database", desc: "ออกแบบและ optimize database" },
-  { id: "api_design", label: "API Design", desc: "ออกแบบ REST / GraphQL API" },
-  { id: "testing", label: "Testing", desc: "เขียน test และ QA strategy" },
-  { id: "summarization", label: "Summarization", desc: "สรุปเอกสารและรายงาน" },
-  { id: "translation", label: "Translation", desc: "แปลภาษาหลายภาษา" },
+  { id: "web_search", label: "ค้นข้อมูลออนไลน์", desc: "ค้นข้อมูลจากอินเทอร์เน็ต กฎหมาย ข่าวสาร" },
+  { id: "data_analysis", label: "วิเคราะห์ข้อมูล", desc: "วิเคราะห์ข้อมูลเชิงสถิติ ตัวเลข กราฟ" },
+  { id: "financial_modeling", label: "งบการเงิน", desc: "วิเคราะห์งบ สร้าง model ทางการเงิน" },
+  { id: "legal_research", label: "กฎหมาย/ภาษี", desc: "ค้นคว้ากฎหมาย สรรพากร ฎีกา และบรรทัดฐาน" },
+  { id: "case_analysis", label: "วิเคราะห์เคส", desc: "วิเคราะห์กรณีศึกษา จุดแข็ง/จุดอ่อน" },
+  { id: "contract_review", label: "ตรวจสัญญา", desc: "ตรวจสอบและร่างสัญญา" },
+  { id: "risk_assessment", label: "ประเมินความเสี่ยง", desc: "ประเมินความเสี่ยงทางธุรกิจและการเงิน" },
+  { id: "market_research", label: "วิเคราะห์ตลาด", desc: "วิเคราะห์ตลาดและคู่แข่ง" },
+  { id: "summarization", label: "สรุปเอกสาร", desc: "สรุปเอกสารและรายงานให้กระชับ" },
+  { id: "translation", label: "แปลภาษา", desc: "แปลภาษาหลายภาษา" },
 ];
 
 // ─── Templates ────────────────────────────────────────────────────────────────
@@ -882,7 +873,7 @@ export default function AgentsPage() {
                           min={1}
                           max={99}
                           value={form.seniority}
-                          aria-label="ลำดับ Seniority"
+                          aria-label="ลำดับอาวุโส"
                           title="ลำดับ Seniority — 1 = ประธาน, 99 = พูดท้าย"
                           onChange={(e) => setForm((f) => ({ ...f, seniority: Number(e.target.value) }))}
                           className="flex-1"
@@ -925,7 +916,7 @@ export default function AgentsPage() {
                     </div>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>MCP Endpoint URL <span className="font-normal">(ใส่ base URL เช่น http://ip:3002)</span></label>
+                        <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>ERP Endpoint URL <span className="font-normal">(ใส่ base URL เช่น http://ip:3002)</span></label>
                         <input
                           value={form.mcpEndpoint}
                           onChange={(e) => { setForm((f) => ({ ...f, mcpEndpoint: e.target.value })); setMcpTestResult(null); }}
@@ -941,8 +932,8 @@ export default function AgentsPage() {
                             <select
                               value={form.mcpAccessMode}
                               onChange={(e) => setForm((f) => ({ ...f, mcpAccessMode: e.target.value }))}
-                              title="MCP Access Mode"
-                              aria-label="MCP Access Mode"
+                              title="ERP Access Mode"
+                              aria-label="ERP Access Mode"
                               className="w-full px-3 py-2 rounded-lg border text-sm"
                               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
                             >

@@ -121,10 +121,10 @@ export default function DashboardPage() {
 
   const statCards = data
     ? [
-        { label: "Agents", value: data.totalAgents, sub: `${data.activeAgents} active`, icon: Users, color: "var(--accent)" },
-        { label: "Teams", value: data.totalTeams, sub: "configured", icon: Zap, color: "var(--info)" },
-        { label: "Sessions", value: data.totalSessions, sub: data.runningSessions > 0 ? `${data.runningSessions} running` : "total", icon: MessageSquare, color: "var(--purple)" },
-        { label: "Tokens", value: formatTokens(data.totalTokens), sub: "total used", icon: TrendingUp, color: "var(--success)", href: "/tokens" },
+        { label: "Agents", value: data.totalAgents, sub: `${data.activeAgents} ใช้งาน`, icon: Users, color: "var(--accent)" },
+        { label: "ทีม", value: data.totalTeams, sub: "ตั้งค่าแล้ว", icon: Zap, color: "var(--info)" },
+        { label: "ประชุม", value: data.totalSessions, sub: data.runningSessions > 0 ? `${data.runningSessions} กำลังประชุม` : "ทั้งหมด", icon: MessageSquare, color: "var(--purple)" },
+        { label: "การใช้งาน", value: formatTokens(data.totalTokens), sub: "มูลค่ารวม", icon: TrendingUp, color: "var(--success)", href: "/tokens" },
       ]
     : [];
 
