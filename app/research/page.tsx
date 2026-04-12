@@ -1280,19 +1280,6 @@ export default function ResearchPage() {
               )}
 
               <div ref={bottomRef} />
-              {/* Scroll to bottom button */}
-              {!autoScroll && (
-                <div className="sticky bottom-3 flex justify-center pointer-events-none">
-                  <button
-                    type="button"
-                    onClick={scrollToBottom}
-                    className="pointer-events-auto px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-all bg-accent text-black"
-                    style={{ background: "var(--accent)", color: "#000" }}
-                  >
-                    ⬇ ไปล่างสุด
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Input box — ChatGPT-style sticky bottom */}
