@@ -210,7 +210,7 @@ export default function BenefitsPage() {
           เริ่มใช้งานฟรี
         </a>
         <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
-          สอบถามเพิ่มเติม: Line @bossboard · info@bossboard.ai
+          สอบถามเพิ่มเติม: Line @ledgio · info@ledgio.ai
         </p>
       </div>
     </div>

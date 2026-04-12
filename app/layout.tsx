@@ -5,8 +5,8 @@ import { Sidebar } from "./sidebar";
 import { ToastContainer } from "./components/Toast";
 
 export const metadata: Metadata = {
-  title: "BossBoard — ห้องประชุม AI",
-  description: "ห้องประชุม AI สำหรับสำนักงานบัญชี | BossBoard",
+  title: "LEDGIO AI — ห้องประชุม AI",
+  description: "AI Financial & Tax Advisor for Modern Business | LEDGIO AI",
 };
 
 export const viewport: Viewport = {

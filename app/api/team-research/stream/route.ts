@@ -60,8 +60,8 @@ async function callLLM(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
-        "HTTP-Referer": "https://bossboard",
-        "X-Title": "BossBoard",
+        "HTTP-Referer": "https://ledgio.ai",
+        "X-Title": "LEDGIO AI",
       },
       body: JSON.stringify({ model, messages, max_tokens: 4096 }),
     });

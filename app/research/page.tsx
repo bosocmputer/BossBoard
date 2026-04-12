@@ -265,7 +265,7 @@ export default function ResearchPage() {
   const [question, setQuestion] = useState("");
   const [historyMode, setHistoryMode] = useState<"full" | "last3" | "summary" | "none">("none");
   const [useFileContext, setUseFileContext] = useState(true);
-  const [useMcpContext, setUseMcpContext] = useState(true);
+  const [useMcpContext, setUseMcpContext] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [running, setRunning] = useState(false);
   const [agentTokens, setAgentTokens] = useState<Record<string, AgentTokenState>>({});
@@ -344,7 +344,6 @@ export default function ResearchPage() {
     const data = await res.json();
     const activeAgents = (data.agents ?? []).filter((a: Agent) => a.active);
     setAgents(activeAgents);
-    setSelectedIds(new Set(activeAgents.map((a: Agent) => a.id)));
   }, []);
 
   const fetchServerHistory = useCallback(async () => {
@@ -489,7 +488,11 @@ export default function ResearchPage() {
     const q = closeMode
       ? (rounds[0]?.question ?? "สรุปมติที่ประชุม")
       : (overrideQuestion ?? question).trim();
-    if (!closeMode && (!q || selectedIds.size === 0 || running)) return;
+    if (!closeMode && selectedIds.size === 0) {
+      showToast("warning", "กรุณาเลือกสมาชิกที่ประชุมก่อนเริ่มประชุม");
+      return;
+    }
+    if (!closeMode && (!q || running)) return;
     if (closeMode && (rounds.length === 0 || running)) return;
 
     setViewingSession(null);

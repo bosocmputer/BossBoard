@@ -153,7 +153,7 @@ export default function GuidePage() {
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: "var(--text)" }}>
-            วิธีใช้งาน BossBoard
+            วิธีใช้งาน LEDGIO AI
           </h1>
           <p className="text-sm sm:text-base" style={{ color: "var(--text-muted)" }}>
             8 ขั้นตอนง่ายๆ จากเริ่มต้นจนใช้งานประชุม AI ได้จริง
@@ -271,7 +271,7 @@ export default function GuidePage() {
             เข้าห้องประชุม AI
           </a>
           <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>
-            มีปัญหาหรือข้อสงสัย? ติดต่อ Line @bossboard
+            มีปัญหาหรือข้อสงสัย? ติดต่อ Line @ledgio
           </p>
         </div>
       </div>

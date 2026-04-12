@@ -7,7 +7,7 @@ export type Locale = "th" | "en";
 const translations: Record<Locale, Record<string, string>> = {
   th: {
     // layout
-    "site.title": "BossBoard Dashboard",
+    "site.title": "LEDGIO AI Dashboard",
     "site.desc": "แดชบอร์ดจัดการทีม AI",
 
     // nav sidebar
@@ -69,9 +69,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.minutes": "นาที",
 
     // home page
-    "home.title": "🐾 BossBoard Dashboard",
+    "home.title": "� LEDGIO AI Dashboard",
     "home.agentCount": "เอเจนต์",
-    "home.pageTitle": "BossBoard เอเจนต์",
+    "home.pageTitle": "LEDGIO AI เอเจนต์",
     "home.defaultModel": "โมเดลเริ่มต้น",
     "home.viewModels": "ดูรายการโมเดล →",
     "home.skillMgmt": "🧩 จัดการทักษะ",
@@ -260,7 +260,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "gateway.fetchError": "ไม่สามารถตรวจสอบ Gateway",
 
     // pixel office
-    "pixelOffice.title": "BossBoard Agents Office",
+    "pixelOffice.title": "LEDGIO AI Agents Office",
     "pixelOffice.editMode": "แก้ไขเลย์เอาท์",
     "pixelOffice.exitEdit": "ออกจากแก้ไข",
     "pixelOffice.save": "บันทึก",
@@ -304,8 +304,8 @@ const translations: Record<Locale, Record<string, string>> = {
   },
   en: {
     // layout
-    "site.title": "BossBoard Dashboard",
-    "site.desc": "AI Team Management Dashboard",
+    "site.title": "LEDGIO AI Dashboard",
+    "site.desc": "AI Financial & Tax Advisor Dashboard",
 
     // nav sidebar
     "nav.dashboard": "Dashboard",
@@ -366,9 +366,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "common.minutes": "minutes",
 
     // home page
-    "home.title": "🐾 BossBoard Dashboard",
+    "home.title": "� LEDGIO AI Dashboard",
     "home.agentCount": "agents",
-    "home.pageTitle": "BossBoard Agents",
+    "home.pageTitle": "LEDGIO AI Agents",
     "home.defaultModel": "Default model",
     "home.viewModels": "View Models →",
     "home.skillMgmt": "🧩 Skills",
@@ -557,7 +557,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "gateway.fetchError": "Cannot check Gateway status",
 
     // pixel office
-    "pixelOffice.title": "BossBoard Agents Office",
+    "pixelOffice.title": "LEDGIO AI Agents Office",
     "pixelOffice.editMode": "Edit Layout",
     "pixelOffice.exitEdit": "Exit Edit",
     "pixelOffice.save": "Save",

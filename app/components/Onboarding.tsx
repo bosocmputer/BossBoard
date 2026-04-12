@@ -15,7 +15,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "welcome",
     icon: Building2,
-    title: "ยินดีต้อนรับสู่ BossBoard",
+    title: "ยินดีต้อนรับสู่ LEDGIO AI",
     description: "ห้องประชุม AI สำหรับสำนักงานบัญชี — สร้างทีม AI หลายตัว ถกเถียงและสรุปมติร่วมกัน",
   },
   {
