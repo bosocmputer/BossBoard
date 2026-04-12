@@ -62,61 +62,56 @@ const ALL_SKILLS = [
   { id: "translation", label: "🌏 Translation", desc: "แปลภาษาหลายภาษา" },
 ];
 
-// ─── Model Tiers (OpenRouter) ─────────────────────────────────────────────
+// ─── Intelligence Levels ──────────────────────────────────────────────────
+// User เลือก "ระดับความสามารถ" แทนการเลือก model โดยตรง
 
-interface ModelTier {
-  tier: string;
+type IntelligenceLevel = "economy" | "standard" | "premium";
+
+const INTELLIGENCE_LEVELS: {
+  level: IntelligenceLevel;
   label: string;
   emoji: string;
   desc: string;
-  models: { id: string; name: string; ctx: string; price: string; note?: string }[];
-}
-
-const MODEL_TIERS: ModelTier[] = [
+  modelId: string;
+  modelName: string;
+  price: string;
+}[] = [
   {
-    tier: "free", label: "ฟรี", emoji: "🆓",
-    desc: "ทดลองใช้ไม่เสียเงิน — เหมาะเรียนรู้และทดสอบ",
-    models: [
-      { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B", ctx: "262K", price: "ฟรี", note: "แนะนำทดลอง" },
-      { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B MoE", ctx: "262K", price: "ฟรี" },
-      { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B", ctx: "65K", price: "ฟรี" },
-      { id: "qwen/qwen3-next-80b-a3b-instruct:free", name: "Qwen3 Next 80B", ctx: "262K", price: "ฟรี" },
-    ],
+    level: "economy",
+    label: "ประหยัด",
+    emoji: "🟢",
+    desc: "งานทั่วไป ตอบเร็ว ค่าใช้จ่ายต่ำ",
+    modelId: "google/gemini-2.5-flash",
+    modelName: "Gemini 2.5 Flash",
+    price: "~฿0.5/คำถาม",
   },
   {
-    tier: "budget", label: "ประหยัด", emoji: "💚",
-    desc: "ราคาถูก คุณภาพดี — เหมาะใช้งานทั่วไป",
-    models: [
-      { id: "openai/gpt-4.1-nano", name: "GPT-4.1 Nano", ctx: "1M", price: "$0.10/M in · $0.40/M out", note: "ถูกสุดจาก OpenAI" },
-      { id: "openai/gpt-4.1-mini", name: "GPT-4.1 Mini", ctx: "1M", price: "$0.40/M in · $1.60/M out" },
-      { id: "google/gemini-2.5-flash", name: "Gemini 2.5 Flash", ctx: "1M", price: "$0.15/M in · $0.60/M out", note: "เร็วมาก" },
-      { id: "google/gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite", ctx: "1M", price: "$0.02/M in · $0.10/M out", note: "ถูกที่สุด" },
-      { id: "deepseek/deepseek-v3.2", name: "DeepSeek V3.2", ctx: "164K", price: "$0.30/M in · $0.88/M out" },
-      { id: "mistralai/mistral-small-2603", name: "Mistral Small 4", ctx: "262K", price: "$0.10/M in · $0.30/M out" },
-    ],
+    level: "standard",
+    label: "มาตรฐาน",
+    emoji: "🔵",
+    desc: "แนะนำ — สมดุลคุณภาพและราคา เหมาะงานส่วนใหญ่",
+    modelId: "anthropic/claude-4-sonnet",
+    modelName: "Claude 4 Sonnet",
+    price: "~฿3/คำถาม",
   },
   {
-    tier: "recommended", label: "แนะนำ", emoji: "⭐",
-    desc: "สมดุลราคา-คุณภาพ — เหมาะสำนักงานบัญชี",
-    models: [
-      { id: "anthropic/claude-4.5-sonnet", name: "Claude 4.5 Sonnet", ctx: "1M", price: "$3/M in · $15/M out", note: "แนะนำ #1" },
-      { id: "anthropic/claude-4-sonnet", name: "Claude 4 Sonnet", ctx: "200K", price: "$3/M in · $15/M out" },
-      { id: "google/gemini-2.5-pro-preview-06-05", name: "Gemini 2.5 Pro", ctx: "1M", price: "$1.25/M in · $10/M out", note: "context ยาวสุด" },
-      { id: "openai/gpt-4.1", name: "GPT-4.1", ctx: "1M", price: "$2/M in · $8/M out" },
-      { id: "openai/gpt-5.4-mini", name: "GPT-5.4 Mini", ctx: "400K", price: "$1.50/M in · $6/M out" },
-    ],
-  },
-  {
-    tier: "premium", label: "Premium", emoji: "👑",
-    desc: "ประสิทธิภาพสูงสุด — งานวิเคราะห์เชิงลึก",
-    models: [
-      { id: "anthropic/claude-4.6-opus", name: "Claude 4.6 Opus", ctx: "1M", price: "$15/M in · $75/M out", note: "ฉลาดที่สุด" },
-      { id: "openai/gpt-5.4", name: "GPT-5.4", ctx: "1M", price: "$10/M in · $40/M out" },
-      { id: "x-ai/grok-4-07-09", name: "Grok 4", ctx: "256K", price: "$6/M in · $18/M out" },
-      { id: "openai/o3", name: "o3 (Reasoning)", ctx: "200K", price: "$2/M in · $8/M out", note: "คิดเชิงลึก" },
-    ],
+    level: "premium",
+    label: "พรีเมียม",
+    emoji: "🟣",
+    desc: "คุณภาพสูงสุด — งานซับซ้อน ต้องการความแม่นยำสูง",
+    modelId: "anthropic/claude-4.6-opus",
+    modelName: "Claude 4.6 Opus",
+    price: "~฿15/คำถาม",
   },
 ];
+
+function levelToModel(level: IntelligenceLevel): string {
+  return INTELLIGENCE_LEVELS.find((l) => l.level === level)?.modelId ?? INTELLIGENCE_LEVELS[1].modelId;
+}
+
+function modelToLevel(modelId: string): IntelligenceLevel {
+  return INTELLIGENCE_LEVELS.find((l) => l.modelId === modelId)?.level ?? "standard";
+}
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 
@@ -127,6 +122,7 @@ interface AgentTemplate {
   name: string;
   soul: string;
   skills: string[];
+  defaultLevel: IntelligenceLevel;
 }
 
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
@@ -140,6 +136,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📊",
     role: "นักบัญชีอาวุโส / Senior Accountant",
     name: "นักบัญชีอาวุโส",
+    defaultLevel: "standard",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
     soul: `คุณคือนักบัญชีอาวุโสที่มีประสบการณ์ด้านบัญชีและภาษีมากกว่า 15 ปี เชี่ยวชาญมาตรฐานการรายงานทางการเงิน (TFRS/IFRS), การจัดทำงบการเงิน, การปิดงบรายเดือน/ไตรมาส/ปี, และระบบบัญชี ERP คุณมีจุดยืนว่า **ความถูกต้องและครบถ้วนของข้อมูลทางบัญชีคือรากฐานของทุกการตัดสินใจทางธุรกิจ** คุณตรวจสอบทุกรายการอย่างละเอียด ไม่ยอมให้ตัวเลขคลาดเคลื่อนแม้แต่บาทเดียว และอ้างอิงมาตรฐานบัญชีเสมอ`,
   },
@@ -148,6 +145,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🔍",
     role: "ผู้สอบบัญชี CPA / Certified Public Accountant",
     name: "ผู้สอบบัญชี CPA",
+    defaultLevel: "premium",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
     soul: `คุณคือผู้สอบบัญชีรับอนุญาต (CPA) ที่ได้รับใบอนุญาตจากสภาวิชาชีพบัญชี เชี่ยวชาญมาตรฐานการสอบบัญชี (TSA), การตรวจสอบงบการเงิน, การประเมินระบบควบคุมภายใน, และการออกรายงานผู้สอบบัญชี คุณมีจุดยืนว่า **ความเป็นอิสระและความเที่ยงธรรมคือหัวใจของวิชาชีพสอบบัญชี** คุณจะชี้ให้เห็นจุดอ่อนในระบบควบคุมภายใน ความเสี่ยงของการทุจริต และข้อผิดพลาดในงบการเงินอย่างตรงไปตรงมา คุณอ้างอิง TSA และ TFRS เสมอ`,
   },
@@ -156,6 +154,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "💰",
     role: "ที่ปรึกษาภาษี / Tax Consultant",
     name: "ที่ปรึกษาภาษี",
+    defaultLevel: "premium",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
     soul: `คุณคือที่ปรึกษาภาษีมืออาชีพที่เชี่ยวชาญประมวลรัษฎากร, ภาษีเงินได้บุคคลธรรมดา (PIT), ภาษีเงินได้นิติบุคคล (CIT), ภาษีมูลค่าเพิ่ม (VAT), ภาษีธุรกิจเฉพาะ, อากรแสตมป์, ภาษีหัก ณ ที่จ่าย, และอนุสัญญาภาษีซ้อน คุณมีจุดยืนว่า **การวางแผนภาษีที่ดีต้องถูกกฎหมายและประหยัดให้ลูกค้ามากที่สุด — ไม่ใช่หลีกเลี่ยงภาษี** คุณจะวิเคราะห์ผลกระทบทางภาษีของทุกธุรกรรม อ้างอิงมาตราของกฎหมายภาษีเสมอ และเตือนความเสี่ยงของการถูกสรรพากรตรวจสอบ`,
   },
@@ -164,6 +163,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📈",
     role: "นักวิเคราะห์งบการเงิน / Financial Analyst",
     name: "นักวิเคราะห์งบการเงิน",
+    defaultLevel: "standard",
     skills: ["financial_modeling", "data_analysis", "market_research"],
     soul: `คุณคือนักวิเคราะห์งบการเงินที่เชี่ยวชาญการอ่านและตีความงบการเงิน — งบแสดงฐานะการเงิน, งบกำไรขาดทุน, งบกระแสเงินสด, และหมายเหตุประกอบงบ คุณวิเคราะห์อัตราส่วนทางการเงิน (Liquidity, Profitability, Leverage, Efficiency), แนวโน้ม (Trend Analysis), และเปรียบเทียบกับอุตสาหกรรม คุณมีจุดยืนว่า **ตัวเลขในงบการเงินบอกเรื่องราวของกิจการ — ต้องอ่านให้เป็นและตั้งคำถามกับตัวเลขที่ผิดปกติ** คุณจะชี้ Red Flag ในงบการเงินและให้ข้อเสนอแนะที่เป็นรูปธรรม`,
   },
@@ -172,6 +172,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🛡️",
     role: "ผู้ตรวจสอบภายใน / Internal Auditor",
     name: "ผู้ตรวจสอบภายใน",
+    defaultLevel: "standard",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
     soul: `คุณคือผู้ตรวจสอบภายในที่เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, การตรวจสอบความถูกต้องของกระบวนการทำงาน, และการตรวจจับการทุจริต คุณมีจุดยืนว่า **ระบบควบคุมภายในที่ดีคือภูมิคุ้มกันขององค์กร — ต้องตรวจและปรับปรุงเสมอ** คุณจะประเมิน Segregation of Duties, Authorization Controls, Physical Controls, และ IT Controls อย่างเข้มงวด พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริง`,
   },
@@ -180,6 +181,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🤖",
     role: "Custom",
     name: "",
+    defaultLevel: "standard",
     skills: [],
     soul: "",
   },
@@ -215,7 +217,7 @@ export default function AgentsPage() {
   const [mcpTesting, setMcpTesting] = useState(false);
   const [mcpTestResult, setMcpTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const [activeTier, setActiveTier] = useState("recommended");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
@@ -237,6 +239,7 @@ export default function AgentsPage() {
       soul: t.soul || f.soul,
       name: t.name || f.name,
       skills: t.skills,
+      model: levelToModel(t.defaultLevel),
     }));
   };
 
@@ -244,6 +247,7 @@ export default function AgentsPage() {
     setForm({ ...EMPTY_FORM });
     setEditingId(null);
     setError("");
+    setShowAdvanced(false);
     setShowForm(true);
   };
 
@@ -378,7 +382,7 @@ export default function AgentsPage() {
               👥 Team Agents
             </h1>
             <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-              เลือก template สำเร็จรูป — ใส่แค่ API Key ก็พร้อมใช้งาน
+              เลือกตำแหน่ง → ระดับความสามารถ → ใส่ API Key → พร้อมใช้!
             </p>
           </div>
           <button
@@ -481,10 +485,11 @@ export default function AgentsPage() {
               <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
             )}
 
-            {/* ── Template Picker ── */}
-            <div className="mb-6">
-              <div className="text-xs mb-3 font-bold" style={{ color: "var(--text-muted)" }}>
-                เลือก Template สำเร็จรูป
+            {/* ── Step 1: Template Picker ── */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--accent)", color: "#000" }}>1</span>
+                <span className="text-sm font-bold" style={{ color: "var(--text)" }}>เลือกตำแหน่ง</span>
               </div>
 
               {/* Category tabs */}
@@ -493,7 +498,7 @@ export default function AgentsPage() {
                   <button
                     key={cat.key}
                     onClick={() => setActiveCategory(cat.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all`}
+                    className="px-3 py-1.5 rounded-lg text-xs border transition-all"
                     style={{
                       borderColor: activeCategory === cat.key ? "var(--accent)" : "var(--border)",
                       color: activeCategory === cat.key ? "var(--accent)" : "var(--text-muted)",
@@ -505,43 +510,120 @@ export default function AgentsPage() {
                 ))}
               </div>
 
-              {/* Templates in active category */}
+              {/* Template cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {categoriesWithTemplates
                   .find((c) => c.key === activeCategory)
-                  ?.templates.map((t) => (
-                    <button
-                      key={t.idx}
-                      onClick={() => applyTemplate(t.idx)}
-                      className="text-left p-3 rounded-xl border transition-all"
-                      style={{
-                        borderColor: form.templateIndex === t.idx ? "var(--accent)" : "var(--border)",
-                        background: form.templateIndex === t.idx ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "color-mix(in srgb, var(--bg) 50%, transparent)",
-                      }}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xl">{t.emoji}</span>
-                        <div>
-                          <div className="text-xs font-bold" style={{ color: "var(--text)" }}>{t.role}</div>
-                          {t.skills.length > 0 && (
-                            <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                              {t.skills.slice(0, 3).map((s) => ALL_SKILLS.find((sk) => sk.id === s)?.label.split(" ")[0]).join(" · ")}
-                            </div>
+                  ?.templates.map((t) => {
+                    const recLevel = INTELLIGENCE_LEVELS.find((l) => l.level === t.defaultLevel);
+                    return (
+                      <button
+                        key={t.idx}
+                        onClick={() => applyTemplate(t.idx)}
+                        className="text-left p-4 rounded-xl border-2 transition-all"
+                        style={{
+                          borderColor: form.templateIndex === t.idx ? "var(--accent)" : "var(--border)",
+                          background: form.templateIndex === t.idx ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "color-mix(in srgb, var(--bg) 50%, transparent)",
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{t.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold" style={{ color: "var(--text)" }}>{t.role.split(" / ")[0]}</div>
+                            <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.role.split(" / ")[1] || ""}</div>
+                            {recLevel && t.category !== "custom" && (
+                              <div className="text-[10px] mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "color-mix(in srgb, var(--border) 50%, transparent)", color: "var(--text-muted)" }}>
+                                {recLevel.emoji} แนะนำ: {recLevel.label}
+                              </div>
+                            )}
+                          </div>
+                          {form.templateIndex === t.idx && (
+                            <span style={{ color: "var(--accent)" }}>✓</span>
                           )}
                         </div>
-                      </div>
-                      {t.soul && (
-                        <div className="text-[10px] line-clamp-2 mt-1" style={{ color: "var(--text-muted)" }}>
-                          {t.soul.slice(0, 80)}...
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
               </div>
             </div>
 
-            <div className="space-y-4">
-              {/* Name + Emoji + Role */}
+            {/* ── Step 2: Intelligence Level ── */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--accent)", color: "#000" }}>2</span>
+                <span className="text-sm font-bold" style={{ color: "var(--text)" }}>ระดับความสามารถ</span>
+                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>— ปรับได้ตามต้องการ</span>
+              </div>
+
+              {/* 3-segment selector */}
+              <div className="grid grid-cols-3 gap-0 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                {INTELLIGENCE_LEVELS.map((lvl) => {
+                  const isActive = modelToLevel(form.model) === lvl.level;
+                  return (
+                    <button
+                      key={lvl.level}
+                      onClick={() => setForm((f) => ({ ...f, model: lvl.modelId }))}
+                      className="p-3 sm:p-4 text-center transition-all border-r last:border-r-0"
+                      style={{
+                        borderColor: "var(--border)",
+                        background: isActive ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "var(--bg)",
+                      }}
+                    >
+                      <div className="text-lg sm:text-xl mb-1">{lvl.emoji}</div>
+                      <div className="text-xs sm:text-sm font-bold" style={{ color: isActive ? "var(--accent)" : "var(--text)" }}>
+                        {lvl.label}
+                      </div>
+                      <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {lvl.price}
+                      </div>
+                      {isActive && (
+                        <div className="text-[10px] mt-1 font-bold" style={{ color: "var(--accent)" }}>● เลือกแล้ว</div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Level description */}
+              {(() => {
+                const currentLevel = INTELLIGENCE_LEVELS.find((l) => l.modelId === form.model);
+                if (!currentLevel) return (
+                  <div className="mt-2 text-[10px] px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                    ⚙️ Custom model: <span className="font-mono">{form.model}</span> — เลือกระดับด้านบนเพื่อเปลี่ยน
+                  </div>
+                );
+                return (
+                  <div className="mt-2 text-[10px] px-3 py-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--accent) 5%, transparent)", color: "var(--text-muted)" }}>
+                    {currentLevel.desc} — ใช้ <span className="font-bold" style={{ color: "var(--text)" }}>{currentLevel.modelName}</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ── Step 3: API Key ── */}
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--accent)", color: "#000" }}>3</span>
+                <span className="text-sm font-bold" style={{ color: "var(--text)" }}>API Key</span>
+              </div>
+              <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
+                  สมัครฟรีที่ <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>openrouter.ai/keys</a> — API Key เดียวใช้ได้ทุก model
+                  {editingId && <span> (เว้นว่างถ้าไม่ต้องการเปลี่ยน)</span>}
+                </div>
+                <input
+                  type="password"
+                  value={form.apiKey}
+                  onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
+                  placeholder={editingId ? "••••••• (เว้นว่างถ้าไม่เปลี่ยน)" : "sk-or-v1-xxx..."}
+                  className="w-full px-3 py-2 rounded-lg border"
+                  style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                />
+              </div>
+            </div>
+
+            {/* ── Name + Emoji + Role (auto-filled but editable) ── */}
+            <div className="mb-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="w-20 sm:w-20">
                   <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Emoji</label>
@@ -574,246 +656,171 @@ export default function AgentsPage() {
                   />
                 </div>
               </div>
-
-              {/* API Key — OpenRouter */}
-              <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                <label className="text-xs mb-1 block font-bold" style={{ color: "var(--accent)" }}>
-                  🔑 OpenRouter API Key {editingId ? "(เว้นว่างถ้าไม่ต้องการเปลี่ยน)" : ""}
-                </label>
-                <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
-                  สมัครฟรีที่ <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>openrouter.ai/keys</a> — API Key เดียวใช้ได้ทุก model
-                </div>
-                <input
-                  type="password"
-                  value={form.apiKey}
-                  onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
-                  placeholder={editingId ? "••••••• (เว้นว่างถ้าไม่เปลี่ยน)" : "sk-or-v1-xxx..."}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                />
-              </div>
-
-              {/* Model — Card-based tier selector */}
-              <div>
-                <label className="text-xs mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
-                  เลือก Model *
-                </label>
-
-                {/* Tier tabs */}
-                <div className="flex gap-1.5 mb-3 flex-wrap">
-                  {MODEL_TIERS.map((t) => (
-                    <button
-                      key={t.tier}
-                      onClick={() => setActiveTier(t.tier)}
-                      className="px-3 py-1.5 rounded-lg text-xs border transition-all"
-                      style={{
-                        borderColor: activeTier === t.tier ? "var(--accent)" : "var(--border)",
-                        color: activeTier === t.tier ? "var(--accent)" : "var(--text-muted)",
-                        background: activeTier === t.tier ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
-                      }}
-                    >
-                      {t.emoji} {t.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Tier description */}
-                {(() => {
-                  const tier = MODEL_TIERS.find((t) => t.tier === activeTier);
-                  if (!tier) return null;
-                  return (
-                    <div className="mb-3">
-                      <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>{tier.desc}</div>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {tier.models.map((m) => (
-                          <button
-                            key={m.id}
-                            onClick={() => setForm((f) => ({ ...f, model: m.id }))}
-                            className="text-left p-3 rounded-xl border transition-all"
-                            style={{
-                              borderColor: form.model === m.id ? "var(--accent)" : "var(--border)",
-                              background: form.model === m.id ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "color-mix(in srgb, var(--bg) 50%, transparent)",
-                            }}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-sm font-bold" style={{ color: form.model === m.id ? "var(--accent)" : "var(--text)" }}>
-                                  {m.name}
-                                </span>
-                                {m.note && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
-                                    {m.note}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-                                📐 {m.ctx}
-                              </div>
-                            </div>
-                            <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-                              {m.price}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Show selected model */}
-                {form.model && (
-                  <div className="text-xs px-3 py-2 rounded-lg border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                    ✓ เลือกแล้ว: <span className="font-bold">{form.model}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Skills */}
-              <div>
-                <label className="text-xs mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
-                  Skills / ความสามารถพิเศษ
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {ALL_SKILLS.map((skill) => (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      onClick={() => toggleSkill(skill.id)}
-                      className="flex items-start gap-2 p-2 rounded-lg border text-left transition-all"
-                      style={{
-                        borderColor: form.skills.includes(skill.id) ? "var(--accent)" : "var(--border)",
-                        background: form.skills.includes(skill.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-                      }}
-                    >
-                      <span className="text-xs font-bold" style={{ color: form.skills.includes(skill.id) ? "var(--accent)" : "var(--text)" }}>
-                        {skill.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Web Search + Seniority */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 p-3 rounded-lg border flex items-center justify-between" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                  <div>
-                    <div className="text-xs font-bold" style={{ color: "var(--text)" }}>🔍 Web Search</div>
-                    <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>ค้นหาข้อมูลจากอินเทอร์เน็ต</div>
-                  </div>
-                  <button
-                    type="button"
-                    title={form.useWebSearch ? "ปิด Web Search" : "เปิด Web Search"}
-                    aria-label={form.useWebSearch ? "ปิด Web Search" : "เปิด Web Search"}
-                    onClick={() => setForm((f) => ({ ...f, useWebSearch: !f.useWebSearch }))}
-                    className="w-10 h-5 rounded-full transition-all relative"
-                    style={{ background: form.useWebSearch ? "var(--accent)" : "var(--border)" }}
-                  >
-                    <span
-                      className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-                      style={{ left: form.useWebSearch ? "calc(100% - 18px)" : "2px" }}
-                    />
-                  </button>
-                </div>
-                <div className="flex-1 p-3 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                  <label className="text-xs font-bold block mb-1" style={{ color: "var(--text)" }}>
-                    🏛️ Seniority (ลำดับพูด)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={1}
-                      max={99}
-                      value={form.seniority}
-                      aria-label="ลำดับ Seniority"
-                      title="ลำดับ Seniority — 1 = ประธาน, 99 = พูดท้าย"
-                      onChange={(e) => setForm((f) => ({ ...f, seniority: Number(e.target.value) }))}
-                      className="flex-1"
-                    />
-                    <span className="text-xs w-8 text-center" style={{ color: "var(--accent)" }}>{form.seniority}</span>
-                  </div>
-                  <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>1 = ประธาน, 99 = พูดท้าย</div>
-                </div>
-              </div>
-
-              {/* MCP Server */}
-              <div className="p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "var(--text)" }}>
-                  🔌 MCP Server Connection <span className="font-normal" style={{ color: "var(--text-muted)" }}>(ไม่บังคับ)</span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>MCP Endpoint URL <span className="font-normal">(ใส่ base URL เช่น http://ip:3002)</span></label>
-                    <input
-                      value={form.mcpEndpoint}
-                      onChange={(e) => { setForm((f) => ({ ...f, mcpEndpoint: e.target.value })); setMcpTestResult(null); }}
-                      placeholder="http://192.168.1.100:3002"
-                      className="w-full px-3 py-2 rounded-lg border text-sm"
-                      style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
-                    />
-                  </div>
-                  {form.mcpEndpoint.trim() && (
-                    <div className="flex gap-3 items-start">
-                      <div className="flex-1">
-                        <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Access Mode</label>
-                        <select
-                          value={form.mcpAccessMode}
-                          onChange={(e) => setForm((f) => ({ ...f, mcpAccessMode: e.target.value }))}
-                          title="MCP Access Mode"
-                          aria-label="MCP Access Mode"
-                          className="w-full px-3 py-2 rounded-lg border text-sm"
-                          style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
-                        >
-                          <option value="general">general — ทั่วไป</option>
-                          <option value="admin">admin — ทุก tools</option>
-                          <option value="sales">sales — ขาย</option>
-                          <option value="purchase">purchase — จัดซื้อ</option>
-                          <option value="stock">stock — คลัง</option>
-                        </select>
-                      </div>
-                      <div className="mt-5">
-                        <button
-                          type="button"
-                          onClick={testMcp}
-                          disabled={mcpTesting}
-                          className="px-4 py-2 rounded-lg text-xs border transition-all disabled:opacity-50"
-                          style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                        >
-                          {mcpTesting ? "กำลังทดสอบ..." : "🔍 ทดสอบ"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {mcpTestResult && (
-                    <div
-                      className="text-xs px-3 py-2 rounded-lg border"
-                      style={{
-                        borderColor: mcpTestResult.ok ? "color-mix(in srgb, var(--success) 30%, transparent)" : "color-mix(in srgb, var(--danger) 30%, transparent)",
-                        background: mcpTestResult.ok ? "color-mix(in srgb, var(--success) 8%, transparent)" : "color-mix(in srgb, var(--danger) 8%, transparent)",
-                        color: mcpTestResult.ok ? "var(--success)" : "var(--danger)",
-                      }}
-                    >
-                      {mcpTestResult.msg}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Soul */}
-              <div>
-                <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
-                  Soul (System Prompt) * — บุคลิกและบทบาทของ agent
-                </label>
-                <textarea
-                  value={form.soul}
-                  onChange={(e) => setForm((f) => ({ ...f, soul: e.target.value }))}
-                  rows={5}
-                  placeholder="อธิบายบุคลิก ความเชี่ยวชาญ และวิธีการทำงานของ agent นี้..."
-                  className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
-                  style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                />
-                <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{form.soul.length} ตัวอักษร</div>
-              </div>
             </div>
+
+            {/* ── Advanced Settings Toggle ── */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg border transition-all w-full"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: showAdvanced ? "color-mix(in srgb, var(--bg) 80%, transparent)" : "transparent" }}
+              >
+                <span style={{ display: "inline-block", transition: "transform 0.2s", transform: showAdvanced ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+                ⚙️ ตั้งค่าขั้นสูง
+                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>— Skills, Soul, Seniority, MCP</span>
+              </button>
+            </div>
+
+            {showAdvanced && (
+              <div className="space-y-4 mb-4 p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 50%, transparent)" }}>
+                {/* Skills */}
+                <div>
+                  <label className="text-xs mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
+                    Skills / ความสามารถพิเศษ
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {ALL_SKILLS.map((skill) => (
+                      <button
+                        key={skill.id}
+                        type="button"
+                        onClick={() => toggleSkill(skill.id)}
+                        className="flex items-start gap-2 p-2 rounded-lg border text-left transition-all"
+                        style={{
+                          borderColor: form.skills.includes(skill.id) ? "var(--accent)" : "var(--border)",
+                          background: form.skills.includes(skill.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                        }}
+                      >
+                        <span className="text-xs font-bold" style={{ color: form.skills.includes(skill.id) ? "var(--accent)" : "var(--text)" }}>
+                          {skill.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Soul */}
+                <div>
+                  <label className="text-xs mb-1 block font-bold" style={{ color: "var(--text-muted)" }}>
+                    Soul (System Prompt) * — บุคลิกและบทบาทของ agent
+                  </label>
+                  <textarea
+                    value={form.soul}
+                    onChange={(e) => setForm((f) => ({ ...f, soul: e.target.value }))}
+                    rows={5}
+                    placeholder="อธิบายบุคลิก ความเชี่ยวชาญ และวิธีการทำงานของ agent นี้..."
+                    className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
+                    style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  />
+                  <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{form.soul.length} ตัวอักษร</div>
+                </div>
+
+                {/* Web Search + Seniority */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 p-3 rounded-lg border flex items-center justify-between" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                    <div>
+                      <div className="text-xs font-bold" style={{ color: "var(--text)" }}>🔍 Web Search</div>
+                      <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>ค้นหาข้อมูลจากอินเทอร์เน็ต</div>
+                    </div>
+                    <button
+                      type="button"
+                      title={form.useWebSearch ? "ปิด Web Search" : "เปิด Web Search"}
+                      aria-label={form.useWebSearch ? "ปิด Web Search" : "เปิด Web Search"}
+                      onClick={() => setForm((f) => ({ ...f, useWebSearch: !f.useWebSearch }))}
+                      className="w-10 h-5 rounded-full transition-all relative"
+                      style={{ background: form.useWebSearch ? "var(--accent)" : "var(--border)" }}
+                    >
+                      <span
+                        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
+                        style={{ left: form.useWebSearch ? "calc(100% - 18px)" : "2px" }}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex-1 p-3 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                    <label className="text-xs font-bold block mb-1" style={{ color: "var(--text)" }}>
+                      🏛️ Seniority (ลำดับพูด)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={1}
+                        max={99}
+                        value={form.seniority}
+                        aria-label="ลำดับ Seniority"
+                        title="ลำดับ Seniority — 1 = ประธาน, 99 = พูดท้าย"
+                        onChange={(e) => setForm((f) => ({ ...f, seniority: Number(e.target.value) }))}
+                        className="flex-1"
+                      />
+                      <span className="text-xs w-8 text-center" style={{ color: "var(--accent)" }}>{form.seniority}</span>
+                    </div>
+                    <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>1 = ประธาน, 99 = พูดท้าย</div>
+                  </div>
+                </div>
+
+                {/* MCP Server */}
+                <div className="p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                  <div className="text-xs font-bold mb-3" style={{ color: "var(--text)" }}>
+                    🔌 MCP Server Connection <span className="font-normal" style={{ color: "var(--text-muted)" }}>(ไม่บังคับ)</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>MCP Endpoint URL <span className="font-normal">(ใส่ base URL เช่น http://ip:3002)</span></label>
+                      <input
+                        value={form.mcpEndpoint}
+                        onChange={(e) => { setForm((f) => ({ ...f, mcpEndpoint: e.target.value })); setMcpTestResult(null); }}
+                        placeholder="http://192.168.1.100:3002"
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
+                      />
+                    </div>
+                    {form.mcpEndpoint.trim() && (
+                      <div className="flex gap-3 items-start">
+                        <div className="flex-1">
+                          <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Access Mode</label>
+                          <select
+                            value={form.mcpAccessMode}
+                            onChange={(e) => setForm((f) => ({ ...f, mcpAccessMode: e.target.value }))}
+                            title="MCP Access Mode"
+                            aria-label="MCP Access Mode"
+                            className="w-full px-3 py-2 rounded-lg border text-sm"
+                            style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
+                          >
+                            <option value="general">general — ทั่วไป</option>
+                            <option value="admin">admin — ทุก tools</option>
+                            <option value="sales">sales — ขาย</option>
+                            <option value="purchase">purchase — จัดซื้อ</option>
+                            <option value="stock">stock — คลัง</option>
+                          </select>
+                        </div>
+                        <div className="mt-5">
+                          <button
+                            type="button"
+                            onClick={testMcp}
+                            disabled={mcpTesting}
+                            className="px-4 py-2 rounded-lg text-xs border transition-all disabled:opacity-50"
+                            style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                          >
+                            {mcpTesting ? "กำลังทดสอบ..." : "🔍 ทดสอบ"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {mcpTestResult && (
+                      <div
+                        className="text-xs px-3 py-2 rounded-lg border"
+                        style={{
+                          borderColor: mcpTestResult.ok ? "color-mix(in srgb, var(--success) 30%, transparent)" : "color-mix(in srgb, var(--danger) 30%, transparent)",
+                          background: mcpTestResult.ok ? "color-mix(in srgb, var(--success) 8%, transparent)" : "color-mix(in srgb, var(--danger) 8%, transparent)",
+                          color: mcpTestResult.ok ? "var(--success)" : "var(--danger)",
+                        }}
+                      >
+                        {mcpTestResult.msg}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 mt-6">
               <button
