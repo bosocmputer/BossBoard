@@ -174,12 +174,36 @@ function SimpleBarChart({ data }: { data: ChartData }) {
   );
 }
 
-// Render message content — strip ```chart blocks
+// Render message content — strip ```chart blocks, collapsible if long
+const COLLAPSE_LINE_LIMIT = 8;
+
 function MessageContent({ content }: { content: string }) {
+  const [expanded, setExpanded] = useState(false);
   const stripped = content.replace(/```chart\n[\s\S]*?\n```/g, "").trim();
+  const lines = stripped.split("\n");
+  const isLong = lines.length > COLLAPSE_LINE_LIMIT;
+  const displayText = !expanded && isLong ? lines.slice(0, COLLAPSE_LINE_LIMIT).join("\n") : stripped;
+
   return (
-    <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: "var(--text)" }}>
-      {stripped}
+    <div>
+      <div
+        className="text-sm whitespace-pre-wrap leading-relaxed relative"
+        style={{ color: "var(--text)" }}
+      >
+        {displayText}
+        {!expanded && isLong && (
+          <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: "linear-gradient(transparent, var(--surface))" }} />
+        )}
+      </div>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs mt-1 px-2 py-0.5 rounded transition-all hover:opacity-80"
+          style={{ color: "var(--accent)" }}
+        >
+          {expanded ? "▲ ย่อข้อความ" : `▼ อ่านเพิ่ม (${lines.length} บรรทัด)`}
+        </button>
+      )}
     </div>
   );
 }
@@ -268,7 +292,7 @@ export default function ResearchPage() {
   const [viewingSession, setViewingSession] = useState<ServerSession | null>(null);
   const [historyTab, setHistoryTab] = useState<"current" | "history">("current");
 
-  const [autoScroll, setAutoScroll] = useState(true);
+  const [autoScroll, setAutoScroll] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -458,7 +482,6 @@ export default function ResearchPage() {
     setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
-    setAutoScroll(true);
     if (!overrideQuestion && !closeMode) setQuestion("");
 
     abortRef.current = new AbortController();
@@ -1007,6 +1030,15 @@ export default function ResearchPage() {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 min-h-[200px] sm:min-h-[300px] relative"
             >
+              {/* Sticky status bar — shows which agent is speaking */}
+              {running && status && (
+                <div className="sticky top-0 z-10 mx-1">
+                  <div className="text-xs px-3 py-2 rounded-lg border backdrop-blur-sm flex items-center gap-2" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border))", color: "var(--text-muted)", background: "color-mix(in srgb, var(--surface) 90%, transparent)" }}>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                    <span className="truncate">{status}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Empty state */}
               {!viewingSession && displayRounds.length === 0 && currentMessages.length === 0 && !running && (
@@ -1180,12 +1212,6 @@ export default function ResearchPage() {
                       <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
                     </div>
                   )}
-                  {status && (
-                    <div className="text-xs px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                      {running && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 mr-2 animate-pulse" />}
-                      {status}
-                    </div>
-                  )}
                   {currentMessages.map((msg) => (
                     <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -1216,7 +1242,7 @@ export default function ResearchPage() {
 
               <div ref={bottomRef} />
               {/* Scroll to bottom button */}
-              {!autoScroll && running && (
+              {!autoScroll && (
                 <div className="sticky bottom-3 flex justify-center pointer-events-none">
                   <button
                     type="button"

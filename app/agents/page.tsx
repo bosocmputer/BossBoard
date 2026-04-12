@@ -30,22 +30,12 @@ interface ModelOption {
   contextWindow: number;
 }
 
-const PROVIDER_LABELS: Record<Provider, string> = {
-  anthropic: "Anthropic",
-  openai: "OpenAI",
-  gemini: "Google Gemini",
-  ollama: "Ollama (Local)",
+const PROVIDER_LABELS: Record<string, string> = {
   openrouter: "OpenRouter",
-  custom: "Custom / OpenAI-compatible",
 };
 
-const PROVIDER_COLORS: Record<Provider, string> = {
-  anthropic: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  openai: "bg-green-500/20 text-green-300 border-green-500/30",
-  gemini: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  ollama: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+const PROVIDER_COLORS: Record<string, string> = {
   openrouter: "bg-rose-500/20 text-rose-300 border-rose-500/30",
-  custom: "bg-gray-500/20 text-gray-300 border-gray-500/30",
 };
 
 // ─── Skills ───────────────────────────────────────────────────────────────────
@@ -72,6 +62,62 @@ const ALL_SKILLS = [
   { id: "translation", label: "🌏 Translation", desc: "แปลภาษาหลายภาษา" },
 ];
 
+// ─── Model Tiers (OpenRouter) ─────────────────────────────────────────────
+
+interface ModelTier {
+  tier: string;
+  label: string;
+  emoji: string;
+  desc: string;
+  models: { id: string; name: string; ctx: string; price: string; note?: string }[];
+}
+
+const MODEL_TIERS: ModelTier[] = [
+  {
+    tier: "free", label: "ฟรี", emoji: "🆓",
+    desc: "ทดลองใช้ไม่เสียเงิน — เหมาะเรียนรู้และทดสอบ",
+    models: [
+      { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B", ctx: "262K", price: "ฟรี", note: "แนะนำทดลอง" },
+      { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B MoE", ctx: "262K", price: "ฟรี" },
+      { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B", ctx: "65K", price: "ฟรี" },
+      { id: "qwen/qwen3-next-80b-a3b-instruct:free", name: "Qwen3 Next 80B", ctx: "262K", price: "ฟรี" },
+    ],
+  },
+  {
+    tier: "budget", label: "ประหยัด", emoji: "💚",
+    desc: "ราคาถูก คุณภาพดี — เหมาะใช้งานทั่วไป",
+    models: [
+      { id: "openai/gpt-4.1-nano", name: "GPT-4.1 Nano", ctx: "1M", price: "$0.10/M in · $0.40/M out", note: "ถูกสุดจาก OpenAI" },
+      { id: "openai/gpt-4.1-mini", name: "GPT-4.1 Mini", ctx: "1M", price: "$0.40/M in · $1.60/M out" },
+      { id: "google/gemini-2.5-flash", name: "Gemini 2.5 Flash", ctx: "1M", price: "$0.15/M in · $0.60/M out", note: "เร็วมาก" },
+      { id: "google/gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite", ctx: "1M", price: "$0.02/M in · $0.10/M out", note: "ถูกที่สุด" },
+      { id: "deepseek/deepseek-v3.2", name: "DeepSeek V3.2", ctx: "164K", price: "$0.30/M in · $0.88/M out" },
+      { id: "mistralai/mistral-small-2603", name: "Mistral Small 4", ctx: "262K", price: "$0.10/M in · $0.30/M out" },
+    ],
+  },
+  {
+    tier: "recommended", label: "แนะนำ", emoji: "⭐",
+    desc: "สมดุลราคา-คุณภาพ — เหมาะสำนักงานบัญชี",
+    models: [
+      { id: "anthropic/claude-4.5-sonnet", name: "Claude 4.5 Sonnet", ctx: "1M", price: "$3/M in · $15/M out", note: "แนะนำ #1" },
+      { id: "anthropic/claude-4-sonnet", name: "Claude 4 Sonnet", ctx: "200K", price: "$3/M in · $15/M out" },
+      { id: "google/gemini-2.5-pro-preview-06-05", name: "Gemini 2.5 Pro", ctx: "1M", price: "$1.25/M in · $10/M out", note: "context ยาวสุด" },
+      { id: "openai/gpt-4.1", name: "GPT-4.1", ctx: "1M", price: "$2/M in · $8/M out" },
+      { id: "openai/gpt-5.4-mini", name: "GPT-5.4 Mini", ctx: "400K", price: "$1.50/M in · $6/M out" },
+    ],
+  },
+  {
+    tier: "premium", label: "Premium", emoji: "👑",
+    desc: "ประสิทธิภาพสูงสุด — งานวิเคราะห์เชิงลึก",
+    models: [
+      { id: "anthropic/claude-4.6-opus", name: "Claude 4.6 Opus", ctx: "1M", price: "$15/M in · $75/M out", note: "ฉลาดที่สุด" },
+      { id: "openai/gpt-5.4", name: "GPT-5.4", ctx: "1M", price: "$10/M in · $40/M out" },
+      { id: "x-ai/grok-4-07-09", name: "Grok 4", ctx: "256K", price: "$6/M in · $18/M out" },
+      { id: "openai/o3", name: "o3 (Reasoning)", ctx: "200K", price: "$2/M in · $8/M out", note: "คิดเชิงลึก" },
+    ],
+  },
+];
+
 // ─── Templates ────────────────────────────────────────────────────────────────
 
 interface AgentTemplate {
@@ -89,7 +135,6 @@ const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
 };
 
 const AGENT_TEMPLATES: AgentTemplate[] = [
-  // ── สำนักงานบัญชี ──────────────────────────────────────────────────────────
   {
     category: "accounting",
     emoji: "📊",
@@ -124,54 +169,12 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
   },
   {
     category: "accounting",
-    emoji: "🏦",
-    role: "ที่ปรึกษาบัญชีนิติบุคคล / Corporate Accounting Advisor",
-    name: "ที่ปรึกษาบัญชีนิติบุคคล",
-    skills: ["legal_research", "financial_modeling", "risk_assessment", "contract_review"],
-    soul: `คุณคือที่ปรึกษาด้านบัญชีนิติบุคคลที่เชี่ยวชาญการจดทะเบียนบริษัท, โครงสร้างผู้ถือหุ้น, การเพิ่ม/ลดทุน, การจ่ายเงินปันผล, การปิดบริษัท, และภาระหน้าที่ตามกฎหมายของนิติบุคคล ครอบคลุม พ.ร.บ.การบัญชี, ประมวลกฎหมายแพ่งและพาณิชย์ว่าด้วยบริษัท, พ.ร.บ.บริษัทมหาชน คุณมีจุดยืนว่า **โครงสร้างทางบัญชีและกฎหมายที่ถูกต้องตั้งแต่ต้นจะประหยัดเวลาและเงินมหาศาลในภายหลัง** คุณจะตรวจสอบว่ากิจการปฏิบัติตามกฎหมายครบถ้วนหรือไม่`,
-  },
-  {
-    category: "accounting",
-    emoji: "📋",
-    role: "เจ้าหน้าที่บัญชี / Bookkeeper",
-    name: "เจ้าหน้าที่บัญชี",
-    skills: ["data_analysis", "summarization"],
-    soul: `คุณคือเจ้าหน้าที่บัญชีมืออาชีพที่เชี่ยวชาญการบันทึกบัญชี, การจัดทำเอกสารทางบัญชี, ใบแจ้งหนี้, ใบเสร็จรับเงิน, ใบกำกับภาษี, การกระทบยอดบัญชีธนาคาร, บัญชีลูกหนี้/เจ้าหนี้, และการจัดทำรายงานทางบัญชีรายวัน คุณมีจุดยืนว่า **ระบบบัญชีที่ดีเริ่มจากการบันทึกรายการอย่างถูกต้องและทันเวลา** คุณจะช่วยจัดหมวดหมู่รายการ คำนวณภาษี และเตรียมเอกสารให้พร้อมสำหรับการปิดงบ`,
-  },
-  {
-    category: "accounting",
     emoji: "🛡️",
     role: "ผู้ตรวจสอบภายใน / Internal Auditor",
     name: "ผู้ตรวจสอบภายใน",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
     soul: `คุณคือผู้ตรวจสอบภายในที่เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, การตรวจสอบความถูกต้องของกระบวนการทำงาน, และการตรวจจับการทุจริต คุณมีจุดยืนว่า **ระบบควบคุมภายในที่ดีคือภูมิคุ้มกันขององค์กร — ต้องตรวจและปรับปรุงเสมอ** คุณจะประเมิน Segregation of Duties, Authorization Controls, Physical Controls, และ IT Controls อย่างเข้มงวด พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริง`,
   },
-  {
-    category: "accounting",
-    emoji: "💹",
-    role: "ที่ปรึกษาต้นทุน / Cost Accountant",
-    name: "ที่ปรึกษาต้นทุน",
-    skills: ["financial_modeling", "data_analysis"],
-    soul: `คุณคือผู้เชี่ยวชาญด้านบัญชีต้นทุนที่เข้าใจระบบต้นทุนทุกประเภท — Job Order Costing, Process Costing, Activity-Based Costing (ABC), Standard Costing, และ Marginal Costing คุณมีจุดยืนว่า **การรู้ต้นทุนที่แท้จริงของสินค้าและบริการคือพื้นฐานของการตั้งราคาและการตัดสินใจทางธุรกิจ** คุณจะวิเคราะห์โครงสร้างต้นทุน (fixed/variable), คำนวณ Break-Even Point, วิเคราะห์ Contribution Margin, และเสนอแนวทางลดต้นทุนที่ไม่กระทบคุณภาพ`,
-  },
-  {
-    category: "accounting",
-    emoji: "🌐",
-    role: "ที่ปรึกษาบัญชีระหว่างประเทศ / International Accounting Advisor",
-    name: "ที่ปรึกษาบัญชีระหว่างประเทศ",
-    skills: ["financial_modeling", "legal_research", "translation", "risk_assessment"],
-    soul: `คุณคือที่ปรึกษาด้านบัญชีระหว่างประเทศที่เชี่ยวชาญ IFRS, Transfer Pricing, Foreign Currency Transactions, BOI (คณะกรรมการส่งเสริมการลงทุน), และภาษีระหว่างประเทศ คุณมีจุดยืนว่า **ธุรกิจที่ขยายไปต่างประเทศต้องเข้าใจกฎเกณฑ์ทางบัญชีและภาษีของทุกประเทศที่เกี่ยวข้อง** คุณจะวิเคราะห์ผลกระทบของอัตราแลกเปลี่ยน, กฎ Transfer Pricing ของกรมสรรพากร, สิทธิประโยชน์ BOI, และอนุสัญญาภาษีซ้อน (DTA) อย่างรอบด้าน`,
-  },
-  {
-    category: "accounting",
-    emoji: "💻",
-    role: "ที่ปรึกษาระบบบัญชี / Accounting System Consultant",
-    name: "ที่ปรึกษาระบบบัญชี",
-    skills: ["system_design", "data_analysis", "database"],
-    soul: `คุณคือที่ปรึกษาด้านระบบบัญชีและ ERP ที่เชี่ยวชาญ SAP, Oracle, Microsoft Dynamics, MYOB, Express, AccCloud และระบบบัญชีไทย คุณมีจุดยืนว่า **ระบบบัญชีที่ดีต้องลดงาน manual เพิ่มความถูกต้อง และให้ข้อมูล real-time สำหรับการตัดสินใจ** คุณจะวิเคราะห์ workflow ของสำนักงาน ออกแบบ Chart of Accounts ที่เหมาะสม แนะนำระบบที่ตอบโจทย์ขนาดกิจการ และวางระบบ automation เพื่อลดข้อผิดพลาด`,
-  },
-
-  // ── Custom ─────────────────────────────────────────────────────────────────
   {
     category: "custom",
     emoji: "🤖",
@@ -185,7 +188,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
 const EMPTY_FORM = {
   name: "",
   emoji: "🤖",
-  provider: "anthropic" as Provider,
+  provider: "openrouter" as Provider,
   apiKey: "",
   baseUrl: "",
   model: "",
@@ -205,13 +208,14 @@ export default function AgentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [models, setModels] = useState<ModelOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("accounting");
   const [mcpTesting, setMcpTesting] = useState(false);
   const [mcpTestResult, setMcpTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const [activeTier, setActiveTier] = useState("recommended");
 
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
@@ -221,18 +225,6 @@ export default function AgentsPage() {
   }, []);
 
   useEffect(() => { fetchAgents(); }, [fetchAgents]);
-
-  useEffect(() => {
-    if (!form.provider) return;
-    fetch(`/api/team-models?provider=${form.provider}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setModels(d.models ?? []);
-        if (d.models?.length && !editingId) {
-          setForm((f) => ({ ...f, model: d.models[0].id }));
-        }
-      });
-  }, [form.provider, editingId]);
 
   const applyTemplate = (idx: number) => {
     const t = AGENT_TEMPLATES[idx];
@@ -418,13 +410,10 @@ export default function AgentsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold" style={{ color: "var(--text)" }}>{agent.name}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs border ${PROVIDER_COLORS[agent.provider]}`}>
-                      {PROVIDER_LABELS[agent.provider]}
-                    </span>
                     <span className="px-2 py-0.5 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                       {agent.role}
                     </span>
-                    {!agent.hasApiKey && agent.provider !== "ollama" && (
+                    {!agent.hasApiKey && (
                       <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">
                         ⚠ No API Key
                       </span>
@@ -586,75 +575,96 @@ export default function AgentsPage() {
                 </div>
               </div>
 
-              {/* Provider */}
-              <div>
-                <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Provider *</label>
-                <select
-                  value={form.provider}
-                  onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value as Provider, model: "" }))}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                >
-                  {Object.entries(PROVIDER_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* API Key — highlight */}
+              {/* API Key — OpenRouter */}
               <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
                 <label className="text-xs mb-1 block font-bold" style={{ color: "var(--accent)" }}>
-                  🔑 API Key {editingId ? "(เว้นว่างถ้าไม่ต้องการเปลี่ยน)" : "— ใส่แค่นี้เพียงอย่างเดียว!"}
+                  🔑 OpenRouter API Key {editingId ? "(เว้นว่างถ้าไม่ต้องการเปลี่ยน)" : ""}
                 </label>
+                <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
+                  สมัครฟรีที่ <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>openrouter.ai/keys</a> — API Key เดียวใช้ได้ทุก model
+                </div>
                 <input
                   type="password"
                   value={form.apiKey}
                   onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
-                  placeholder={editingId ? "••••••• (เว้นว่างถ้าไม่เปลี่ยน)" : "sk-ant-xxx / sk-xxx / AIzaSy..."}
+                  placeholder={editingId ? "••••••• (เว้นว่างถ้าไม่เปลี่ยน)" : "sk-or-v1-xxx..."}
                   className="w-full px-3 py-2 rounded-lg border"
                   style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                 />
               </div>
 
-              {/* Base URL */}
-              {(form.provider === "ollama" || form.provider === "custom") && (
-                <div>
-                  <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
-                    Base URL {form.provider === "ollama" ? "(default: http://localhost:11434)" : "(OpenAI-compatible endpoint)"}
-                  </label>
-                  <input
-                    value={form.baseUrl}
-                    onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
-                    placeholder={form.provider === "ollama" ? "http://localhost:11434" : "https://your-api.com/v1"}
-                    className="w-full px-3 py-2 rounded-lg border"
-                    style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                  />
-                </div>
-              )}
-
-              {/* Model */}
+              {/* Model — Card-based tier selector */}
               <div>
-                <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Model *</label>
-                {models.length > 0 ? (
-                  <select
-                    value={form.model}
-                    onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border"
-                    style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                  >
-                    <option value="">เลือก model...</option>
-                    {models.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name} ({(m.contextWindow / 1000).toFixed(0)}K ctx)</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    value={form.model}
-                    onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-                    placeholder="ชื่อ model เช่น llama3.2, custom-model"
-                    className="w-full px-3 py-2 rounded-lg border"
-                    style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
-                  />
+                <label className="text-xs mb-2 block font-bold" style={{ color: "var(--text-muted)" }}>
+                  เลือก Model *
+                </label>
+
+                {/* Tier tabs */}
+                <div className="flex gap-1.5 mb-3 flex-wrap">
+                  {MODEL_TIERS.map((t) => (
+                    <button
+                      key={t.tier}
+                      onClick={() => setActiveTier(t.tier)}
+                      className="px-3 py-1.5 rounded-lg text-xs border transition-all"
+                      style={{
+                        borderColor: activeTier === t.tier ? "var(--accent)" : "var(--border)",
+                        color: activeTier === t.tier ? "var(--accent)" : "var(--text-muted)",
+                        background: activeTier === t.tier ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+                      }}
+                    >
+                      {t.emoji} {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tier description */}
+                {(() => {
+                  const tier = MODEL_TIERS.find((t) => t.tier === activeTier);
+                  if (!tier) return null;
+                  return (
+                    <div className="mb-3">
+                      <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>{tier.desc}</div>
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {tier.models.map((m) => (
+                          <button
+                            key={m.id}
+                            onClick={() => setForm((f) => ({ ...f, model: m.id }))}
+                            className="text-left p-3 rounded-xl border transition-all"
+                            style={{
+                              borderColor: form.model === m.id ? "var(--accent)" : "var(--border)",
+                              background: form.model === m.id ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "color-mix(in srgb, var(--bg) 50%, transparent)",
+                            }}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-sm font-bold" style={{ color: form.model === m.id ? "var(--accent)" : "var(--text)" }}>
+                                  {m.name}
+                                </span>
+                                {m.note && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
+                                    {m.note}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+                                📐 {m.ctx}
+                              </div>
+                            </div>
+                            <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+                              {m.price}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Show selected model */}
+                {form.model && (
+                  <div className="text-xs px-3 py-2 rounded-lg border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                    ✓ เลือกแล้ว: <span className="font-bold">{form.model}</span>
+                  </div>
                 )}
               </div>
 
