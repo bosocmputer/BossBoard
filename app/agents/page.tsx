@@ -424,6 +424,17 @@ export default function AgentsPage() {
           </button>
         </div>
 
+        {/* Tips for accounting firms */}
+        <div className="border rounded-xl p-4 sm:p-5 mb-4" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+          <div className="font-bold text-sm mb-2" style={{ color: "var(--accent)" }}>💡 เคล็ดลับเพื่อให้ AI ตอบได้แม่นยำขึ้น</div>
+          <ul className="text-xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
+            <li>📌 <b style={{ color: "var(--text)" }}>เปิดค้นข้อมูลออนไลน์</b> — ให้ AI ค้นข้อมูลใหม่ล่าสุดจากอินเทอร์เน็ต เช่น กฎหมายภาษี คำวินิจฉัย แนวปฏิบัติ</li>
+            <li>📂 <b style={{ color: "var(--text)" }}>อัปโหลดฐานความรู้</b> — กดปุ่ม Knowledge เพื่อใส่ข้อมูลเฉพาะทาง เช่น สรุปมาตรา คู่มือบัญชี ระเบียบสำนักงาน</li>
+            <li>✍️ <b style={{ color: "var(--text)" }}>ใส่คำสั่งให้ชัดเจน</b> — ใน soul ของ agent ยิ่งระบุบทบาทและกฎเกณฑ์ชัด AI จะตอบได้ตรงประเด็นมากขึ้น</li>
+            <li>⚠️ <b style={{ color: "var(--text)" }}>คำตอบจาก AI เป็นข้อมูลเบื้องต้น</b> — ควรตรวจสอบกับผู้เชี่ยวชาญก่อนนำไปใช้จริงเสมอ</li>
+          </ul>
+        </div>
+
         {/* Agent List */}
         {loading ? (
           <div className="text-center py-20" style={{ color: "var(--text-muted)" }}>Loading...</div>

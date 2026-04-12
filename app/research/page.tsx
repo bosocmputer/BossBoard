@@ -1260,6 +1260,9 @@ export default function ResearchPage() {
                       <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
                       <MessageContent content={round.finalAnswer} />
                       {round.chartData && <SimpleBarChart data={round.chartData} />}
+                      <div className="mt-3 pt-3 border-t text-[11px] leading-relaxed" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)", color: "var(--text-muted)" }}>
+                        ⚠️ คำตอบจาก AI เป็นข้อมูลเบื้องต้นเท่านั้น ควรตรวจสอบกับผู้เชี่ยวชาญหรืออ้างอิงกฎหมาย/มาตรฐานที่เกี่ยวข้องก่อนนำไปใช้จริง
+                      </div>
                     </div>
                   )}
 
