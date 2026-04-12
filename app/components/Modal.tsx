@@ -28,7 +28,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
       <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-label="Close" />
       <div
         ref={panelRef}
-        className={`relative w-full ${maxWidth} rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl max-h-[90vh] overflow-y-auto animate-in`}
+        className={`relative w-full ${maxWidth} rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl max-h-[90vh] overflow-y-auto animate-in`}
       >
         {title && (
           <div className="flex items-center justify-between p-5 pb-0">

@@ -523,7 +523,7 @@ export default function AgentsPage() {
       {/* ── Modal Form (Step Wizard) ── */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(0,0,0,0.8)" }}>
-          <div className="w-full max-w-3xl rounded-2xl border flex flex-col max-h-[95vh] sm:max-h-[92vh]" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          <div className="w-full max-w-3xl rounded-xl border flex flex-col max-h-[95vh] sm:max-h-[92vh]" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
             {/* Header + Step indicator */}
             <div className="flex-shrink-0 p-4 sm:p-6 pb-0">
               <div className="flex items-center justify-between mb-4">
@@ -1022,7 +1022,7 @@ export default function AgentsPage() {
                     className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
                     style={{ background: "var(--accent)", color: "#000" }}
                   >
-                    {saving ? "Saving..." : editingId ? "Update Agent" : "✨ Create Agent"}
+                    {saving ? "Saving..." : editingId ? "Update Agent" : "Create Agent"}
                   </button>
                 )}
               </div>
@@ -1034,7 +1034,7 @@ export default function AgentsPage() {
       {/* ─── Knowledge Modal ─── */}
       {knowledgeAgentId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
-          <div className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 max-h-[80vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          <div className="w-full max-w-lg rounded-xl border shadow-xl p-6 max-h-[80vh] overflow-y-auto" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>ฐานความรู้ — {knowledgeAgentName}</h3>
               <button onClick={() => { setKnowledgeAgentId(null); setKnowledgePreview(null); }} className="text-xl" style={{ color: "var(--text-muted)" }}>✕</button>

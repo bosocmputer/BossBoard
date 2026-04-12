@@ -162,7 +162,7 @@ export default function TokensPage() {
       {/* Daily usage chart */}
       {loading ? (
         <div className="mb-8">
-          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-64 rounded-xl" />
         </div>
       ) : data && data.dailyUsage.length > 0 ? (
         <Card padding="md" className="mb-8">

@@ -1069,7 +1069,7 @@ export default function ResearchPage() {
               {/* Sticky status bar — shows which agent is speaking */}
               {running && status && (
                 <div className="sticky top-0 z-10 mx-1">
-                  <div className="text-xs px-3 py-2 rounded-lg border backdrop-blur-sm flex items-center gap-2" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border))", color: "var(--text-muted)", background: "color-mix(in srgb, var(--surface) 90%, transparent)" }}>
+                  <div className="text-xs px-3 py-2 rounded-lg border flex items-center gap-2" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border))", color: "var(--text-muted)", background: "var(--surface)" }}>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
                     <span className="truncate">{status}</span>
                   </div>
@@ -1095,7 +1095,7 @@ export default function ResearchPage() {
                           className="text-xs px-3 py-2 rounded-lg border transition-all hover:opacity-80 text-left max-w-xs"
                           style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}
                         >
-                          💡 {q}
+                          {q}
                         </button>
                       ))}
                     </div>
@@ -1223,7 +1223,7 @@ export default function ResearchPage() {
 
                   {roundIndex === displayRounds.length - 1 && round.suggestions.length > 0 && !running && currentMessages.length === 0 && (
                     <div className="space-y-2">
-                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>💡 วาระต่อเนื่องที่แนะนำ:</div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>วาระต่อเนื่องที่แนะนำ:</div>
                       <div className="flex flex-col gap-1.5">
                         {round.suggestions.map((s, i) => (
                           <button key={i} onClick={() => handleRun(s)} disabled={running} className="text-left px-3 py-2 rounded-lg border text-xs transition-all hover:opacity-80 disabled:opacity-40" style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}>
@@ -1296,7 +1296,7 @@ export default function ResearchPage() {
             {!viewingSession && (
               <div className="sticky bottom-0 flex-shrink-0 pt-2" style={{ background: "var(--bg)" }}>
                 <div
-                  className="border rounded-2xl overflow-hidden transition-colors"
+                  className="border rounded-xl overflow-hidden transition-colors"
                   style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
                 >
                   <textarea

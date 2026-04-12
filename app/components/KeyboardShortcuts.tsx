@@ -91,7 +91,7 @@ export function ShortcutsHelp({
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-label="Close" />
       <div
-        className="relative w-full max-w-sm mx-4 rounded-2xl border shadow-2xl overflow-hidden"
+        className="relative w-full max-w-sm mx-4 rounded-xl border shadow-xl overflow-hidden"
         style={{ background: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
