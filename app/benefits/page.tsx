@@ -28,28 +28,28 @@ export default function BenefitsPage() {
     {
       name: "Solo",
       price: "ฟรี",
-      period: "",
-      target: "ลองใช้ดูก่อน",
-      features: ["Agent ได้ 3 ตัว", "ประชุมได้ 10 sessions/เดือน", "1 ผู้ใช้", "Export รายงาน", "ใช้ API key ของตัวเอง"],
+      period: "ทดลอง 14 วัน",
+      target: "ลองใช้ดูก่อนตัดสินใจ",
+      features: ["Agent ได้ 3 ตัว", "ประชุมได้ 10 sessions", "1 ผู้ใช้", "Export รายงาน", "ใช้ API key ของตัวเอง"],
       excluded: ["File upload", "ฐานความรู้ Agent"],
-      cta: "เริ่มใช้ฟรี",
+      cta: "ทดลองใช้ฟรี 14 วัน",
       highlight: false,
       color: "var(--text-muted)",
     },
     {
       name: "Starter",
-      price: "490",
+      price: "790",
       period: "บาท/เดือน",
       target: "นักบัญชีอิสระ / Freelance",
       features: ["Agent ได้ 5 ตัว", "ประชุมไม่จำกัด", "1 ผู้ใช้", "Upload ไฟล์ (Excel/PDF)", "ฐานความรู้ Agent", "ข้อมูลบริษัท", "Line support"],
       excluded: [],
-      cta: "เริ่มต้น 490 บาท",
+      cta: "เริ่มต้น 790 บาท",
       highlight: false,
       color: "var(--accent)",
     },
     {
       name: "Professional",
-      price: "990",
+      price: "1,990",
       period: "บาท/เดือน",
       target: "สำนักงานบัญชี 1-5 คน",
       features: ["Agent ไม่จำกัด", "ประชุมไม่จำกัด", "5 ผู้ใช้", "Upload ไฟล์ทุกประเภท", "ฐานความรู้ไม่จำกัด", "Stats + กราฟวิเคราะห์", "Template บัญชี 10+ ตัว", "Web Search", "Priority support"],
@@ -60,7 +60,7 @@ export default function BenefitsPage() {
     },
     {
       name: "Enterprise",
-      price: "2,490",
+      price: "4,990",
       period: "บาท/เดือน",
       target: "สำนักงานใหญ่ / หลายสาขา",
       features: ["ทุกอย่างใน Professional", "ผู้ใช้ไม่จำกัด", "Custom AI Templates", "MCP Integration (เชื่อมระบบ ERP)", "Onboarding + ช่วย setup", "White-label (ใส่ logo สำนักงาน)", "SLA + Dedicated support"],
@@ -134,7 +134,7 @@ export default function BenefitsPage() {
           แพ็กเกจราคา
         </h2>
         <p className="text-xs mb-8" style={{ color: "var(--text-muted)" }}>
-          ค่า LLM API (~0.50-2 บาท/session) คิดตามการใช้งานจริง ผ่าน OpenRouter
+          ค่า LLM API (~0.50-5 บาท/session) คิดตามการใช้งานจริง ผ่าน API key ของคุณเอง
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -193,7 +193,7 @@ export default function BenefitsPage() {
         <div className="mt-6 rounded-xl p-4 text-center" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <p className="font-bold text-sm mb-0.5" style={{ color: "var(--text)" }}>ต้องการติดตั้งบนเซิร์ฟเวอร์ของคุณเอง?</p>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Self-hosted license เริ่มต้น 15,000 บาท/ปี
+            Self-hosted license เริ่มต้น 29,000 บาท/ปี — รวม setup + training
           </p>
         </div>
       </div>
