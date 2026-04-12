@@ -39,7 +39,7 @@ async function callLLM(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 2048,
+        max_tokens: 4096,
         system: systemMsg?.content,
         messages: userMsgs,
       }),
@@ -63,7 +63,7 @@ async function callLLM(
         "HTTP-Referer": "https://bossboard",
         "X-Title": "BossBoard",
       },
-      body: JSON.stringify({ model, messages, max_tokens: 2048 }),
+      body: JSON.stringify({ model, messages, max_tokens: 4096 }),
     });
     if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -82,7 +82,7 @@ async function callLLM(
         Authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ model, messages, max_tokens: 2048 }),
+      body: JSON.stringify({ model, messages, max_tokens: 4096 }),
     });
     if (!res.ok) throw new Error(`OpenAI error: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -106,7 +106,7 @@ async function callLLM(
           role: m.role === "assistant" ? "model" : "user",
           parts: [{ text: m.content }],
         })),
-        generationConfig: { maxOutputTokens: 2048 },
+        generationConfig: { maxOutputTokens: 4096 },
       }),
     });
     if (!res.ok) throw new Error(`Gemini error: ${res.status} ${await res.text()}`);
@@ -510,6 +510,8 @@ export async function POST(req: NextRequest) {
 
       const agentFindings: { agentId: string; name: string; emoji: string; role: string; content: string; searchResults?: string }[] = [];
       const agentTokens: Record<string, { input: number; output: number }> = {};
+      const failedAgents: string[] = [];
+      let silentAgents: string[] = [];
 
       const historyContext = buildHistoryContext(conversationHistory);
       const fileContext = buildFileContext(fileContexts);
@@ -529,7 +531,7 @@ export async function POST(req: NextRequest) {
               },
               {
                 role: "user",
-                content: `กรุณาเปิดการประชุมสำหรับวาระ: "${question}"\n\nชี้แจงวัตถุประสงค์และกำหนดประเด็นหลักที่ต้องการหาคำตอบ (2-3 ประเด็น) เพื่อให้ทีมงานวิเคราะห์ในทิศทางเดียวกัน`,
+                content: `กรุณาเปิดการประชุมสำหรับวาระ: "${question}"\n\nชี้แจงวัตถุประสงค์สั้นกระชับ (3-5 ประโยค) และกำหนดประเด็นหลัก 2-3 ข้อที่ต้องการหาคำตอบ เพื่อให้ทีมงานวิเคราะห์ในทิศทางเดียวกัน\n\n⚠️ สำคัญ: พูดกระชับ ไม่ต้องอธิบายรายละเอียดยาว เพราะทีมจะนำเสนอข้อมูลเชิงลึกเอง`,
               },
             ]);
 
@@ -597,15 +599,24 @@ export async function POST(req: NextRequest) {
             ? `คุณเป็นประธานการประชุม นำเสนอมุมมองจากตำแหน่ง ${agent.role} ของคุณ`
             : `นำเสนอมุมมองจากมุมมองของ ${agent.role} อย่างชัดเจนและตรงประเด็น`;
 
+          // Build context of previous agents' findings to avoid repetition
+          let previousFindingsContext = "";
+          if (agentFindings.length > 0) {
+            const summaries = agentFindings.map((f) =>
+              `[${f.emoji} ${f.name} — ${f.role}]: ${f.content.slice(0, 600)}${f.content.length > 600 ? "..." : ""}`
+            ).join("\n\n");
+            previousFindingsContext = `\n\n---\n⚠️ ผู้เชี่ยวชาญก่อนหน้าได้นำเสนอไปแล้ว (สรุปย่อ):\n${summaries}\n\n❌ ห้ามพูดซ้ำสิ่งที่คนอื่นพูดไปแล้ว ห้ามสร้างตารางเปรียบเทียบภาพรวมซ้ำ\n✅ ให้เสริมเฉพาะมุมมองใหม่ ข้อสังเกตใหม่ ความเสี่ยงใหม่ จากบทบาท ${agent.role} ของคุณเท่านั้น\n---\n`;
+          }
+
           const knowledgeContext = getAgentKnowledgeContent(agent.id);
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${agent.soul}${knowledgeContext}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}`,
+              content: `${companyContext}${agent.soul}${knowledgeContext}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${previousFindingsContext}`,
             },
             {
               role: "user",
-              content: `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาแสดงมุมมองและข้อมูลที่เกี่ยวข้องจากบทบาทของคุณ พร้อมระบุประเด็นสำคัญที่ควรพิจารณา${fileContexts?.length ? " โดยอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}`,
+              content: `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์เชิงลึกจากมุมมองเฉพาะทางของ ${agent.role} พร้อมระบุ:\n1. ประเด็นสำคัญที่คนอื่นยังไม่ได้พูดถึง\n2. ความเสี่ยงหรือข้อกังวลจากมุมมองของคุณ\n3. ข้อเสนอแนะเฉพาะทาง${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}\n\n⚠️ เน้นวิเคราะห์เชิงลึกเฉพาะบทบาทของคุณ ไม่ต้องสรุปภาพรวมหรือสร้างตารางเปรียบเทียบทั่วไปที่คนอื่นทำแล้ว`,
             },
           ]);
 
@@ -644,7 +655,23 @@ export async function POST(req: NextRequest) {
             searchResults: searchContext || undefined,
           });
         } catch (err) {
-          send("agent_error", { agentId: agent.id, error: String(err) });
+          const errorDetail = String(err);
+          send("agent_error", { agentId: agent.id, error: errorDetail });
+          failedAgents.push(`${agent.emoji} ${agent.name} (${agent.role})`);
+
+          // Send a visible error message so user knows this agent failed
+          const errorMsg: ResearchMessage = {
+            id: crypto.randomUUID(),
+            agentId: agent.id,
+            agentName: agent.name,
+            agentEmoji: agent.emoji,
+            role: "finding",
+            content: `⚠️ ไม่สามารถวิเคราะห์ได้ — เกิดข้อผิดพลาดในการเชื่อมต่อกับ model ${agent.model} (${agent.provider})\n\nข้อผิดพลาด: ${errorDetail.slice(0, 200)}`,
+            tokensUsed: 0,
+            timestamp: new Date().toISOString(),
+          };
+          appendResearchMessage(sessionId, errorMsg);
+          send("message", errorMsg);
         }
       }
 
@@ -657,9 +684,10 @@ export async function POST(req: NextRequest) {
           const apiKey = getAgentApiKey(agent.id);
           if (!apiKey) continue;
 
+          // Summarize other agents' findings (max 500 chars each to reduce tokens)
           const otherFindings = agentFindings
             .filter((f) => f.agentId !== agent.id)
-            .map((f) => `[${f.emoji} ${f.name} — ${f.role}]:\n${f.content}`)
+            .map((f) => `[${f.emoji} ${f.name} — ${f.role}]:\n${f.content.slice(0, 500)}${f.content.length > 500 ? "..." : ""}`)
             .join("\n\n---\n\n");
 
           const myFinding = agentFindings.find((f) => f.agentId === agent.id);
@@ -670,11 +698,11 @@ export async function POST(req: NextRequest) {
             const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
               {
                 role: "system",
-                content: `${companyContext}${agent.soul}${knowledgeCtx}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา หากเห็นด้วยให้ระบุว่าเห็นด้วยในประเด็นใด หากไม่เห็นด้วยให้ระบุชัดเจนว่าทำไมและเสนอมุมมองของคุณแทน ห้ามเออออกับทุกคนโดยไม่มีจุดยืน`,
+                content: `${companyContext}${agent.soul}${knowledgeCtx}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา\n\n⚠️ กฎเหล็กของการอภิปราย:\n1. ห้ามพูดแค่ "เห็นด้วย" โดยไม่มีเนื้อหาใหม่ — ถ้าเห็นด้วยต้องเสริมมุมมองใหม่ที่คนอื่นยังไม่ได้พูด\n2. คุณต้องระบุอย่างน้อย 1 จุดที่ไม่เห็นด้วยหรือมีข้อกังวล พร้อมเหตุผลจากประสบการณ์ในบทบาท ${agent.role}\n3. คุณต้องชี้อย่างน้อย 1 ความเสี่ยงหรือข้อควรระวังที่คนอื่นอาจมองข้าม\n4. พูดกระชับ เน้นเฉพาะจุดที่ต่างจากคนอื่น ไม่ต้องสรุปซ้ำสิ่งที่ทุกคนเห็นตรงกันแล้ว`,
               },
               {
                 role: "user",
-                content: `วาระ: ${question}\n\nความเห็นของคุณ:\n${myFinding.content}\n\n---\nความเห็นจากสมาชิกคนอื่น:\n${otherFindings}\n\n---\nในฐานะ ${agent.role} คุณมีจุดยืนอย่างไรต่อความเห็นเหล่านี้? ระบุให้ชัดเจนว่าเห็นด้วย/ไม่เห็นด้วยในประเด็นใด และเพราะอะไร`,
+                content: `วาระ: ${question}\n\nสรุปมุมมองของคุณ:\n${myFinding.content.slice(0, 500)}${myFinding.content.length > 500 ? "..." : ""}\n\n---\nมุมมองจากสมาชิกคนอื่น:\n${otherFindings}\n\n---\nในฐานะ ${agent.role}:\n1. ระบุจุดที่คุณไม่เห็นด้วยกับใคร เพราะอะไร?\n2. มีความเสี่ยงอะไรที่คนอื่นมองข้าม?\n3. มีข้อเสนอเพิ่มเติมจากมุมมอง ${agent.role} ของคุณไหม?`,
               },
             ]);
 
@@ -705,9 +733,16 @@ export async function POST(req: NextRequest) {
             updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
           } catch (err) {
             send("agent_error", { agentId: agent.id, error: String(err) });
+            failedAgents.push(`${agent.emoji} ${agent.name} (${agent.role})`);
           }
         }
       }
+
+      // Track agents that had no findings (failed in Phase 1)
+      const respondedAgentIds = new Set(agentFindings.map((f) => f.agentId));
+      silentAgents = orderedAgents
+        .filter((a) => !respondedAgentIds.has(a.id))
+        .map((a) => `${a.emoji} ${a.name} (${a.role})`);
 
       } // end if (mode !== "close") — Phase 1+2
 
@@ -738,14 +773,21 @@ export async function POST(req: NextRequest) {
 
       if (chairApiKey && allContext.length > 0) {
         try {
+          // Build awareness of agent failures for synthesis
+          let failureNote = "";
+          if (silentAgents.length > 0 || failedAgents.length > 0) {
+            const allFailed = [...new Set([...silentAgents, ...failedAgents])];
+            failureNote = `\n\n⚠️ หมายเหตุ: ผู้เชี่ยวชาญต่อไปนี้ไม่สามารถนำเสนอข้อมูลได้ในการประชุมนี้: ${allFailed.join(", ")} — ให้ระบุในรายงานว่ายังขาดมุมมองจากตำแหน่งเหล่านี้ และอาจต้องประชุมเพิ่มเติม`;
+          }
+
           const result = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}`,
+              content: `${companyContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}`,
             },
             {
               role: "user",
-              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานการประชุมที่มี:\n1. **ประเด็นที่ที่ประชุมเห็นพ้องกัน**\n2. **ประเด็นที่ยังมีความเห็นต่าง** (พร้อมเหตุผลแต่ละฝ่าย)\n3. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผล\n4. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role ถ้าเป็นไปได้)\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
+              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานการประชุมที่มี:\n1. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n2. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n3. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n4. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n5. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ สำคัญ: ข้อมูลตัวเลขทุกตัวที่อ้างอิงในรายงานต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
             },
           ]);
 
