@@ -965,10 +965,10 @@ export default function ResearchPage() {
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="md:hidden px-3 py-2 rounded-lg text-xs border"
-              style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+              className="md:hidden px-3 py-2 rounded-lg text-xs border flex items-center gap-1.5"
+              style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}
             >
-              👥 {selectedIds.size}/{agents.length}
+              ⚙️ ตั้งค่า · 👥 {selectedIds.size}/{agents.length}
             </button>
             {(rounds.length > 0 || viewingSession) && (
               <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
@@ -976,6 +976,17 @@ export default function ResearchPage() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* ── Mobile quick-info strip ── */}
+        <div className="flex md:hidden items-center gap-2 px-3 py-2 rounded-xl border text-[10px] flex-wrap" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}>
+          <button onClick={() => setMobileSidebarOpen(true)} className="flex items-center gap-1 px-2 py-1 rounded-lg border" style={{ borderColor: selectedIds.size > 0 ? "var(--accent)" : "var(--border)", color: selectedIds.size > 0 ? "var(--accent)" : "var(--text-muted)" }}>
+            👥 {selectedIds.size} agent{selectedIds.size !== 1 ? "s" : ""}
+          </button>
+          {useMcpContext && <span className="px-2 py-1 rounded-lg" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)" }}>🔌 MCP</span>}
+          {useFileContext && attachedFiles.length > 0 && <span className="px-2 py-1 rounded-lg" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)" }}>📎 {attachedFiles.length} ไฟล์</span>}
+          {!useMcpContext && !useFileContext && selectedIds.size > 0 && <span className="opacity-60">กดปุ่ม ⚙️ ตั้งค่า เพื่อเปิด MCP หรือแนบไฟล์</span>}
+          {selectedIds.size === 0 && <span className="opacity-60">กดปุ่ม ⚙️ เพื่อเลือก Agent เข้าประชุม</span>}
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
