@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listAgents, createAgent, AgentProvider } from "@/lib/agents-store";
+import { listAgents, createAgent, AgentProvider, migrateSouls } from "@/lib/agents-store";
 
 export async function GET() {
   try {
+    migrateSouls();
     const agents = listAgents();
     return NextResponse.json({ agents });
   } catch (e) {
