@@ -400,6 +400,9 @@ export async function POST(req: NextRequest) {
     fileContexts,
     historyMode = "full", // "full" | "summary" | "last3" | "none"
     disableMcp = false,
+    mode = "full", // "full" | "discuss" | "close"
+    sessionId: existingSessionId,
+    allRounds,
   } = body as {
     question: string;
     agentIds: string[];
@@ -410,6 +413,9 @@ export async function POST(req: NextRequest) {
     fileContexts?: { filename: string; meta: string; context: string; sheets?: string[] }[];
     historyMode?: "full" | "summary" | "last3" | "none";
     disableMcp?: boolean;
+    mode?: "full" | "discuss" | "close";
+    sessionId?: string;
+    allRounds?: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }[];
   };
 
   if (!question || !agentIds?.length) {
@@ -469,11 +475,17 @@ export async function POST(req: NextRequest) {
     return `\n\n---\n📎 เอกสารอ้างอิงที่แนบมา (ใช้ข้อมูลเหล่านี้ประกอบการวิเคราะห์):\n${contexts.map((f) => `[${f.meta}]\n${f.context}`).join("\n\n---\n")}\n---\n`;
   }
 
-  const session = createResearchSession({ question, agentIds, dataSource });
-
-  // Increment session count for each participating agent
-  for (const aid of agentIds) {
-    incrementAgentSessionCount(aid);
+  let sessionId: string;
+  if (existingSessionId) {
+    // Reuse existing session (multi-round meeting)
+    sessionId = existingSessionId;
+  } else {
+    const newSession = createResearchSession({ question, agentIds, dataSource });
+    sessionId = newSession.id;
+    // Increment session count only on first round
+    for (const aid of agentIds) {
+      incrementAgentSessionCount(aid);
+    }
   }
 
   // Detect chairman
@@ -487,15 +499,18 @@ export async function POST(req: NextRequest) {
         controller.enqueue(sseEvent(encoder, event, data));
       };
 
-      send("session", { sessionId: session.id });
+      send("session", { sessionId });
       send("chairman", { agentId: chairman.id, name: chairman.name, emoji: chairman.emoji, role: chairman.role });
-      send("status", { message: `🏛️ ประธาน: ${chairman.emoji} ${chairman.name} (${chairman.role}) — เปิดการประชุม` });
+      send("status", { message: `🏛️ ประธาน: ${chairman.emoji} ${chairman.name} (${chairman.role}) — ${mode === "close" ? "สรุปมติที่ประชุม" : "เปิดการประชุม"}` });
 
       const agentFindings: { agentId: string; name: string; emoji: string; role: string; content: string; searchResults?: string }[] = [];
       const agentTokens: Record<string, { input: number; output: number }> = {};
 
       const historyContext = buildHistoryContext(conversationHistory);
       const fileContext = buildFileContext(fileContexts);
+
+      // === Phase 1 + 2: Discussion (skip in "close" mode) ===
+      if (mode !== "close") {
 
       // Chairman opens the meeting
       {
@@ -523,7 +538,7 @@ export async function POST(req: NextRequest) {
               tokensUsed: openingResult.inputTokens + openingResult.outputTokens,
               timestamp: new Date().toISOString(),
             };
-            appendResearchMessage(session.id, openingMsg);
+            appendResearchMessage(sessionId, openingMsg);
             send("message", openingMsg);
             agentTokens[chairman.id] = { input: openingResult.inputTokens, output: openingResult.outputTokens };
           } catch { /* skip opening if error */ }
@@ -569,7 +584,7 @@ export async function POST(req: NextRequest) {
             tokensUsed: 0,
             timestamp: new Date().toISOString(),
           };
-          appendResearchMessage(session.id, thinkingMsg);
+          appendResearchMessage(sessionId, thinkingMsg);
           send("message", thinkingMsg);
 
           const isChairman = agent.id === chairman.id;
@@ -604,7 +619,7 @@ export async function POST(req: NextRequest) {
             tokensUsed: result.inputTokens + result.outputTokens,
             timestamp: new Date().toISOString(),
           };
-          appendResearchMessage(session.id, findingMsg);
+          appendResearchMessage(sessionId, findingMsg);
           send("message", findingMsg);
           send("agent_tokens", {
             agentId: agent.id,
@@ -672,7 +687,7 @@ export async function POST(req: NextRequest) {
               tokensUsed: result.inputTokens + result.outputTokens,
               timestamp: new Date().toISOString(),
             };
-            appendResearchMessage(session.id, chatMsg);
+            appendResearchMessage(sessionId, chatMsg);
             send("message", chatMsg);
             send("agent_tokens", {
               agentId: agent.id,
@@ -687,25 +702,43 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Phase 3: Chairman synthesizes — miti + action items + chart suggestion
+      } // end if (mode !== "close") — Phase 1+2
+
+      // === Phase 3: Chairman synthesis (skip in "discuss" mode) ===
+      if (mode !== "discuss") {
+
       send("status", { message: "🏛️ Phase 3 — ประธานสรุปมติและ Action Items" });
 
       const chairApiKey = getAgentApiKey(chairman.id);
 
-      if (chairApiKey && agentFindings.length > 0) {
-        try {
-          const allContext = agentFindings
-            .map((f) => `[${f.emoji} ${f.name} — ${f.role}]:\n${f.content}`)
-            .join("\n\n---\n\n");
+      // Build allContext from either current round findings or all rounds (close mode)
+      let allContext = "";
+      if (mode === "close" && allRounds && allRounds.length > 0) {
+        // Close mode: synthesize from all accumulated rounds
+        allContext = allRounds.map((round: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }, i: number) => {
+          const msgs = (round.messages ?? [])
+            .filter((m: { role: string }) => m.role !== "thinking")
+            .map((m: { agentEmoji: string; agentName: string; role: string; content: string }) => `[${m.agentEmoji} ${m.agentName} — ${m.role}]:\n${m.content}`)
+            .join("\n\n");
+          return `=== วาระที่ ${i + 1}: ${round.question} ===\n${msgs}`;
+        }).join("\n\n---\n\n");
+      } else {
+        // Full/default mode: use current round findings
+        allContext = agentFindings
+          .map((f) => `[${f.emoji} ${f.name} — ${f.role}]:\n${f.content}`)
+          .join("\n\n---\n\n");
+      }
 
+      if (chairApiKey && allContext.length > 0) {
+        try {
           const result = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
             {
               role: "system",
-              content: `คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน`,
+              content: `คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}`,
             },
             {
               role: "user",
-              content: `วาระ: ${question}\n\nความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานการประชุมที่มี:\n1. **ประเด็นที่ที่ประชุมเห็นพ้องกัน**\n2. **ประเด็นที่ยังมีความเห็นต่าง** (พร้อมเหตุผลแต่ละฝ่าย)\n3. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผล\n4. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role ถ้าเป็นไปได้)\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
+              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานการประชุมที่มี:\n1. **ประเด็นที่ที่ประชุมเห็นพ้องกัน**\n2. **ประเด็นที่ยังมีความเห็นต่าง** (พร้อมเหตุผลแต่ละฝ่าย)\n3. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผล\n4. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role ถ้าเป็นไปได้)\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
             },
           ]);
 
@@ -719,7 +752,7 @@ export async function POST(req: NextRequest) {
             tokensUsed: result.inputTokens + result.outputTokens,
             timestamp: new Date().toISOString(),
           };
-          appendResearchMessage(session.id, synthMsg);
+          appendResearchMessage(sessionId, synthMsg);
           send("message", synthMsg);
 
           // Parse chart data from synthesis
@@ -734,7 +767,7 @@ export async function POST(req: NextRequest) {
           }
 
           send("final_answer", { content: result.content });
-          completeResearchSession(session.id, result.content, "completed");
+          completeResearchSession(sessionId, result.content, "completed");
 
           // Update chairman tokens
           const prevTokens = agentTokens[chairman.id] ?? { input: 0, output: 0 };
@@ -775,15 +808,18 @@ export async function POST(req: NextRequest) {
           } catch { /* ignore */ }
 
         } catch (err) {
-          completeResearchSession(session.id, String(err), "error");
+          completeResearchSession(sessionId, String(err), "error");
           send("error", { message: String(err) });
         }
-      } else {
-        completeResearchSession(session.id, agentFindings[0]?.content ?? "", "completed");
+      } else if (mode !== "close") {
+        // Only auto-complete for "full" mode when no chairman API key
+        completeResearchSession(sessionId, agentFindings[0]?.content ?? "", "completed");
         send("final_answer", { content: agentFindings[0]?.content ?? "" });
       }
 
-      send("done", { sessionId: session.id });
+      } // end if (mode !== "discuss") — Phase 3
+
+      send("done", { sessionId });
       controller.close();
     },
   });

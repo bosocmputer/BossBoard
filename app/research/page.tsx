@@ -47,6 +47,7 @@ interface ConversationRound {
   suggestions: string[];
   chartData?: ChartData;
   chairmanId?: string;
+  isSynthesis?: boolean;
 }
 
 interface ConversationTurn {
@@ -57,6 +58,7 @@ interface ConversationTurn {
 interface ServerSession {
   id: string;
   question: string;
+  agentIds?: string[];
   status: string;
   startedAt: string;
   totalTokens: number;
@@ -248,6 +250,7 @@ export default function ResearchPage() {
 
   // Conversation state (persisted in localStorage)
   const [rounds, setRounds] = useState<ConversationRound[]>([]);
+  const [meetingSessionId, setMeetingSessionId] = useState<string | null>(null);
   const [currentMessages, setCurrentMessages] = useState<ResearchMessage[]>([]);
   const [currentFinalAnswer, setCurrentFinalAnswer] = useState("");
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
@@ -275,12 +278,14 @@ export default function ResearchPage() {
   const currentSuggestionsRef = useRef<string[]>([]);
   const currentChartDataRef = useRef<ChartData | null>(null);
   const chairmanIdRef = useRef<string | null>(null);
+  const meetingSessionIdRef = useRef<string | null>(null);
 
   useEffect(() => { currentFinalAnswerRef.current = currentFinalAnswer; }, [currentFinalAnswer]);
   useEffect(() => { currentMessagesRef.current = currentMessages; }, [currentMessages]);
   useEffect(() => { currentSuggestionsRef.current = currentSuggestions; }, [currentSuggestions]);
   useEffect(() => { currentChartDataRef.current = currentChartData; }, [currentChartData]);
   useEffect(() => { chairmanIdRef.current = chairmanId; }, [chairmanId]);
+  useEffect(() => { meetingSessionIdRef.current = meetingSessionId; }, [meetingSessionId]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -289,6 +294,10 @@ export default function ResearchPage() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.rounds) setRounds(parsed.rounds);
+        if (parsed.meetingSessionId) {
+          setMeetingSessionId(parsed.meetingSessionId);
+          meetingSessionIdRef.current = parsed.meetingSessionId;
+        }
       }
     } catch { /* ignore */ }
   }, []);
@@ -296,9 +305,9 @@ export default function ResearchPage() {
   // Save to localStorage when rounds change
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ rounds }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ rounds, meetingSessionId }));
     } catch { /* ignore */ }
-  }, [rounds]);
+  }, [rounds, meetingSessionId]);
 
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
@@ -413,7 +422,13 @@ export default function ResearchPage() {
   };
 
   const buildHistory = (): ConversationTurn[] =>
-    rounds.map((r) => ({ question: r.question, answer: r.finalAnswer }));
+    rounds.filter(r => !r.isSynthesis).map((r) => ({
+      question: r.question,
+      answer: r.finalAnswer || r.messages
+        .filter(m => m.role === "finding" || m.role === "chat" || m.role === "synthesis")
+        .map(m => `${m.agentEmoji} ${m.agentName}: ${m.content.slice(0, 500)}`)
+        .join("\n---\n"),
+    }));
 
   const buildFileContexts = () =>
     attachedFiles.length > 0
@@ -425,9 +440,12 @@ export default function ResearchPage() {
         }))
       : undefined;
 
-  const handleRun = async (overrideQuestion?: string) => {
-    const q = (overrideQuestion ?? question).trim();
-    if (!q || selectedIds.size === 0 || running) return;
+  const handleRun = async (overrideQuestion?: string, closeMode = false) => {
+    const q = closeMode
+      ? (rounds[0]?.question ?? "สรุปมติที่ประชุม")
+      : (overrideQuestion ?? question).trim();
+    if (!closeMode && (!q || selectedIds.size === 0 || running)) return;
+    if (closeMode && (rounds.length === 0 || running)) return;
 
     setViewingSession(null);
     setHistoryTab("current");
@@ -437,27 +455,38 @@ export default function ResearchPage() {
     setCurrentSuggestions([]);
     setCurrentChartData(null);
     setAgentTokens({});
-    setStatus("");
+    setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
     setAutoScroll(true);
-    if (!overrideQuestion) setQuestion("");
+    if (!overrideQuestion && !closeMode) setQuestion("");
 
     abortRef.current = new AbortController();
     const roundTokens: Record<string, AgentTokenState> = {};
 
     try {
+      const body: Record<string, unknown> = {
+        question: q,
+        agentIds: Array.from(selectedIds),
+        mode: closeMode ? "close" : "discuss",
+        sessionId: meetingSessionIdRef.current || undefined,
+        conversationHistory: buildHistory(),
+        fileContexts: useFileContext ? buildFileContexts() : [],
+        historyMode,
+        disableMcp: !useMcpContext,
+      };
+
+      if (closeMode) {
+        body.allRounds = rounds.filter(r => !r.isSynthesis).map(r => ({
+          question: r.question,
+          messages: r.messages.filter(m => m.role !== "thinking"),
+        }));
+      }
+
       const res = await fetch("/api/team-research/stream", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          question: q,
-          agentIds: Array.from(selectedIds),
-          conversationHistory: buildHistory(),
-          fileContexts: useFileContext ? buildFileContexts() : [],
-          historyMode,
-          disableMcp: !useMcpContext,
-        }),
+        body: JSON.stringify(body),
         signal: abortRef.current.signal,
       });
 
@@ -483,7 +512,12 @@ export default function ResearchPage() {
           try {
             const payload = JSON.parse(line.slice(6));
 
-            if (currentEvent === "status" || ("message" in payload && typeof payload.message === "string")) {
+            if (currentEvent === "session") {
+              if (!meetingSessionIdRef.current) {
+                meetingSessionIdRef.current = payload.sessionId;
+                setMeetingSessionId(payload.sessionId);
+              }
+            } else if (currentEvent === "status" || ("message" in payload && typeof payload.message === "string")) {
               setStatus(payload.message);
             } else if (currentEvent === "chairman") {
               setChairmanId(payload.agentId);
@@ -514,18 +548,27 @@ export default function ResearchPage() {
     } finally {
       setRunning(false);
       setSearchingAgents(new Set());
-      setRounds((prev) => [
-        ...prev,
-        {
-          question: q,
-          messages: currentMessagesRef.current,
-          finalAnswer: currentFinalAnswerRef.current,
-          agentTokens: roundTokens,
-          suggestions: currentSuggestionsRef.current,
-          chartData: currentChartDataRef.current ?? undefined,
-          chairmanId: chairmanIdRef.current ?? undefined,
-        },
-      ]);
+      // Only add a round if there are messages (close mode may have only synthesis)
+      if (currentMessagesRef.current.length > 0 || currentFinalAnswerRef.current) {
+        setRounds((prev) => [
+          ...prev,
+          {
+            question: closeMode ? "🏛️ สรุปมติที่ประชุม" : q,
+            messages: currentMessagesRef.current,
+            finalAnswer: currentFinalAnswerRef.current,
+            agentTokens: roundTokens,
+            suggestions: currentSuggestionsRef.current,
+            chartData: currentChartDataRef.current ?? undefined,
+            chairmanId: chairmanIdRef.current ?? undefined,
+            isSynthesis: closeMode,
+          },
+        ]);
+      }
+      if (closeMode) {
+        // Meeting closed — clear session
+        setMeetingSessionId(null);
+        meetingSessionIdRef.current = null;
+      }
       setCurrentMessages([]);
       setCurrentFinalAnswer("");
       setCurrentSuggestions([]);
@@ -535,6 +578,8 @@ export default function ResearchPage() {
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
   };
+
+  const handleCloseMeeting = () => handleRun(undefined, true);
 
   const handleStop = () => {
     abortRef.current?.abort();
@@ -555,6 +600,8 @@ export default function ResearchPage() {
 
   const clearSession = () => {
     setRounds([]);
+    setMeetingSessionId(null);
+    meetingSessionIdRef.current = null;
     setCurrentMessages([]);
     setCurrentFinalAnswer("");
     setCurrentSuggestions([]);
@@ -1013,7 +1060,38 @@ export default function ResearchPage() {
                       <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
                       <MessageContent content={viewingSession.finalAnswer} />
                       <button
-                        onClick={() => { setViewingSession(null); setHistoryTab("current"); setQuestion(viewingSession.question); }}
+                        onClick={() => {
+                          // Restore agents from original session
+                          if (viewingSession.agentIds && viewingSession.agentIds.length > 0) {
+                            setSelectedIds(new Set(viewingSession.agentIds));
+                          }
+                          // Build prior context from the original session's messages into a round
+                          const priorRound: ConversationRound = {
+                            question: viewingSession.question,
+                            messages: viewingSession.messages.map((m: any) => ({
+                              id: m.id,
+                              agentId: m.agentId,
+                              agentName: m.agentName,
+                              agentEmoji: m.agentEmoji,
+                              role: m.role,
+                              content: m.content,
+                              tokensUsed: m.tokensUsed,
+                              timestamp: m.timestamp || new Date().toISOString(),
+                            })),
+                            finalAnswer: viewingSession.finalAnswer || "",
+                            agentTokens: {},
+                            suggestions: [],
+                            chairmanId: undefined,
+                          };
+                          // Set up as a new multi-turn session with prior context
+                          clearSession();
+                          setRounds([priorRound]);
+                          setMeetingSessionId(null);
+                          meetingSessionIdRef.current = null;
+                          setQuestion("");
+                          setViewingSession(null);
+                          setHistoryTab("current");
+                        }}
                         className="mt-3 text-xs px-3 py-1.5 rounded-lg border"
                         style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                       >
@@ -1028,18 +1106,25 @@ export default function ResearchPage() {
               {!viewingSession && displayRounds.map((round, roundIndex) => (
                 <div key={roundIndex} className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
-                    <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
-                      วาระที่ {roundIndex + 1}
+                    <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
+                    <div className="text-xs px-3 py-1 rounded-full border" style={{
+                      borderColor: "var(--accent)",
+                      color: round.isSynthesis ? "#000" : "var(--accent)",
+                      background: round.isSynthesis ? "var(--accent)" : "color-mix(in srgb, var(--accent) 8%, transparent)",
+                      fontWeight: round.isSynthesis ? 700 : 400,
+                    }}>
+                      {round.isSynthesis ? "📋 สรุปมติที่ประชุม" : `วาระที่ ${roundIndex + 1}`}
                     </div>
-                    <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
+                    <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
                   </div>
 
-                  <div className="flex justify-end">
-                    <div className="max-w-[85%] sm:max-w-xl px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tr-sm text-sm" style={{ background: "var(--accent)", color: "#000" }}>
-                      {round.question}
+                  {!round.isSynthesis && (
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] sm:max-w-xl px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tr-sm text-sm" style={{ background: "var(--accent)", color: "#000" }}>
+                        {round.question}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {round.messages.map((msg) => (
                     <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
@@ -1164,7 +1249,7 @@ export default function ResearchPage() {
                     onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleRun(); } }}
                     disabled={running}
                     rows={1}
-                    placeholder={rounds.length > 0 ? "พิมพ์วาระต่อไป... (⌘+Enter ส่ง)" : "พิมพ์วาระแรกเพื่อเริ่มประชุม... (⌘+Enter ส่ง)"}
+                    placeholder={meetingSessionId ? "ถามต่อได้เลย หรือกด 'สรุปมติ / ปิดประชุม' เมื่อพร้อม... (⌘+Enter ส่ง)" : rounds.length > 0 ? "พิมพ์วาระต่อไป... (⌘+Enter ส่ง)" : "พิมพ์วาระแรกเพื่อเริ่มประชุม... (⌘+Enter ส่ง)"}
                     className="w-full bg-transparent text-sm resize-none outline-none px-4 pt-3 pb-1"
                     style={{ color: "var(--text)", minHeight: 36, maxHeight: 160 }}
                   />
@@ -1179,12 +1264,23 @@ export default function ResearchPage() {
                         ⚙️
                       </button>
                       <div className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                        {meetingSessionId && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />🟢 ประชุมอยู่ · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
                         {selectedIds.size}/{agents.length} สมาชิก
                         {attachedFiles.length > 0 && <span> · 📎 {attachedFiles.length}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {rounds.length > 0 && !running && meetingSessionId && (
+                        <button
+                          onClick={handleCloseMeeting}
+                          className="h-8 px-3 rounded-lg flex items-center justify-center border text-xs font-bold transition-all hover:opacity-80"
+                          style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
+                          title="สรุปมติและปิดการประชุม"
+                        >
+                          📋 สรุปมติ / ปิดประชุม
+                        </button>
+                      )}
                       {running ? (
                         <button
                           onClick={handleStop}
