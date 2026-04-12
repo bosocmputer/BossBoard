@@ -141,6 +141,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+> **📖 ติดตั้ง Production Server ตั้งแต่เริ่มต้น?** ดู [INSTALL.md](INSTALL.md) — คู่มือแบบ step-by-step สำหรับผู้ไม่มีความรู้ด้านเทคนิค
+>
+> **⚡ Quick Start?** ดู [quick_start.md](quick_start.md) — ติดตั้งเร็ว 5 นาที
+
 ---
 
 ## Requirements

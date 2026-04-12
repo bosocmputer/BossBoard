@@ -6,7 +6,7 @@ export async function GET() {
     const agents = listAgents();
     return NextResponse.json({ agents });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดในระบบ" }, { status: 500 });
   }
 }
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields: name, provider, model, soul, role" }, { status: 400 });
     }
 
-    const agent = createAgent({
+    const agent = await createAgent({
       name,
       emoji: emoji || "🤖",
       provider: provider as AgentProvider,
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ agent }, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดในระบบ" }, { status: 500 });
   }
 }

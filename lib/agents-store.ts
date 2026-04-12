@@ -106,6 +106,23 @@ function decrypt(text: string): string {
 
 // --- Agents ---
 
+// Simple in-process mutex for file writes to prevent race conditions
+const fileLocks = new Map<string, Promise<void>>();
+async function withFileLock<T>(file: string, fn: () => T): Promise<T> {
+  while (fileLocks.has(file)) {
+    await fileLocks.get(file);
+  }
+  let resolve: () => void;
+  const promise = new Promise<void>((r) => { resolve = r; });
+  fileLocks.set(file, promise);
+  try {
+    return fn();
+  } finally {
+    fileLocks.delete(file);
+    resolve!();
+  }
+}
+
 function readAgents(): Agent[] {
   ensureDir(AGENTS_FILE);
   if (!fs.existsSync(AGENTS_FILE)) return [];
@@ -148,8 +165,9 @@ export function createAgent(data: {
   seniority?: number;
   mcpEndpoint?: string;
   mcpAccessMode?: string;
-}): AgentPublic {
-  const agents = readAgents();
+}): Promise<AgentPublic> {
+  return withFileLock(AGENTS_FILE, () => {
+    const agents = readAgents();
   const now = new Date().toISOString();
   const agent: Agent = {
     id: crypto.randomUUID(),
@@ -173,6 +191,7 @@ export function createAgent(data: {
   writeAgents(agents);
   const { apiKeyEncrypted, ...pub } = agent;
   return { ...pub, hasApiKey: true };
+  });
 }
 
 export function updateAgent(
@@ -192,7 +211,8 @@ export function updateAgent(
     mcpEndpoint: string;
     mcpAccessMode: string;
   }>
-): AgentPublic | null {
+): Promise<AgentPublic | null> {
+  return withFileLock(AGENTS_FILE, () => {
   const agents = readAgents();
   const idx = agents.findIndex((a) => a.id === id);
   if (idx === -1) return null;
@@ -215,14 +235,17 @@ export function updateAgent(
   writeAgents(agents);
   const { apiKeyEncrypted, ...pub } = agent;
   return { ...pub, hasApiKey: true };
+  });
 }
 
-export function deleteAgent(id: string): boolean {
-  const agents = readAgents();
-  const filtered = agents.filter((a) => a.id !== id);
-  if (filtered.length === agents.length) return false;
-  writeAgents(filtered);
-  return true;
+export function deleteAgent(id: string): Promise<boolean> {
+  return withFileLock(AGENTS_FILE, () => {
+    const agents = readAgents();
+    const filtered = agents.filter((a) => a.id !== id);
+    if (filtered.length === agents.length) return false;
+    writeAgents(filtered);
+    return true;
+  });
 }
 
 // --- Research History ---

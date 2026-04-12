@@ -1,70 +1,48 @@
-#快速启动办法（中文）
-## 1.通过prompt安装
-```
-在openclaw输入如下提示词，让openclaw帮启动：
-请帮我安装并运行这个github项目，并把服务访问地址发给我：https://github.com/xmanrui/OpenClaw-bot-review
-```
+# Quick Start — BossBoard ห้องประชุม AI
 
-## 2.通过git安装
-```
-git clone https://github.com/xmanrui/OpenClaw-bot-review.git
-cd OpenClaw-bot-review
+## ติดตั้งเร็ว (5 นาที)
+
+```bash
+# 1. ต้องมี Node.js 22+
+node --version    # ต้องได้ v22.x.x
+
+# 2. Clone และติดตั้ง
+git clone https://github.com/bosocmputer/BossBoard.git
+cd BossBoard
 npm install
+
+# 3. ตั้งค่า encryption key (แนะนำ)
+echo "AGENT_ENCRYPT_KEY=$(openssl rand -hex 16)" > .env.local
+
+# 4. รัน Development
 npm run dev
+# เปิด http://localhost:3000
 ```
 
-## 3.通过skill安装
-```
-npx clawhub install openclaw-bot-dashboard
-或者：npx skills add xmanrui/openclaw-bot-dashboard
+## รัน Production (Standalone)
 
-安装后通过这些关键词触发启动服务：
-- "打开 OpenClaw-bot-review"
-- "打开 Openclaw dashboard"
-- "打开 bot review"
-- "打开机器人大盘"
-- "打开 bot-review"
-- "打开openclaw机器人大盘"
-- "open openclaw dashboard"
-- "open OpenClaw-bot-review"
-- "open openclaw dashsboard"
-- "launch bot review"
-- "start dashboard"
-
+```bash
+npm run build
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+cd .next/standalone
+PORT=3003 node server.js
+# เปิด http://localhost:3003
 ```
 
----
+## รัน Docker
 
-# Quick Start (English)
-## 1. Install via Prompt
-```
-In OpenClaw, send the prompt below and let OpenClaw set it up:
-Please help me install and run this GitHub project, and send me the service URL: https://github.com/xmanrui/OpenClaw-bot-review
+```bash
+docker build -t bossboard .
+docker run -d -p 3003:3000 -v ~/.bossboard:/root/.bossboard bossboard
 ```
 
-## 2. Install via Git
-```
-git clone https://github.com/xmanrui/OpenClaw-bot-review.git
-cd OpenClaw-bot-review
-npm install
-npm run dev
-```
+## หลังติดตั้ง
 
-## 3. Install via Skill
-```
-npx clawhub install openclaw-bot-dashboard
-or: npx skills add xmanrui/openclaw-bot-dashboard
+1. เปิดเบราว์เซอร์ → `http://localhost:3000` (dev) หรือ `http://<IP>:3003` (production)
+2. ไปที่ **👥 จัดการเอเจนต์** → สร้าง agent อย่างน้อย 2 ตัว (ใส่ API Key จาก OpenRouter/OpenAI/etc.)
+3. ไปที่ **🏛️ ห้องประชุม** → เลือก agents → พิมพ์คำถาม → **เริ่มประชุม**
 
-After installation, use these trigger phrases to start the service:
-- "打开 OpenClaw-bot-review"
-- "打开 Openclaw dashboard"
-- "打开 bot review"
-- "打开机器人大盘"
-- "打开 bot-review"
-- "打开openclaw机器人大盘"
-- "open openclaw dashboard"
-- "open OpenClaw-bot-review"
-- "open openclaw dashsboard"
-- "launch bot review"
-- "start dashboard"
-```
+## ต้องการคู่มือเต็ม?
+
+ดู [INSTALL.md](INSTALL.md) — คู่มือติดตั้ง server ตั้งแต่เริ่มต้น สำหรับผู้ไม่มีความรู้ด้านเทคนิค
