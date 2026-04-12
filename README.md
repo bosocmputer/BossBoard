@@ -27,9 +27,16 @@
 ### 🏠 Dashboard (`/`)
 หน้าภาพรวมระบบ — แสดงสถิติ agents, teams, sessions, tokens ใช้งาน, quick actions, การประชุมล่าสุด, เอเจนต์ยอดนิยม
 
+- **Hero CTA** — ปุ่ม "🏛️ เริ่มประชุม AI" โดดเด่นบนสุด พร้อมลิงก์ตรงไปห้องประชุม
+- **Quick Meeting Templates** — เลือก template ประชุมสำเร็จรูป (วิเคราะห์งบ, วางแผนภาษี, ประเมินความเสี่ยง, วิเคราะห์ต้นทุน) → เปิดห้องประชุมพร้อม `?q=` prefill
+
 ### 👥 Team Agents (`/agents`)
 สร้างและจัดการทีม AI agents — แต่ละตัวมี provider, model, API key, soul (บุคลิก), skills, MCP endpoint เป็นของตัวเอง
 
+- **4-Step Wizard Form** — สร้าง/แก้ไข agent ผ่าน step form แบบ tab navigation (Template → Model → ข้อมูล → ขั้นสูง)
+- **Emoji Picker** — เลือก emoji จาก grid 80 ตัวใน 4 หมวด (คน, ธุรกิจ, วิเคราะห์, กฎหมาย) — ไม่ต้องพิมพ์เอง
+- **Agent Cards** — แสดง model badge, ลำดับอาวุโส 🏛️, web search 🔍, MCP 🔌 indicators
+- **Toast Notifications** — แจ้งเตือนเมื่อ save/delete/toggle agent สำเร็จ
 - **11 Agent Templates** ใน 2 หมวด (เน้นสำนักงานบัญชี):
   - **สำนักงานบัญชี (10):** นักบัญชีอาวุโส, ผู้สอบบัญชี CPA, ที่ปรึกษาภาษี, นักวิเคราะห์งบการเงิน, ที่ปรึกษาบัญชีนิติบุคคล, เจ้าหน้าที่บัญชี, ผู้ตรวจสอบภายใน, ที่ปรึกษาต้นทุน, ที่ปรึกษาบัญชีระหว่างประเทศ, ที่ปรึกษาระบบบัญชี
   - **Custom (1):** สร้าง agent ตามต้องการ
@@ -59,6 +66,9 @@
 - **Charts**: Auto-render Bar/Line/Pie จาก `chart` blocks ใน AI output
 - **History**: ดูประวัติ sessions เก่า (เก็บ 100 sessions ล่าสุด)
 - **Follow-up Suggestions** จาก AI
+- **Meeting Timer** — นับเวลาประชุม (mm:ss) แสดงใน status bar
+- **Token Cost Estimation** — แสดงจำนวน tokens + ค่าใช้จ่ายโดยประมาณ (~$X.XXX) ใน status bar
+- **URL Param `?q=`** — เปิดห้องประชุมพร้อม prefill คำถามจาก dashboard template
 - **Export**: Meeting Minutes เป็น Markdown
 
 ### 📋 Teams (`/teams`)
