@@ -553,7 +553,7 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${agent.soul}${knowledgeContext}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}\n\nตอบคำถามอย่างกระชับ ตรงประเด็น ใช้ภาษาที่เข้าใจง่าย ถ้ามีตัวเลขให้แสดงชัดเจน ตอบไม่เกิน 500 คำ เว้นแต่คำถามต้องการรายละเอียดมาก`,
+              content: `${companyContext}${agent.soul}${knowledgeContext}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}\n\nรูปแบบการตอบ:\n1. **ตอบคำตอบหลักให้ชัดเจนก่อนเลยในย่อหน้าแรก** (ใช่/ไม่ใช่/มี/ไม่มี + สรุปสั้น 1-2 ประโยค)\n2. จากนั้นค่อยอธิบายเหตุผล หลักกฎหมาย หรือรายละเอียดสนับสนุน\n3. ถ้ามีเงื่อนไขพิเศษหรือข้อยกเว้น ให้ระบุชัดเจนว่ากรณีของผู้ถามเข้าเงื่อนไขไหน\n\nสำคัญ: คำตอบต้องสอดคล้องกันตลอด — ห้ามเปิดด้วยข้อมูลที่ขัดกับข้อสรุป ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ`,
             },
             { role: "user", content: question },
           ]);
