@@ -55,16 +55,25 @@ async function callLLM(
 
   if (provider === "openrouter") {
     const url = "https://openrouter.ai/api/v1/chat/completions";
-    const res = await fetch(url, {
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+      "HTTP-Referer": "https://ledgio.ai",
+      "X-Title": "LEDGIO AI",
+    };
+    let res = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-        "HTTP-Referer": "https://ledgio.ai",
-        "X-Title": "LEDGIO AI",
-      },
+      headers,
       body: JSON.stringify({ model, messages, max_tokens: 4096 }),
     });
+    // Fallback to gpt-4o-mini if model is invalid (400/404)
+    if (!res.ok && (res.status === 400 || res.status === 404)) {
+      res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ model: "openai/gpt-4o-mini", messages, max_tokens: 4096 }),
+      });
+    }
     if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${await res.text()}`);
     const data = await res.json();
     return {
@@ -402,7 +411,7 @@ export async function POST(req: NextRequest) {
     fileContexts,
     historyMode = "full", // "full" | "summary" | "last3" | "none"
     disableMcp = false,
-    mode = "full", // "full" | "discuss" | "close"
+    mode = "full", // "full" | "discuss" | "close" | "qa"
     sessionId: existingSessionId,
     allRounds,
   } = body as {
@@ -415,7 +424,7 @@ export async function POST(req: NextRequest) {
     fileContexts?: { filename: string; meta: string; context: string; sheets?: string[] }[];
     historyMode?: "full" | "summary" | "last3" | "none";
     disableMcp?: boolean;
-    mode?: "full" | "discuss" | "close";
+    mode?: "full" | "discuss" | "close" | "qa";
     sessionId?: string;
     allRounds?: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }[];
   };
@@ -506,7 +515,7 @@ export async function POST(req: NextRequest) {
 
       send("session", { sessionId });
       send("chairman", { agentId: chairman.id, name: chairman.name, emoji: chairman.emoji, role: chairman.role });
-      send("status", { message: `🏛️ ประธาน: ${chairman.emoji} ${chairman.name} (${chairman.role}) — ${mode === "close" ? "สรุปมติที่ประชุม" : "เปิดการประชุม"}` });
+      send("status", { message: mode === "qa" ? `💬 ${chairman.emoji} ${chairman.name} กำลังตอบ...` : `🏛️ ประธาน: ${chairman.emoji} ${chairman.name} (${chairman.role}) — ${mode === "close" ? "สรุปมติที่ประชุม" : "เปิดการประชุม"}` });
 
       const agentFindings: { agentId: string; name: string; emoji: string; role: string; content: string; searchResults?: string }[] = [];
       const agentTokens: Record<string, { input: number; output: number }> = {};
@@ -515,6 +524,80 @@ export async function POST(req: NextRequest) {
 
       const historyContext = buildHistoryContext(conversationHistory);
       const fileContext = buildFileContext(fileContexts);
+
+      // === QA Mode: Direct single-agent answer (no meeting ceremony) ===
+      if (mode === "qa") {
+        const agent = orderedAgents[0];
+        const apiKey = getAgentApiKey(agent.id);
+        if (!apiKey) {
+          send("error", { message: "ไม่มี API key สำหรับ agent นี้" });
+          send("done", { sessionId });
+          controller.close();
+          return;
+        }
+        send("agent_start", { agentId: agent.id, name: agent.name, emoji: agent.emoji, role: agent.role, isChairman: true });
+
+        let mcpContext = "";
+        if (!disableMcp && agent.mcpEndpoint) {
+          mcpContext = await fetchMcpContext(agent.mcpEndpoint, agent.mcpAccessMode ?? "general", question);
+        }
+        let searchContext = "";
+        if (agent.useWebSearch && (serperKey || serpApiKeyVal)) {
+          send("agent_searching", { agentId: agent.id, query: question });
+          const searchResults = await webSearch(question, serperKey, serpApiKeyVal);
+          if (searchResults) searchContext = `\n\n🔍 ผลการค้นหา:\n${searchResults}\n`;
+        }
+
+        const knowledgeContext = getAgentKnowledgeContent(agent.id);
+        try {
+          const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
+            {
+              role: "system",
+              content: `${companyContext}${agent.soul}${knowledgeContext}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}\n\nตอบคำถามอย่างกระชับ ตรงประเด็น ใช้ภาษาที่เข้าใจง่าย ถ้ามีตัวเลขให้แสดงชัดเจน ตอบไม่เกิน 500 คำ เว้นแต่คำถามต้องการรายละเอียดมาก`,
+            },
+            { role: "user", content: question },
+          ]);
+
+          const answerMsg: ResearchMessage = {
+            id: crypto.randomUUID(),
+            agentId: agent.id,
+            agentName: agent.name,
+            agentEmoji: agent.emoji,
+            role: "synthesis",
+            content: result.content,
+            tokensUsed: result.inputTokens + result.outputTokens,
+            timestamp: new Date().toISOString(),
+          };
+          appendResearchMessage(sessionId, answerMsg);
+          send("message", answerMsg);
+          send("agent_tokens", {
+            agentId: agent.id,
+            inputTokens: result.inputTokens,
+            outputTokens: result.outputTokens,
+            totalTokens: result.inputTokens + result.outputTokens,
+          });
+          updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
+          send("final_answer", { content: result.content });
+          completeResearchSession(sessionId, result.content, "completed");
+        } catch (err) {
+          const errorMsg: ResearchMessage = {
+            id: crypto.randomUUID(),
+            agentId: agent.id,
+            agentName: agent.name,
+            agentEmoji: agent.emoji,
+            role: "finding",
+            content: `⚠️ เกิดข้อผิดพลาด: ${String(err).slice(0, 200)}`,
+            tokensUsed: 0,
+            timestamp: new Date().toISOString(),
+          };
+          appendResearchMessage(sessionId, errorMsg);
+          send("message", errorMsg);
+          completeResearchSession(sessionId, String(err), "error");
+        }
+        send("done", { sessionId });
+        controller.close();
+        return;
+      }
 
       // === Phase 1 + 2: Discussion (skip in "close" mode) ===
       if (mode !== "close") {

@@ -304,6 +304,12 @@ export default function ResearchPage() {
   const chairmanIdRef = useRef<string | null>(null);
   const meetingSessionIdRef = useRef<string | null>(null);
 
+  // Smart mode (auto-detect QA vs meeting based on agent count)
+  const [forceMode, setForceMode] = useState<"auto" | "meeting" | "qa">("auto");
+  const skipToSummaryRef = useRef(false);
+  const [pendingSkipToSummary, setPendingSkipToSummary] = useState(false);
+  const handleCloseRef = useRef<() => void>(() => {});
+
   useEffect(() => { currentFinalAnswerRef.current = currentFinalAnswer; }, [currentFinalAnswer]);
   useEffect(() => { currentMessagesRef.current = currentMessages; }, [currentMessages]);
   useEffect(() => { currentSuggestionsRef.current = currentSuggestions; }, [currentSuggestions]);
@@ -459,6 +465,9 @@ export default function ResearchPage() {
     }));
   };
 
+  // Smart mode: auto = 1 agent→QA, 2+→meeting; user can override
+  const effectiveMode = forceMode !== "auto" ? forceMode : selectedIds.size <= 1 ? "qa" : "meeting";
+
   const buildHistory = (): ConversationTurn[] =>
     rounds.filter(r => !r.isSynthesis).map((r) => ({
       question: r.question,
@@ -489,16 +498,18 @@ export default function ResearchPage() {
     if (!closeMode && (!q || running)) return;
     if (closeMode && (rounds.length === 0 || running)) return;
 
+    const isQA = !closeMode && effectiveMode === "qa";
+
     setViewingSession(null);
     setHistoryTab("current");
     setRunning(true);
     setCurrentMessages([]);
     setCurrentFinalAnswer("");
-    if (!meetingStartTime) setMeetingStartTime(Date.now());
+    if (!meetingStartTime && !isQA) setMeetingStartTime(Date.now());
     setCurrentSuggestions([]);
     setCurrentChartData(null);
     setAgentTokens({});
-    setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : "");
+    setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "💬 กำลังตอบ..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
     if (!overrideQuestion && !closeMode) setQuestion("");
@@ -510,7 +521,7 @@ export default function ResearchPage() {
       const body: Record<string, unknown> = {
         question: q,
         agentIds: Array.from(selectedIds),
-        mode: closeMode ? "close" : "discuss",
+        mode: closeMode ? "close" : isQA ? "qa" : "discuss",
         sessionId: meetingSessionIdRef.current || undefined,
         conversationHistory: buildHistory(),
         fileContexts: useFileContext ? buildFileContexts() : [],
@@ -606,6 +617,10 @@ export default function ResearchPage() {
           },
         ]);
       }
+      if (skipToSummaryRef.current && !closeMode) {
+        skipToSummaryRef.current = false;
+        setTimeout(() => handleCloseRef.current(), 300);
+      }
       if (closeMode) {
         // Meeting closed — clear session
         setMeetingSessionId(null);
@@ -625,11 +640,33 @@ export default function ResearchPage() {
   };
 
   const handleCloseMeeting = () => handleRun(undefined, true);
+  handleCloseRef.current = handleCloseMeeting;
+
+  const handleSkipToSummary = () => {
+    const hasData = currentMessagesRef.current.some(m =>
+      m.role === "finding" || m.role === "chat" || m.role === "analysis" || m.role === "synthesis"
+    );
+    if (!hasData && rounds.length === 0) {
+      showToast("warning", "ยังไม่มีข้อมูลเพียงพอ — รอให้ agent นำเสนอก่อน");
+      return;
+    }
+    skipToSummaryRef.current = true;
+    abortRef.current?.abort();
+  };
+
+  // Auto-trigger close meeting after skip-to-summary abort settles
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pendingSkipToSummary && !running && rounds.length > 0) {
+      setPendingSkipToSummary(false);
+      handleCloseMeeting();
+    }
+  }, [pendingSkipToSummary, running, rounds]);
 
   const handleStop = () => {
     abortRef.current?.abort();
     setRunning(false);
-    setStatus("หยุดการทำงาน");
+    setStatus("หยุดแล้ว — พิมพ์คำถามใหม่ หรือกดสรุปมติ");
   };
 
   const loadServerSession = async (session: ServerSession) => {
@@ -1295,7 +1332,7 @@ export default function ResearchPage() {
                     onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleRun(); } }}
                     disabled={running}
                     rows={1}
-                    placeholder={meetingSessionId ? "ถามต่อได้เลย หรือกด 'สรุปมติ / ปิดประชุม' เมื่อพร้อม... (⌘+Enter ส่ง)" : rounds.length > 0 ? "พิมพ์วาระต่อไป... (⌘+Enter ส่ง)" : "พิมพ์วาระแรกเพื่อเริ่มประชุม... (⌘+Enter ส่ง)"}
+                    placeholder={effectiveMode === "qa" ? "พิมพ์คำถาม... (⌘+Enter ส่ง)" : meetingSessionId ? "ถามต่อได้เลย หรือกด 'สรุปมติ / ปิดประชุม' เมื่อพร้อม... (⌘+Enter ส่ง)" : rounds.length > 0 ? "พิมพ์วาระต่อไป... (⌘+Enter ส่ง)" : "พิมพ์วาระแรกเพื่อเริ่มประชุม... (⌘+Enter ส่ง)"}
                     className="w-full bg-transparent text-sm resize-none outline-none px-4 pt-3 pb-1"
                     style={{ color: "var(--text)", minHeight: 36, maxHeight: 160 }}
                   />
@@ -1309,8 +1346,17 @@ export default function ResearchPage() {
                       >
                         ⚙️
                       </button>
+                      <button
+                        onClick={() => setForceMode(prev => prev === "auto" ? (effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
+                        className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded transition-all"
+                        style={{ background: forceMode !== "auto" ? "color-mix(in srgb, var(--accent) 18%, transparent)" : "color-mix(in srgb, var(--accent) 8%, transparent)", color: "var(--accent)" }}
+                        title={effectiveMode === "qa" ? "โหมดถามตอบ — คลิกเพื่อสลับ" : "โหมดประชุม — คลิกเพื่อสลับ"}
+                        disabled={running}
+                      >
+                        {effectiveMode === "qa" ? "💬" : "🏛️"}
+                      </button>
                       <div className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
-                        {meetingSessionId && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
+                        {meetingSessionId && effectiveMode !== "qa" && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
                         {selectedIds.size}/{agents.length} สมาชิก
                         {attachedFiles.length > 0 && <span> · 📎 {attachedFiles.length}</span>}
@@ -1325,7 +1371,7 @@ export default function ResearchPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {rounds.length > 0 && !running && meetingSessionId && (
+                      {rounds.length > 0 && !running && meetingSessionId && effectiveMode !== "qa" && (
                         <button
                           onClick={handleCloseMeeting}
                           className="h-8 px-3 rounded-lg flex items-center justify-center border text-xs font-bold transition-all hover:opacity-80"
@@ -1336,21 +1382,33 @@ export default function ResearchPage() {
                         </button>
                       )}
                       {running ? (
-                        <button
-                          onClick={handleStop}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center border transition-all"
-                          style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
-                          title="หยุด"
-                        >
-                          ⏹
-                        </button>
+                        <>
+                          {effectiveMode !== "qa" && (
+                            <button
+                              onClick={handleSkipToSummary}
+                              className="h-8 px-3 rounded-lg flex items-center justify-center border text-xs font-bold transition-all hover:opacity-80"
+                              style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
+                              title="ข้ามไปสรุปมติเลย"
+                            >
+                              📋 ข้ามไปสรุป
+                            </button>
+                          )}
+                          <button
+                            onClick={handleStop}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center border transition-all"
+                            style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                            title="หยุด"
+                          >
+                            ⏹
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={() => handleRun()}
                           disabled={!question.trim() || selectedIds.size === 0}
                           className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all"
                           style={{ background: "var(--accent)", color: "#000" }}
-                          title="เปิดวาระ (⌘+Enter)"
+                          title={effectiveMode === "qa" ? "ส่งคำถาม (⌘+Enter)" : "เปิดวาระ (⌘+Enter)"}
                         >
                           ▶
                         </button>
