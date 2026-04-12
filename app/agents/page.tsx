@@ -256,6 +256,11 @@ export default function AgentsPage() {
       setError("กรุณากรอกข้อมูลให้ครบ: ชื่อ, Provider, Model, Role, Soul");
       return;
     }
+    if (!editingId && !form.apiKey.trim()) {
+      setError("⚠️ กรุณาใส่ API Key — สมัครฟรีที่ openrouter.ai/keys");
+      setFormStep(2);
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -756,8 +761,13 @@ export default function AgentsPage() {
                       onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
                       placeholder={editingId ? "••••••• (เว้นว่างถ้าไม่เปลี่ยน)" : "sk-or-v1-xxx..."}
                       className="w-full px-3 py-2 rounded-lg border text-sm"
-                      style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                      style={{ background: "var(--bg)", borderColor: !editingId && !form.apiKey.trim() ? "var(--danger)" : "var(--border)", color: "var(--text)" }}
                     />
+                    {!editingId && !form.apiKey.trim() && (
+                      <div className="mt-2 text-xs px-3 py-2 rounded-lg border" style={{ borderColor: "var(--danger)", background: "color-mix(in srgb, var(--danger) 8%, transparent)", color: "var(--danger)" }}>
+                        ⚠️ จำเป็นต้องใส่ API Key — ถ้าไม่มี Agent จะใช้งานไม่ได้
+                      </div>
+                    )}
                   </div>
 
                   {/* Name + Emoji + Role */}

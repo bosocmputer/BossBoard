@@ -495,6 +495,14 @@ export default function ResearchPage() {
       showToast("warning", "กรุณาเลือกสมาชิกที่ประชุมก่อนเริ่มประชุม");
       return;
     }
+    // Warn if any selected agent has no API key
+    if (!closeMode) {
+      const noKey = agents.filter(a => selectedIds.has(a.id) && !a.hasApiKey);
+      if (noKey.length > 0) {
+        showToast("warning", `⚠️ ${noKey.map(a => a.name).join(", ")} ยังไม่มี API Key — ไปตั้งค่าที่หน้า Agent ก่อน`);
+        return;
+      }
+    }
     if (!closeMode && (!q || running)) return;
     if (closeMode && (rounds.length === 0 || running)) return;
 
