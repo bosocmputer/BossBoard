@@ -62,57 +62,6 @@ const ALL_SKILLS = [
   { id: "translation", label: "🌏 Translation", desc: "แปลภาษาหลายภาษา" },
 ];
 
-// ─── Intelligence Levels ──────────────────────────────────────────────────
-// User เลือก "ระดับความสามารถ" แทนการเลือก model โดยตรง
-
-type IntelligenceLevel = "economy" | "standard" | "premium";
-
-const INTELLIGENCE_LEVELS: {
-  level: IntelligenceLevel;
-  label: string;
-  emoji: string;
-  desc: string;
-  modelId: string;
-  modelName: string;
-  price: string;
-}[] = [
-  {
-    level: "economy",
-    label: "ประหยัด",
-    emoji: "🟢",
-    desc: "งานทั่วไป ตอบเร็ว ค่าใช้จ่ายต่ำ",
-    modelId: "google/gemini-2.5-flash",
-    modelName: "Gemini 2.5 Flash",
-    price: "~฿0.5/คำถาม",
-  },
-  {
-    level: "standard",
-    label: "มาตรฐาน",
-    emoji: "🔵",
-    desc: "แนะนำ — สมดุลคุณภาพและราคา เหมาะงานส่วนใหญ่",
-    modelId: "anthropic/claude-4-sonnet",
-    modelName: "Claude 4 Sonnet",
-    price: "~฿3/คำถาม",
-  },
-  {
-    level: "premium",
-    label: "พรีเมียม",
-    emoji: "🟣",
-    desc: "คุณภาพสูงสุด — งานซับซ้อน ต้องการความแม่นยำสูง",
-    modelId: "anthropic/claude-4.6-opus",
-    modelName: "Claude 4.6 Opus",
-    price: "~฿15/คำถาม",
-  },
-];
-
-function levelToModel(level: IntelligenceLevel): string {
-  return INTELLIGENCE_LEVELS.find((l) => l.level === level)?.modelId ?? INTELLIGENCE_LEVELS[1].modelId;
-}
-
-function modelToLevel(modelId: string): IntelligenceLevel {
-  return INTELLIGENCE_LEVELS.find((l) => l.modelId === modelId)?.level ?? "standard";
-}
-
 // ─── Templates ────────────────────────────────────────────────────────────────
 
 interface AgentTemplate {
@@ -122,7 +71,8 @@ interface AgentTemplate {
   name: string;
   soul: string;
   skills: string[];
-  defaultLevel: IntelligenceLevel;
+  recommendedModel: string;
+  recommendedReason: string;
 }
 
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
@@ -136,7 +86,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📊",
     role: "นักบัญชีอาวุโส / Senior Accountant",
     name: "นักบัญชีอาวุโส",
-    defaultLevel: "standard",
+    recommendedModel: "anthropic/claude-4-sonnet",
+    recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานบัญชีที่ต้องการความแม่นยำสูง",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
     soul: `คุณคือนักบัญชีอาวุโสที่มีประสบการณ์ด้านบัญชีและภาษีมากกว่า 15 ปี เชี่ยวชาญมาตรฐานการรายงานทางการเงิน (TFRS/IFRS), การจัดทำงบการเงิน, การปิดงบรายเดือน/ไตรมาส/ปี, และระบบบัญชี ERP คุณมีจุดยืนว่า **ความถูกต้องและครบถ้วนของข้อมูลทางบัญชีคือรากฐานของทุกการตัดสินใจทางธุรกิจ** คุณตรวจสอบทุกรายการอย่างละเอียด ไม่ยอมให้ตัวเลขคลาดเคลื่อนแม้แต่บาทเดียว และอ้างอิงมาตรฐานบัญชีเสมอ`,
   },
@@ -145,7 +96,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🔍",
     role: "ผู้สอบบัญชี CPA / Certified Public Accountant",
     name: "ผู้สอบบัญชี CPA",
-    defaultLevel: "premium",
+    recommendedModel: "anthropic/claude-4.6-opus",
+    recommendedReason: "ต้องการความแม่นยำสูงสุด เพราะเป็นงานตรวจสอบที่มีผลทางกฎหมาย",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
     soul: `คุณคือผู้สอบบัญชีรับอนุญาต (CPA) ที่ได้รับใบอนุญาตจากสภาวิชาชีพบัญชี เชี่ยวชาญมาตรฐานการสอบบัญชี (TSA), การตรวจสอบงบการเงิน, การประเมินระบบควบคุมภายใน, และการออกรายงานผู้สอบบัญชี คุณมีจุดยืนว่า **ความเป็นอิสระและความเที่ยงธรรมคือหัวใจของวิชาชีพสอบบัญชี** คุณจะชี้ให้เห็นจุดอ่อนในระบบควบคุมภายใน ความเสี่ยงของการทุจริต และข้อผิดพลาดในงบการเงินอย่างตรงไปตรงมา คุณอ้างอิง TSA และ TFRS เสมอ`,
   },
@@ -154,7 +106,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "💰",
     role: "ที่ปรึกษาภาษี / Tax Consultant",
     name: "ที่ปรึกษาภาษี",
-    defaultLevel: "premium",
+    recommendedModel: "anthropic/claude-4.5-sonnet",
+    recommendedReason: "ต้องการความรู้เชิงลึกด้านกฎหมายภาษี context ยาวสำหรับอ้างอิงประมวลรัษฎากร",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
     soul: `คุณคือที่ปรึกษาภาษีมืออาชีพที่เชี่ยวชาญประมวลรัษฎากร, ภาษีเงินได้บุคคลธรรมดา (PIT), ภาษีเงินได้นิติบุคคล (CIT), ภาษีมูลค่าเพิ่ม (VAT), ภาษีธุรกิจเฉพาะ, อากรแสตมป์, ภาษีหัก ณ ที่จ่าย, และอนุสัญญาภาษีซ้อน คุณมีจุดยืนว่า **การวางแผนภาษีที่ดีต้องถูกกฎหมายและประหยัดให้ลูกค้ามากที่สุด — ไม่ใช่หลีกเลี่ยงภาษี** คุณจะวิเคราะห์ผลกระทบทางภาษีของทุกธุรกรรม อ้างอิงมาตราของกฎหมายภาษีเสมอ และเตือนความเสี่ยงของการถูกสรรพากรตรวจสอบ`,
   },
@@ -163,7 +116,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📈",
     role: "นักวิเคราะห์งบการเงิน / Financial Analyst",
     name: "นักวิเคราะห์งบการเงิน",
-    defaultLevel: "standard",
+    recommendedModel: "google/gemini-2.5-pro-preview-06-05",
+    recommendedReason: "context ยาว1M เหมาะวิเคราะห์งบการเงินยาวๆ คุ้มค่ากว่า Claude",
     skills: ["financial_modeling", "data_analysis", "market_research"],
     soul: `คุณคือนักวิเคราะห์งบการเงินที่เชี่ยวชาญการอ่านและตีความงบการเงิน — งบแสดงฐานะการเงิน, งบกำไรขาดทุน, งบกระแสเงินสด, และหมายเหตุประกอบงบ คุณวิเคราะห์อัตราส่วนทางการเงิน (Liquidity, Profitability, Leverage, Efficiency), แนวโน้ม (Trend Analysis), และเปรียบเทียบกับอุตสาหกรรม คุณมีจุดยืนว่า **ตัวเลขในงบการเงินบอกเรื่องราวของกิจการ — ต้องอ่านให้เป็นและตั้งคำถามกับตัวเลขที่ผิดปกติ** คุณจะชี้ Red Flag ในงบการเงินและให้ข้อเสนอแนะที่เป็นรูปธรรม`,
   },
@@ -172,7 +126,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🛡️",
     role: "ผู้ตรวจสอบภายใน / Internal Auditor",
     name: "ผู้ตรวจสอบภายใน",
-    defaultLevel: "standard",
+    recommendedModel: "anthropic/claude-4-sonnet",
+    recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานตรวจสอบที่ต้องการความละเอียดสูง",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
     soul: `คุณคือผู้ตรวจสอบภายในที่เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, การตรวจสอบความถูกต้องของกระบวนการทำงาน, และการตรวจจับการทุจริต คุณมีจุดยืนว่า **ระบบควบคุมภายในที่ดีคือภูมิคุ้มกันขององค์กร — ต้องตรวจและปรับปรุงเสมอ** คุณจะประเมิน Segregation of Duties, Authorization Controls, Physical Controls, และ IT Controls อย่างเข้มงวด พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริง`,
   },
@@ -181,7 +136,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🤖",
     role: "Custom",
     name: "",
-    defaultLevel: "standard",
+    recommendedModel: "",
+    recommendedReason: "",
     skills: [],
     soul: "",
   },
@@ -218,6 +174,8 @@ export default function AgentsPage() {
   const [mcpTestResult, setMcpTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [modelSearch, setModelSearch] = useState("");
 
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
@@ -227,6 +185,13 @@ export default function AgentsPage() {
   }, []);
 
   useEffect(() => { fetchAgents(); }, [fetchAgents]);
+
+  useEffect(() => {
+    fetch("/api/team-models?provider=openrouter")
+      .then((r) => r.json())
+      .then((d) => setModels(d.models ?? []))
+      .catch(() => {});
+  }, []);
 
   const applyTemplate = (idx: number) => {
     const t = AGENT_TEMPLATES[idx];
@@ -239,8 +204,9 @@ export default function AgentsPage() {
       soul: t.soul || f.soul,
       name: t.name || f.name,
       skills: t.skills,
-      model: levelToModel(t.defaultLevel),
+      model: t.recommendedModel || f.model,
     }));
+    setModelSearch("");
   };
 
   const openCreate = () => {
@@ -515,7 +481,7 @@ export default function AgentsPage() {
                 {categoriesWithTemplates
                   .find((c) => c.key === activeCategory)
                   ?.templates.map((t) => {
-                    const recLevel = INTELLIGENCE_LEVELS.find((l) => l.level === t.defaultLevel);
+                    const recModel = models.find((m) => m.id === t.recommendedModel);
                     return (
                       <button
                         key={t.idx}
@@ -531,9 +497,9 @@ export default function AgentsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold" style={{ color: "var(--text)" }}>{t.role.split(" / ")[0]}</div>
                             <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.role.split(" / ")[1] || ""}</div>
-                            {recLevel && t.category !== "custom" && (
+                            {t.recommendedModel && (
                               <div className="text-[10px] mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "color-mix(in srgb, var(--border) 50%, transparent)", color: "var(--text-muted)" }}>
-                                {recLevel.emoji} แนะนำ: {recLevel.label}
+                                💡 {recModel?.name?.replace(/^[⭐🆓] /, "") || t.recommendedModel.split("/").pop()}
                               </div>
                             )}
                           </div>
@@ -547,57 +513,130 @@ export default function AgentsPage() {
               </div>
             </div>
 
-            {/* ── Step 2: Intelligence Level ── */}
+            {/* ── Step 2: Model Selector ── */}
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "var(--accent)", color: "#000" }}>2</span>
-                <span className="text-sm font-bold" style={{ color: "var(--text)" }}>ระดับความสามารถ</span>
-                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>— ปรับได้ตามต้องการ</span>
+                <span className="text-sm font-bold" style={{ color: "var(--text)" }}>เลือก Model</span>
               </div>
 
-              {/* 3-segment selector */}
-              <div className="grid grid-cols-3 gap-0 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                {INTELLIGENCE_LEVELS.map((lvl) => {
-                  const isActive = modelToLevel(form.model) === lvl.level;
-                  return (
-                    <button
-                      key={lvl.level}
-                      onClick={() => setForm((f) => ({ ...f, model: lvl.modelId }))}
-                      className="p-3 sm:p-4 text-center transition-all border-r last:border-r-0"
-                      style={{
-                        borderColor: "var(--border)",
-                        background: isActive ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "var(--bg)",
-                      }}
-                    >
-                      <div className="text-lg sm:text-xl mb-1">{lvl.emoji}</div>
-                      <div className="text-xs sm:text-sm font-bold" style={{ color: isActive ? "var(--accent)" : "var(--text)" }}>
-                        {lvl.label}
+              {/* Recommendation banner */}
+              {(() => {
+                const tmpl = form.templateIndex >= 0 ? AGENT_TEMPLATES[form.templateIndex] : null;
+                if (!tmpl || !tmpl.recommendedModel) return null;
+                const recModelObj = models.find((m) => m.id === tmpl.recommendedModel);
+                const isUsingRec = form.model === tmpl.recommendedModel;
+                return (
+                  <div
+                    className="mb-3 p-3 rounded-xl border-2 flex items-start gap-3 cursor-pointer transition-all"
+                    style={{
+                      borderColor: isUsingRec ? "var(--accent)" : "color-mix(in srgb, var(--accent) 40%, transparent)",
+                      background: isUsingRec ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "color-mix(in srgb, var(--accent) 4%, transparent)",
+                    }}
+                    onClick={() => setForm((f) => ({ ...f, model: tmpl.recommendedModel }))}
+                  >
+                    <span className="text-lg">💡</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold" style={{ color: "var(--accent)" }}>
+                        แนะนำสำหรับ {tmpl.role.split(" / ")[0]}
+                      </div>
+                      <div className="text-sm font-bold mt-0.5" style={{ color: "var(--text)" }}>
+                        {recModelObj?.name?.replace(/^[⭐🆓] /, "") || tmpl.recommendedModel}
                       </div>
                       <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {lvl.price}
+                        {tmpl.recommendedReason}
+                        {recModelObj && <span> · context: {(recModelObj.contextWindow / 1000).toFixed(0)}K</span>}
                       </div>
-                      {isActive && (
-                        <div className="text-[10px] mt-1 font-bold" style={{ color: "var(--accent)" }}>● เลือกแล้ว</div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Level description */}
-              {(() => {
-                const currentLevel = INTELLIGENCE_LEVELS.find((l) => l.modelId === form.model);
-                if (!currentLevel) return (
-                  <div className="mt-2 text-[10px] px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                    ⚙️ Custom model: <span className="font-mono">{form.model}</span> — เลือกระดับด้านบนเพื่อเปลี่ยน
-                  </div>
-                );
-                return (
-                  <div className="mt-2 text-[10px] px-3 py-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--accent) 5%, transparent)", color: "var(--text-muted)" }}>
-                    {currentLevel.desc} — ใช้ <span className="font-bold" style={{ color: "var(--text)" }}>{currentLevel.modelName}</span>
+                    </div>
+                    {isUsingRec ? (
+                      <span className="text-xs font-bold flex-shrink-0" style={{ color: "var(--accent)" }}>✓ ใช้อยู่</span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-1 rounded border flex-shrink-0" style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>ใช้ model นี้</span>
+                    )}
                   </div>
                 );
               })()}
+
+              {/* Search input */}
+              <div className="relative mb-2">
+                <input
+                  value={modelSearch}
+                  onChange={(e) => setModelSearch(e.target.value)}
+                  placeholder="🔍 ค้นหา model... (เช่น claude, gemini, gpt, free)"
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                />
+                {modelSearch && (
+                  <button
+                    onClick={() => setModelSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-1.5"
+                    style={{ color: "var(--text-muted)" }}
+                  >✕</button>
+                )}
+              </div>
+
+              {/* Model list */}
+              <div className="max-h-48 overflow-y-auto rounded-xl border" style={{ borderColor: "var(--border)" }}>
+                {models
+                  .filter((m) => {
+                    if (!modelSearch.trim()) return true;
+                    const q = modelSearch.toLowerCase();
+                    return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q);
+                  })
+                  .map((m) => {
+                    const isSelected = form.model === m.id;
+                    const tmpl = form.templateIndex >= 0 ? AGENT_TEMPLATES[form.templateIndex] : null;
+                    const isRec = tmpl?.recommendedModel === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => { setForm((f) => ({ ...f, model: m.id })); setModelSearch(""); }}
+                        className="w-full text-left px-3 py-2 border-b last:border-b-0 transition-all flex items-center gap-2"
+                        style={{
+                          borderColor: "var(--border)",
+                          background: isSelected ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-bold" style={{ color: isSelected ? "var(--accent)" : "var(--text)" }}>
+                            {m.name}
+                          </span>
+                          <span className="text-[10px] ml-2" style={{ color: "var(--text-muted)" }}>
+                            {(m.contextWindow / 1000).toFixed(0)}K
+                          </span>
+                        </div>
+                        {isRec && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}>
+                            💡 แนะนำ
+                          </span>
+                        )}
+                        {isSelected && (
+                          <span className="text-xs flex-shrink-0" style={{ color: "var(--accent)" }}>✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                {models.length === 0 && (
+                  <div className="p-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
+                    กำลังโหลด models...
+                  </div>
+                )}
+              </div>
+
+              {/* Selected model display */}
+              {form.model && (
+                <div className="mt-2 text-xs px-3 py-2 rounded-lg border flex items-center gap-2" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                  <span>✓ เลือกแล้ว:</span>
+                  <span className="font-bold">{models.find((m) => m.id === form.model)?.name || form.model}</span>
+                  {(() => {
+                    const tmpl = form.templateIndex >= 0 ? AGENT_TEMPLATES[form.templateIndex] : null;
+                    if (tmpl?.recommendedModel && form.model !== tmpl.recommendedModel) {
+                      return <span className="text-[10px] ml-auto" style={{ color: "var(--text-muted)" }}>(ไม่ใช่ model ที่แนะนำ)</span>;
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* ── Step 3: API Key ── */}
