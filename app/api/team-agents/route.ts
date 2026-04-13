@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, emoji, provider, apiKey, baseUrl, model, soul, role, useWebSearch, seniority, mcpEndpoint, mcpAccessMode } = body;
+    const { name, emoji, provider, apiKey, baseUrl, model, soul, role, useWebSearch, seniority, mcpEndpoint, mcpAccessMode, trustedUrls } = body;
 
     if (!name || !provider || !model || !soul || !role) {
       return NextResponse.json({ error: "Missing required fields: name, provider, model, soul, role" }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       seniority,
       mcpEndpoint,
       mcpAccessMode,
+      trustedUrls,
     });
 
     return NextResponse.json({ agent }, { status: 201 });

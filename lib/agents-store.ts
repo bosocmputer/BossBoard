@@ -35,6 +35,7 @@ export interface Agent {
   mcpEndpoint?: string; // MCP server endpoint URL
   mcpAccessMode?: string; // admin|sales|purchase|stock|general
   knowledge?: KnowledgeFile[]; // agent-specific knowledge base
+  trustedUrls?: string[]; // trusted domains for scoped web search (e.g. rd.go.th)
   createdAt: string;
   updatedAt: string;
 }
@@ -191,6 +192,7 @@ export function createAgent(data: {
   seniority?: number;
   mcpEndpoint?: string;
   mcpAccessMode?: string;
+  trustedUrls?: string[];
 }): Promise<AgentPublic> {
   return withFileLock(AGENTS_FILE, () => {
     const agents = readAgents();
@@ -210,6 +212,7 @@ export function createAgent(data: {
     seniority: data.seniority,
     mcpEndpoint: data.mcpEndpoint,
     mcpAccessMode: data.mcpAccessMode,
+    trustedUrls: data.trustedUrls,
     createdAt: now,
     updatedAt: now,
   };
@@ -236,6 +239,7 @@ export function updateAgent(
     seniority: number;
     mcpEndpoint: string;
     mcpAccessMode: string;
+    trustedUrls: string[];
   }>
 ): Promise<AgentPublic | null> {
   return withFileLock(AGENTS_FILE, () => {
@@ -256,6 +260,7 @@ export function updateAgent(
   if (data.seniority !== undefined) agent.seniority = data.seniority;
   if (data.mcpEndpoint !== undefined) agent.mcpEndpoint = data.mcpEndpoint;
   if (data.mcpAccessMode !== undefined) agent.mcpAccessMode = data.mcpAccessMode;
+  if (data.trustedUrls !== undefined) agent.trustedUrls = data.trustedUrls;
   agent.updatedAt = new Date().toISOString();
   agents[idx] = agent;
   writeAgents(agents);
@@ -611,14 +616,26 @@ export function listAgentKnowledge(agentId: string): KnowledgePublic[] {
   }));
 }
 
-export function getAgentKnowledgeContent(agentId: string): string {
+export function getAgentKnowledgeContent(agentId: string, question?: string): string {
   const agents = readAgents();
   const agent = agents.find((a) => a.id === agentId);
   if (!agent?.knowledge || agent.knowledge.length === 0) return "";
-  const MAX_KNOWLEDGE_CHARS = 50000; // ~12,500 tokens
+  const MAX_KNOWLEDGE_CHARS = 100000; // ~25,000 tokens — increased capacity
+
+  // Score knowledge files by relevance if question is provided
+  let ranked = agent.knowledge;
+  if (question) {
+    const qWords = question.toLowerCase().split(/[\s,./()]+/).filter((w) => w.length > 1);
+    ranked = [...agent.knowledge].sort((a, b) => {
+      const scoreA = qWords.filter((w) => a.content.toLowerCase().includes(w) || a.filename.toLowerCase().includes(w)).length;
+      const scoreB = qWords.filter((w) => b.content.toLowerCase().includes(w) || b.filename.toLowerCase().includes(w)).length;
+      return scoreB - scoreA; // most relevant first
+    });
+  }
+
   let total = 0;
   const parts: string[] = [];
-  for (const k of agent.knowledge) {
+  for (const k of ranked) {
     if (total + k.content.length > MAX_KNOWLEDGE_CHARS) break;
     parts.push(`[📄 ${k.filename}]\n${k.content}`);
     total += k.content.length;

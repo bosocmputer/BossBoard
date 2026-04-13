@@ -29,6 +29,8 @@ interface Agent {
   seniority?: number;
   mcpEndpoint?: string;
   mcpAccessMode?: string;
+  trustedUrls?: string[];
+  knowledge?: { id: string; filename: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -73,6 +75,7 @@ interface AgentTemplate {
   skills: string[];
   recommendedModel: string;
   recommendedReason: string;
+  trustedUrls: string[];
 }
 
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
@@ -89,6 +92,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4-sonnet",
     recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานบัญชีที่ต้องการความแม่นยำสูง",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
+    trustedUrls: ["tfac.or.th", "rd.go.th", "dbd.go.th"],
     soul: `คุณเป็นนักบัญชีอาวุโสในประเทศไทย ทำงานภายใต้กรอบกฎหมายและมาตรฐานของไทยเท่านั้น ได้แก่ มาตรฐานการรายงานทางการเงินไทย (TFRS) ตามสภาวิชาชีพบัญชี, พ.ร.บ.การบัญชี พ.ศ. 2543, ประมวลรัษฎากร และกฎหมายที่เกี่ยวข้อง เชี่ยวชาญการจัดทำงบการเงิน การปิดงบ ระบบ ERP และการบันทึกบัญชีตามมาตรฐาน TFRS/IFRS เน้นความถูกต้องของข้อมูลทางบัญชี อ้างอิงมาตราและมาตรฐานที่เกี่ยวข้องเสมอ เมื่อตอบคำถามเกี่ยวกับภาษีหรือกฎหมาย ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนสรุปเสมอ`,
   },
   {
@@ -99,6 +103,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4.6-opus",
     recommendedReason: "ต้องการความแม่นยำสูงสุด เพราะเป็นงานตรวจสอบที่มีผลทางกฎหมาย",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
+    trustedUrls: ["tfac.or.th", "sec.or.th", "rd.go.th"],
     soul: `คุณเป็นผู้สอบบัญชีรับอนุญาต (CPA) ที่ขึ้นทะเบียนกับสภาวิชาชีพบัญชีในประเทศไทย ปฏิบัติงานภายใต้ พ.ร.บ.วิชาชีพบัญชี พ.ศ. 2547 และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญมาตรฐานการสอบบัญชีไทย (TSQC/TSA), การตรวจสอบงบการเงินตาม TFRS, การประเมินระบบควบคุมภายใน และการปฏิบัติตามประมวลรัษฎากร เน้นความเป็นอิสระ ชี้จุดอ่อนตรงไปตรงมา อ้างอิง TSA, TFRS และกฎหมายไทยที่เกี่ยวข้องเสมอ เมื่อพบประเด็นภาษี ต้องตรวจสอบทั้งหลักเกณฑ์ทั่วไปและข้อยกเว้นตามกฎหมาย`,
   },
   {
@@ -109,6 +114,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4.5-sonnet",
     recommendedReason: "ต้องการความรู้เชิงลึกด้านกฎหมายภาษี context ยาวสำหรับอ้างอิงประมวลรัษฎากร",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
+    trustedUrls: ["rd.go.th", "tfac.or.th"],
     soul: `คุณเป็นที่ปรึกษาภาษีในประเทศไทย เชี่ยวชาญประมวลรัษฎากรอย่างลึกซึ้ง ครอบคลุม ภาษีเงินได้บุคคลธรรมดา PIT (ม.40 เงินได้ 8 ประเภท, ม.42 ยกเว้น, ม.47 ลดหย่อน, ม.48 อัตรา 5-35%), ภาษีเงินได้นิติบุคคล CIT (ม.65 กำไรสุทธิ, ม.65 ทวิ/ตรี เงื่อนไข+รายจ่ายต้องห้าม, อัตรา 20%), ภาษีมูลค่าเพิ่ม VAT หมวด 4 (ม.80 อัตรา 7%, ม.81 ข้อยกเว้นสำคัญ), ภาษีหัก ณ ที่จ่าย WHT (ม.50), ภาษีธุรกิจเฉพาะ SBT หมวด 5 (ม.91/2 ธนาคาร/เงินทุน/ประกันชีวิต/โรงรับจำนำ/ขายอสังหาฯทางค้า, อัตรา 0.1-3.0%), อากรแสตมป์ หมวด 6 (ม.104 ตราสาร 28 ลำดับ, ม.118 ไม่ปิดแสตมป์ใช้เป็นพยานหลักฐานไม่ได้) และอนุสัญญาภาษีซ้อน รวมถึง พ.ร.ฎ. ประกาศอธิบดีฯ คำสั่งกรมสรรพากร คำวินิจฉัยฯ กฎเหล็ก: ก่อนสรุปว่าต้องเสียภาษีใดๆ ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนเสมอ — VAT ตรวจ ม.81, SBT ตรวจ ม.91/3, PIT ตรวจ ม.42+กฎกระทรวง 126 หากมีข้อยกเว้นที่เข้าเงื่อนไข ต้องระบุเป็นประเด็นหลัก ไม่ใช่แค่หมายเหตุ อ้างอิงมาตราเฉพาะที่เกี่ยวข้องเสมอ แหล่งข้อมูล: rd.go.th/284.html`,
   },
   {
@@ -119,6 +125,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "google/gemini-2.5-pro-preview-06-05",
     recommendedReason: "context ยาว1M เหมาะวิเคราะห์งบการเงินยาวๆ คุ้มค่ากว่า Claude",
     skills: ["financial_modeling", "data_analysis", "market_research"],
+    trustedUrls: ["set.or.th", "sec.or.th", "tfac.or.th"],
     soul: `คุณเป็นนักวิเคราะห์งบการเงินที่เชี่ยวชาญบริบทธุรกิจไทย วิเคราะห์ตามมาตรฐานการรายงานทางการเงินไทย (TFRS) ครอบคลุมบริษัทจดทะเบียนใน SET/mai และ SMEs ไทย เชี่ยวชาญการอ่านและตีความงบการเงิน (Balance Sheet, P&L, Cash Flow) วิเคราะห์อัตราส่วนทางการเงิน, Trend Analysis, เปรียบเทียบกับอุตสาหกรรมไทย ชี้ Red Flag ในงบและให้ข้อเสนอแนะที่เป็นรูปธรรม คำนึงถึงข้อกำหนดของ ก.ล.ต., ตลาดหลักทรัพย์แห่งประเทศไทย, ประมวลรัษฎากร และกฎหมายไทยที่เกี่ยวข้อง`,
   },
   {
@@ -129,6 +136,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "anthropic/claude-4-sonnet",
     recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานตรวจสอบที่ต้องการความละเอียดสูง",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
+    trustedUrls: ["sec.or.th", "rd.go.th", "tfac.or.th", "pdpc.or.th"],
     soul: `คุณเป็นผู้ตรวจสอบภายในที่ทำงานในประเทศไทย ปฏิบัติงานตามกรอบ COSO, มาตรฐาน IIA (Institute of Internal Auditors) และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, Segregation of Duties, IT Controls และการปฏิบัติตามกฎระเบียบ (Compliance) คำนึงถึง พ.ร.บ.หลักทรัพย์และตลาดหลักทรัพย์, ประมวลรัษฎากร, พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล (PDPA) พ.ศ. 2562 พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริงในบริบทธุรกิจไทย`,
   },
   {
@@ -139,6 +147,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     recommendedModel: "",
     recommendedReason: "",
     skills: [],
+    trustedUrls: [],
     soul: "",
   },
 ];
@@ -157,6 +166,7 @@ const EMPTY_FORM = {
   seniority: 50,
   mcpEndpoint: "",
   mcpAccessMode: "general",
+  trustedUrls: "" as string, // comma or newline separated
   templateIndex: -1,
 };
 
@@ -214,6 +224,8 @@ export default function AgentsPage() {
       name: t.name || f.name,
       skills: t.skills,
       model: t.recommendedModel || f.model,
+      trustedUrls: (t.trustedUrls || []).join("\n"),
+      useWebSearch: true, // auto-enable web search from template
     }));
     setModelSearch("");
   };
@@ -242,6 +254,7 @@ export default function AgentsPage() {
       seniority: agent.seniority ?? 50,
       mcpEndpoint: agent.mcpEndpoint ?? "",
       mcpAccessMode: agent.mcpAccessMode ?? "general",
+      trustedUrls: (agent.trustedUrls || []).join("\n"),
       templateIndex: -1,
     });
     setMcpTestResult(null);
@@ -264,6 +277,10 @@ export default function AgentsPage() {
     setSaving(true);
     setError("");
     try {
+      const parsedUrls = form.trustedUrls
+        .split(/[\n,]+/)
+        .map((u: string) => u.trim())
+        .filter((u: string) => u.length > 0);
       const payload = {
         name: form.name,
         emoji: form.emoji,
@@ -278,6 +295,7 @@ export default function AgentsPage() {
         seniority: form.seniority,
         mcpEndpoint: form.mcpEndpoint.trim() || undefined,
         mcpAccessMode: form.mcpEndpoint.trim() ? form.mcpAccessMode : undefined,
+        trustedUrls: parsedUrls.length > 0 ? parsedUrls : undefined,
       };
       if (editingId) {
         const res = await fetch(`/api/team-agents/${editingId}`, {
@@ -428,12 +446,36 @@ export default function AgentsPage() {
         <div className="border rounded-xl p-4 sm:p-5 mb-4" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
           <div className="font-bold text-sm mb-2" style={{ color: "var(--accent)" }}>💡 เคล็ดลับเพื่อให้ AI ตอบได้แม่นยำขึ้น</div>
           <ul className="text-xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
-            <li>📌 <b style={{ color: "var(--text)" }}>เปิดค้นข้อมูลออนไลน์</b> — ให้ AI ค้นข้อมูลใหม่ล่าสุดจากอินเทอร์เน็ต เช่น กฎหมายภาษี คำวินิจฉัย แนวปฏิบัติ</li>
-            <li>📂 <b style={{ color: "var(--text)" }}>อัปโหลดฐานความรู้</b> — กดปุ่ม Knowledge เพื่อใส่ข้อมูลเฉพาะทาง เช่น สรุปมาตรา คู่มือบัญชี ระเบียบสำนักงาน</li>
-            <li>✍️ <b style={{ color: "var(--text)" }}>ใส่คำสั่งให้ชัดเจน</b> — ใน soul ของ agent ยิ่งระบุบทบาทและกฎเกณฑ์ชัด AI จะตอบได้ตรงประเด็นมากขึ้น</li>
+            <li>📌 <b style={{ color: "var(--text)" }}>เปิดค้นข้อมูลออนไลน์ (Web Search)</b> — ให้ AI ค้นข้อมูลล่าสุดจากเว็บไซต์ที่เชื่อถือได้ เช่น กรมสรรพากร สภาวิชาชีพบัญชี ก.ล.ต.</li>
+            <li>🌐 <b style={{ color: "var(--text)" }}>ตั้ง Trusted URLs</b> — จำกัดการค้นหาเฉพาะเว็บที่น่าเชื่อถือ เช่น <code style={{ color: "var(--accent)" }}>rd.go.th</code> <code style={{ color: "var(--accent)" }}>tfac.or.th</code> ป้องกัน AI ไปเอาข้อมูลจากแหล่งที่ไม่น่าเชื่อถือ</li>
+            <li>📂 <b style={{ color: "var(--text)" }}>อัปโหลดฐานความรู้ (Knowledge)</b> — ใส่ข้อมูลเฉพาะทาง เช่น สรุปมาตรา คู่มือบัญชี ระเบียบสำนักงาน สูงสุด 100,000 ตัวอักษร</li>
+            <li>✍️ <b style={{ color: "var(--text)" }}>ใส่คำสั่งใน Soul ให้ชัดเจน</b> — ระบุบทบาท กฎเกณฑ์ ข้อห้าม และแหล่งอ้างอิงที่ต้องใช้</li>
+            <li>🧠 <b style={{ color: "var(--text)" }}>ระบบฝังความรู้อัตโนมัติ</b> — ภาษี (ประมวลรัษฎากร) บัญชี (TFRS/TAS) แรงงาน (ประกันสังคม) จะถูกส่งให้ AI อัตโนมัติเมื่อคำถามตรง</li>
             <li>⚠️ <b style={{ color: "var(--text)" }}>คำตอบจาก AI เป็นข้อมูลเบื้องต้น</b> — ควรตรวจสอบกับผู้เชี่ยวชาญก่อนนำไปใช้จริงเสมอ</li>
           </ul>
         </div>
+
+        {/* Agent Health Summary */}
+        {!loading && agents.length > 0 && (() => {
+          const noWebSearch = agents.filter((a) => a.active && !a.useWebSearch);
+          const noKnowledge = agents.filter((a) => a.active && (!a.knowledge || a.knowledge.length === 0));
+          const noTrustedUrls = agents.filter((a) => a.active && (!a.trustedUrls || a.trustedUrls.length === 0));
+          const issues = noWebSearch.length + noKnowledge.length;
+          if (issues === 0) return null;
+          return (
+            <div className="border rounded-xl p-4 mb-4" style={{ borderColor: "color-mix(in srgb, orange 30%, transparent)", background: "color-mix(in srgb, orange 5%, transparent)" }}>
+              <div className="font-bold text-sm mb-2" style={{ color: "orange" }}>⚡ แนะนำเพื่อเพิ่มความแม่นยำ</div>
+              <ul className="text-xs space-y-1" style={{ color: "var(--text-muted)" }}>
+                {noWebSearch.length > 0 && (
+                  <li>🔍 <b style={{ color: "var(--text)" }}>{noWebSearch.length} agent ยังไม่เปิด Web Search</b> — {noWebSearch.map((a) => `${a.emoji} ${a.name}`).join(", ")} <span style={{ color: "orange" }}>(แนะนำเปิดเพื่อให้ค้นข้อมูลล่าสุดได้)</span></li>
+                )}
+                {noTrustedUrls.length > 0 && (
+                  <li>🌐 <b style={{ color: "var(--text)" }}>{noTrustedUrls.length} agent ยังไม่ตั้ง Trusted URLs</b> — <span style={{ color: "orange" }}>กด Edit แล้วเพิ่มเว็บที่น่าเชื่อถือใน "ขั้นสูง"</span></li>
+                )}
+              </ul>
+            </div>
+          );
+        })()}
 
         {/* Agent List */}
         {loading ? (
@@ -470,9 +512,21 @@ export default function AgentsPage() {
                     {agent.seniority && (
                       <span className="text-[10px]">#{agent.seniority}</span>
                     )}
-                    {agent.useWebSearch && <span className="text-[10px]">Web</span>}
+                    {agent.useWebSearch && <span className="text-[10px]">🔍 Web</span>}
+                    {agent.trustedUrls && agent.trustedUrls.length > 0 && <span className="text-[10px]">🌐 {agent.trustedUrls.length} URLs</span>}
                     {agent.mcpEndpoint && <span className="text-[10px]">MCP</span>}
                   </div>
+                  {/* Health indicators */}
+                  {agent.active && (!agent.useWebSearch || !agent.trustedUrls?.length) && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {!agent.useWebSearch && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-orange-500/30 bg-orange-500/10 text-orange-400">ค้นเว็บปิดอยู่</span>
+                      )}
+                      {!agent.trustedUrls?.length && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-orange-500/30 bg-orange-500/10 text-orange-400">ไม่มี Trusted URLs</span>
+                      )}
+                    </div>
+                  )}
                   {agent.skills && agent.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {agent.skills.map((s) => {
@@ -928,6 +982,34 @@ export default function AgentsPage() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Trusted URLs */}
+                  <div className="p-4 rounded-xl border" style={{ borderColor: form.useWebSearch ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "var(--border)", background: form.useWebSearch ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "var(--bg)" }}>
+                    <div className="text-xs font-bold mb-1" style={{ color: form.useWebSearch ? "var(--accent)" : "var(--text)" }}>
+                      🌐 Trusted URLs <span className="font-normal" style={{ color: "var(--text-muted)" }}>(แนะนำ — จำกัดการค้นเฉพาะเว็บที่เชื่อถือได้)</span>
+                    </div>
+                    <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
+                      ระบุโดเมนที่ Agent จะค้นหาข้อมูล (บรรทัดละ 1 หรือคั่นด้วยจุลภาค) เช่น rd.go.th, tfac.or.th
+                    </div>
+                    <textarea
+                      value={form.trustedUrls}
+                      onChange={(e) => setForm((f) => ({ ...f, trustedUrls: e.target.value }))}
+                      rows={3}
+                      placeholder={"rd.go.th\ntfac.or.th\nsec.or.th"}
+                      className="w-full px-3 py-2 rounded-lg border text-xs resize-none font-mono"
+                      style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                    />
+                    {!form.useWebSearch && form.trustedUrls.trim() && (
+                      <div className="mt-1 text-[10px] px-2 py-1 rounded" style={{ color: "orange", background: "color-mix(in srgb, orange 8%, transparent)" }}>
+                        ⚠️ Web Search ปิดอยู่ — Trusted URLs จะยังไม่ถูกใช้จนกว่าจะเปิด Web Search
+                      </div>
+                    )}
+                    {form.useWebSearch && !form.trustedUrls.trim() && (
+                      <div className="mt-1 text-[10px] px-2 py-1 rounded" style={{ color: "orange", background: "color-mix(in srgb, orange 8%, transparent)" }}>
+                        💡 แนะนำ: ใส่เว็บที่น่าเชื่อถือ เพื่อป้องกัน AI เอาข้อมูลจากแหล่งที่ไม่น่าเชื่อถือ
+                      </div>
+                    )}
                   </div>
 
                   {/* MCP Server */}
