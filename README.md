@@ -57,11 +57,16 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
 
-- **4-Phase Meeting Flow:**
+- **5-Phase Meeting Flow:**
+  0. **ถามกลับ (clarification)** — ประธานถามคำถามเพิ่มเติมก่อนเริ่มประชุม เพื่อให้ได้ข้อมูลครบถ้วน
   1. **คิด (thinking)** — agents วิเคราะห์โจทย์
   2. **นำเสนอ (finding)** — agents พูดตามลำดับ seniority จาก soul/role
   3. **อภิปราย (chat)** — agents อ่านความเห็นกัน แสดงจุดยืน เห็นด้วย/ไม่เห็นด้วย
   4. **มติประธาน (synthesis)** — Chairman สรุป + Action Items
+- **Pre-flight Clarification** — ก่อนเริ่มประชุม ประธานจะวิเคราะห์คำถามและขอข้อมูลเพิ่มเติม (ประเภทกิจการ, ทุนจดทะเบียน, ฯลฯ) เพื่อลดการสมมติข้อมูล
+- **Anti-Hallucination Rules** — ทุก agent ต้องอ้างอิงมาตรา/กฎหมาย และแยกให้ชัดระหว่าง "ข้อเท็จจริง" กับ "ความเห็น"
+- **Web Source Display** — แสดง URL แหล่งข้อมูลที่ agent ค้นหาจากอินเทอร์เน็ต พร้อมลิงก์คลิกได้
+- **Professional Markdown Rendering** — render ข้อความ agent ด้วย Markdown (หัวข้อ, ตาราง, bullet, bold/italic, code block)
 - **Chairman Auto-Detection** จาก role/seniority
 - **Real-time SSE Streaming** — ดูทุก agent ตอบ real-time
 - **Data Sources:**
@@ -76,7 +81,7 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 - **Meeting Timer** — นับเวลาประชุม (mm:ss) แสดงใน status bar
 - **Token Cost Estimation** — แสดงจำนวน tokens + ค่าใช้จ่ายโดยประมาณ (~$X.XXX) ใน status bar
 - **URL Param `?q=`** — เปิดห้องประชุมพร้อม prefill คำถามจาก dashboard template
-- **Export**: Meeting Minutes เป็น Markdown
+- **Export Minutes** — บันทึกการประชุม Markdown พร้อมผู้เข้าประชุม, คำถามชี้แจง, ข้อค้นพบ, อภิปราย, มติ, แหล่งข้อมูลเว็บ, สรุป tokens
 
 ### 📋 Teams (`/teams`)
 
@@ -165,6 +170,8 @@ Open [http://localhost:3000](http://localhost:3000)
 > **📖 ติดตั้ง Production Server ตั้งแต่เริ่มต้น?** ดู [INSTALL.md](INSTALL.md) — คู่มือแบบ step-by-step สำหรับผู้ไม่มีความรู้ด้านเทคนิค
 >
 > **⚡ Quick Start?** ดู [quick_start.md](quick_start.md) — ติดตั้งเร็ว 5 นาที
+>
+> **📋 Changelog?** ดู [CHANGELOG.md](CHANGELOG.md) — ประวัติการอัปเดตทั้งหมด
 
 ---
 
@@ -219,46 +226,51 @@ AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
 
 ### Production Server
 
-| Item | Detail                             |
-| ---- | ---------------------------------- |
-| Host | `192.168.2.109` (Ubuntu 24.04 LTS) |
-| Port | `3003`                             |
-| Node | v22.22.1                           |
-| Mode | Next.js standalone (`nohup`)       |
-| URL  | `http://192.168.2.109:3003`        |
+| Item      | Detail                              |
+| --------- | ----------------------------------- |
+| Host      | `192.168.2.109` (Ubuntu 24.04 LTS)  |
+| Port      | `3003`                              |
+| Runtime   | Docker container                    |
+| Image     | `bossboard` (built from Dockerfile) |
+| URL       | `http://192.168.2.109:3003`         |
+| Data      | `/home/bosscatdog/.bossboard`       |
 
-### First Time Setup
+### Docker Deploy (recommended)
 
 ```bash
+# First time
 git clone https://github.com/bosocmputer/BossBoard.git
 cd BossBoard
-npm install
-npm run build
-cp -r .next/static .next/standalone/.next/static
-cp -r public .next/standalone/public
-PORT=3003 node .next/standalone/server.js
+docker build -t bossboard .
+docker run -d --name bossboard -p 3003:3000 \
+  -v ~/.bossboard:/root/.bossboard \
+  --restart unless-stopped bossboard
 ```
 
-### Deploy Update
-
 ```bash
+# Update
 cd ~/BossBoard
 git pull origin main
-npm install          # ← สำคัญ ถ้ามี dependency ใหม่
-npm run build
-cp -r .next/static .next/standalone/.next/static
-cp -r public .next/standalone/public
-fuser -k 3003/tcp
-cd .next/standalone && PORT=3003 nohup node server.js > /tmp/bossboard.log 2>&1 &
+docker build -t bossboard .
+docker rm -f bossboard
+docker run -d --name bossboard -p 3003:3000 \
+  -v ~/.bossboard:/root/.bossboard \
+  --restart unless-stopped bossboard
 ```
 
-> `scripts/deploy.sh` มีอยู่แต่แนะนำให้ deploy manual ตามขั้นตอนด้านบน
+```bash
+# View logs
+docker logs -f bossboard
+docker logs bossboard | grep WebSearch   # ← ตรวจสอบ Web Search API
+```
 
-### Docker (alternative)
+### Standalone (alternative)
 
 ```bash
-docker build -t bossboard .
-docker run -p 3003:3000 -v ~/.bossboard:/root/.bossboard bossboard
+npm install && npm run build
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+cd .next/standalone && PORT=3003 nohup node server.js > /tmp/bossboard.log 2>&1 &
 ```
 
 ### Server Services Overview (192.168.2.109)

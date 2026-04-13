@@ -19,6 +19,16 @@ npm run dev
 # เปิด http://localhost:3000
 ```
 
+## รัน Production (Docker — แนะนำ)
+
+```bash
+docker build -t bossboard .
+docker run -d --name bossboard -p 3003:3000 \
+  -v ~/.bossboard:/root/.bossboard \
+  --restart unless-stopped bossboard
+# เปิด http://localhost:3003
+```
+
 ## รัน Production (Standalone)
 
 ```bash
@@ -28,13 +38,6 @@ cp -r public .next/standalone/public
 cd .next/standalone
 PORT=3003 node server.js
 # เปิด http://localhost:3003
-```
-
-## รัน Docker
-
-```bash
-docker build -t bossboard .
-docker run -d -p 3003:3000 -v ~/.bossboard:/root/.bossboard bossboard
 ```
 
 ## หลังติดตั้ง
