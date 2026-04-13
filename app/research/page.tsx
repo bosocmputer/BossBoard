@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { showToast } from "../components/Toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Agent {
   id: string;
@@ -49,11 +51,26 @@ interface ConversationRound {
   chartData?: ChartData;
   chairmanId?: string;
   isSynthesis?: boolean;
+  webSources?: WebSource[];
 }
 
 interface ConversationTurn {
   question: string;
   answer: string;
+}
+
+interface ClarificationQuestion {
+  id: string;
+  question: string;
+  type: "choice" | "text";
+  options?: string[];
+}
+
+interface WebSource {
+  title: string;
+  url: string;
+  domain: string;
+  snippet: string;
 }
 
 interface ServerSession {
@@ -175,7 +192,7 @@ function SimpleBarChart({ data }: { data: ChartData }) {
   );
 }
 
-// Render message content — strip ```chart blocks, collapsible if long
+// Render message content — Markdown with collapsible long content
 const COLLAPSE_LINE_LIMIT = 8;
 
 function MessageContent({ content }: { content: string }) {
@@ -187,11 +204,44 @@ function MessageContent({ content }: { content: string }) {
 
   return (
     <div>
-      <div
-        className="text-sm whitespace-pre-wrap leading-relaxed relative"
-        style={{ color: "var(--text)" }}
-      >
-        {displayText}
+      <div className="prose-container text-sm leading-relaxed relative" style={{ color: "var(--text)" }}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: ({ children }) => <h3 className="text-base font-bold mt-3 mb-1.5" style={{ color: "var(--text)" }}>{children}</h3>,
+            h2: ({ children }) => <h4 className="text-sm font-bold mt-2.5 mb-1" style={{ color: "var(--text)" }}>{children}</h4>,
+            h3: ({ children }) => <h5 className="text-sm font-semibold mt-2 mb-1" style={{ color: "var(--text)" }}>{children}</h5>,
+            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            strong: ({ children }) => <strong className="font-bold" style={{ color: "var(--accent)" }}>{children}</strong>,
+            ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-0.5">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-0.5">{children}</ol>,
+            li: ({ children }) => <li className="text-sm">{children}</li>,
+            a: ({ href, children }) => (
+              <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>{children}</a>
+            ),
+            table: ({ children }) => (
+              <div className="overflow-x-auto my-2">
+                <table className="w-full text-xs border-collapse" style={{ borderColor: "var(--border)" }}>{children}</table>
+              </div>
+            ),
+            thead: ({ children }) => <thead style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}>{children}</thead>,
+            th: ({ children }) => <th className="px-2 py-1.5 text-left border font-semibold text-xs" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{children}</th>,
+            td: ({ children }) => <td className="px-2 py-1.5 border text-xs" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{children}</td>,
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-3 pl-3 my-2 italic" style={{ borderColor: "var(--accent)", color: "var(--text-muted)" }}>{children}</blockquote>
+            ),
+            code: ({ className, children }) => {
+              const isBlock = className?.includes("language-");
+              if (isBlock) {
+                return <pre className="text-xs p-3 rounded-lg my-2 overflow-x-auto" style={{ background: "var(--bg)", color: "var(--text)" }}><code>{children}</code></pre>;
+              }
+              return <code className="text-xs px-1 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>{children}</code>;
+            },
+            hr: () => <hr className="my-3" style={{ borderColor: "var(--border)" }} />,
+          }}
+        >
+          {displayText}
+        </ReactMarkdown>
         {!expanded && isLong && (
           <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: "linear-gradient(transparent, var(--surface))" }} />
         )}
@@ -267,6 +317,15 @@ export default function ResearchPage() {
   const [chairmanId, setChairmanId] = useState<string | null>(null);
   const [searchingAgents, setSearchingAgents] = useState<Set<string>>(new Set());
 
+  // Clarification state
+  const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
+  const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
+  const [pendingClarification, setPendingClarification] = useState(false);
+
+  // Web sources state
+  const [currentWebSources, setCurrentWebSources] = useState<WebSource[]>([]);
+  const currentWebSourcesRef = useRef<WebSource[]>([]);
+
   // Meeting timer
   const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -316,6 +375,7 @@ export default function ResearchPage() {
   useEffect(() => { currentChartDataRef.current = currentChartData; }, [currentChartData]);
   useEffect(() => { chairmanIdRef.current = chairmanId; }, [chairmanId]);
   useEffect(() => { meetingSessionIdRef.current = meetingSessionId; }, [meetingSessionId]);
+  useEffect(() => { currentWebSourcesRef.current = currentWebSources; }, [currentWebSources]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -487,7 +547,7 @@ export default function ResearchPage() {
         }))
       : undefined;
 
-  const handleRun = async (overrideQuestion?: string, closeMode = false) => {
+  const handleRun = async (overrideQuestion?: string, closeMode = false, withClarificationAnswers?: { question: string; answer: string }[]) => {
     const q = closeMode
       ? (rounds[0]?.question ?? "สรุปมติที่ประชุม")
       : (overrideQuestion ?? question).trim();
@@ -517,6 +577,8 @@ export default function ResearchPage() {
     setCurrentSuggestions([]);
     setCurrentChartData(null);
     setAgentTokens({});
+    setCurrentWebSources([]);
+    currentWebSourcesRef.current = [];
     setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "💬 กำลังตอบ..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
@@ -535,6 +597,7 @@ export default function ResearchPage() {
         fileContexts: useFileContext ? buildFileContexts() : [],
         historyMode,
         disableMcp: !useMcpContext,
+        clarificationAnswers: withClarificationAnswers || undefined,
       };
 
       if (closeMode) {
@@ -598,6 +661,19 @@ export default function ResearchPage() {
               setCurrentSuggestions(payload.suggestions);
             } else if (currentEvent === "chart_data") {
               setCurrentChartData(payload);
+            } else if (currentEvent === "clarification_needed") {
+              setClarificationQuestions(payload.questions ?? []);
+              setClarificationAnswers({});
+              setPendingClarification(true);
+            } else if (currentEvent === "web_sources") {
+              const newSources: WebSource[] = payload.sources ?? [];
+              setCurrentWebSources((prev) => {
+                const seen = new Set(prev.map((s) => s.url));
+                const fresh = newSources.filter((s: WebSource) => !seen.has(s.url));
+                const merged = [...prev, ...fresh];
+                currentWebSourcesRef.current = merged;
+                return merged;
+              });
             }
           } catch { /* ignore */ }
         }
@@ -622,6 +698,7 @@ export default function ResearchPage() {
             chartData: currentChartDataRef.current ?? undefined,
             chairmanId: chairmanIdRef.current ?? undefined,
             isSynthesis: closeMode,
+            webSources: currentWebSourcesRef.current.length > 0 ? currentWebSourcesRef.current : undefined,
           },
         ]);
       }
@@ -641,10 +718,29 @@ export default function ResearchPage() {
       setCurrentFinalAnswer("");
       setCurrentSuggestions([]);
       setCurrentChartData(null);
+      setCurrentWebSources([]);
+      currentWebSourcesRef.current = [];
       setChairmanId(null);
       fetchServerHistory();
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
+  };
+
+  // Handle clarification submit
+  const handleClarificationSubmit = () => {
+    const answers = clarificationQuestions.map((q) => ({
+      question: q.question,
+      answer: clarificationAnswers[q.id] || "(ไม่ระบุ)",
+    }));
+    setPendingClarification(false);
+    setClarificationQuestions([]);
+    handleRun(undefined, false, answers);
+  };
+
+  const handleSkipClarification = () => {
+    setPendingClarification(false);
+    setClarificationQuestions([]);
+    handleRun(undefined, false, []);
   };
 
   const handleCloseMeeting = () => handleRun(undefined, true);
@@ -1118,8 +1214,88 @@ export default function ResearchPage() {
                 </div>
               )}
 
+              {/* Clarification Questions UI */}
+              {pendingClarification && clarificationQuestions.length > 0 && (
+                <div className="mx-1 space-y-3">
+                  <div className="border-2 rounded-xl p-4 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">💬</span>
+                      <div>
+                        <div className="font-bold text-sm" style={{ color: "var(--accent)" }}>ต้องการข้อมูลเพิ่มเติม</div>
+                        <div className="text-xs" style={{ color: "var(--text-muted)" }}>กรุณาตอบคำถามเหล่านี้เพื่อให้ได้คำตอบที่แม่นยำขึ้น</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {clarificationQuestions.map((q, qi) => (
+                        <div key={q.id} className="border rounded-lg p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                          <div className="text-sm font-medium mb-2" style={{ color: "var(--text)" }}>
+                            {qi + 1}. {q.question}
+                          </div>
+                          {q.type === "choice" && q.options ? (
+                            <div className="space-y-1.5">
+                              <div className="flex flex-wrap gap-1.5">
+                                {q.options.map((opt) => (
+                                  <button
+                                    key={opt}
+                                    onClick={() => setClarificationAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+                                    className="text-xs px-3 py-1.5 rounded-lg border transition-all"
+                                    style={{
+                                      borderColor: clarificationAnswers[q.id] === opt ? "var(--accent)" : "var(--border)",
+                                      background: clarificationAnswers[q.id] === opt ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
+                                      color: clarificationAnswers[q.id] === opt ? "var(--accent)" : "var(--text)",
+                                      fontWeight: clarificationAnswers[q.id] === opt ? 600 : 400,
+                                    }}
+                                  >
+                                    {opt}
+                                  </button>
+                                ))}
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="หรือพิมพ์คำตอบเอง..."
+                                value={q.options.includes(clarificationAnswers[q.id] ?? "") ? "" : (clarificationAnswers[q.id] ?? "")}
+                                onChange={(e) => setClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                                className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none mt-1"
+                                style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                              />
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="พิมพ์คำตอบ..."
+                              value={clarificationAnswers[q.id] ?? ""}
+                              onChange={(e) => setClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                              className="w-full text-xs px-3 py-2 rounded-lg border outline-none"
+                              style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={handleClarificationSubmit}
+                        className="flex-1 py-2 rounded-lg text-sm font-bold transition-all"
+                        style={{ background: "var(--accent)", color: "#000" }}
+                      >
+                        ✓ ส่งคำตอบ เริ่มประชุม
+                      </button>
+                      <button
+                        onClick={handleSkipClarification}
+                        className="px-4 py-2 rounded-lg text-xs border transition-all hover:opacity-80"
+                        style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                      >
+                        ข้ามไป →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Empty state */}
-              {!viewingSession && displayRounds.length === 0 && currentMessages.length === 0 && !running && (
+              {!viewingSession && displayRounds.length === 0 && currentMessages.length === 0 && !running && !pendingClarification && (
                 <div className="text-center py-16 text-sm" style={{ color: "var(--text-muted)" }}>
                   🏛️ ห้องประชุมพร้อมแล้ว — พิมพ์วาระแรกเพื่อเริ่มประชุม<br />
                   <span className="text-xs opacity-60">ประธานจะถูกเลือกอัตโนมัติจาก Role · agents จำ context ทุกวาระ</span>
@@ -1154,6 +1330,12 @@ export default function ResearchPage() {
                     </div>
                   </div>
                   {viewingSession.messages.map((msg) => (
+                    msg.role === "thinking" ? (
+                      <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs opacity-50" style={{ color: "var(--text-muted)" }}>
+                        <span>{msg.agentEmoji}</span>
+                        <span className="italic">{msg.content.slice(0, 100)}</span>
+                      </div>
+                    ) : (
                     <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className="text-lg">{msg.agentEmoji}</span>
@@ -1164,6 +1346,7 @@ export default function ResearchPage() {
                       </div>
                       <MessageContent content={msg.content} />
                     </div>
+                    )
                   ))}
                   {viewingSession.finalAnswer && (
                     <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
@@ -1237,6 +1420,12 @@ export default function ResearchPage() {
                   )}
 
                   {round.messages.map((msg) => (
+                    msg.role === "thinking" ? (
+                      <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs opacity-50" style={{ color: "var(--text-muted)" }}>
+                        <span>{msg.agentEmoji}</span>
+                        <span className="italic">{msg.content.slice(0, 100)}</span>
+                      </div>
+                    ) : (
                     <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className="text-lg">{msg.agentEmoji}</span>
@@ -1247,12 +1436,10 @@ export default function ResearchPage() {
                         <span className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                           {ROLE_LABEL[msg.role] ?? msg.role}
                         </span>
-                        {msg.tokensUsed > 0 && (
-                          <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>{msg.tokensUsed.toLocaleString()} tokens</span>
-                        )}
                       </div>
                       <MessageContent content={msg.content} />
                     </div>
+                    )
                   ))}
 
                   {round.finalAnswer && (
@@ -1260,6 +1447,30 @@ export default function ResearchPage() {
                       <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
                       <MessageContent content={round.finalAnswer} />
                       {round.chartData && <SimpleBarChart data={round.chartData} />}
+
+                      {/* Web Sources */}
+                      {round.webSources && round.webSources.length > 0 && (
+                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)" }}>
+                          <div className="text-xs font-bold mb-2" style={{ color: "var(--text-muted)" }}>📎 แหล่งอ้างอิง</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {round.webSources.map((src, si) => (
+                              <a
+                                key={si}
+                                href={src.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border transition-all hover:opacity-80"
+                                style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--bg)" }}
+                                title={src.snippet}
+                              >
+                                <span className="font-medium truncate max-w-[180px]">{src.title}</span>
+                                <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>{src.domain}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="mt-3 pt-3 border-t text-[11px] leading-relaxed" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)", color: "var(--text-muted)" }}>
                         ⚠️ คำตอบจาก AI เป็นข้อมูลเบื้องต้นเท่านั้น ควรตรวจสอบกับผู้เชี่ยวชาญหรืออ้างอิงกฎหมาย/มาตรฐานที่เกี่ยวข้องก่อนนำไปใช้จริง
                       </div>
@@ -1294,6 +1505,12 @@ export default function ResearchPage() {
                     </div>
                   )}
                   {currentMessages.map((msg) => (
+                    msg.role === "thinking" ? (
+                      <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs animate-pulse" style={{ color: "var(--text-muted)" }}>
+                        <span>{msg.agentEmoji}</span>
+                        <span className="italic">{msg.content.slice(0, 100)}</span>
+                      </div>
+                    ) : (
                     <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className="text-lg">{msg.agentEmoji}</span>
@@ -1304,18 +1521,39 @@ export default function ResearchPage() {
                         <span className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                           {ROLE_LABEL[msg.role] ?? msg.role}
                         </span>
-                        {msg.tokensUsed > 0 && (
-                          <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>{msg.tokensUsed.toLocaleString()} tokens</span>
-                        )}
                       </div>
                       <MessageContent content={msg.content} />
                     </div>
+                    )
                   ))}
                   {currentFinalAnswer && (
                     <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
                       <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
                       <MessageContent content={currentFinalAnswer} />
                       {currentChartData && <SimpleBarChart data={currentChartData} />}
+
+                      {/* Web Sources for current round */}
+                      {currentWebSources.length > 0 && (
+                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)" }}>
+                          <div className="text-xs font-bold mb-2" style={{ color: "var(--text-muted)" }}>📎 แหล่งอ้างอิง</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {currentWebSources.map((src, si) => (
+                              <a
+                                key={si}
+                                href={src.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border transition-all hover:opacity-80"
+                                style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--bg)" }}
+                                title={src.snippet}
+                              >
+                                <span className="font-medium truncate max-w-[180px]">{src.title}</span>
+                                <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>{src.domain}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
