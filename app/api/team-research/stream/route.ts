@@ -358,7 +358,7 @@ async function webSearch(query: string, serperKey?: string, serpApiKey?: string,
         ).join("\n\n");
         return { text, sources };
       }
-    } catch { /* fall through */ }
+    } catch (e) { console.error("[WebSearch] Serper failed:", e instanceof Error ? e.message : e); }
   }
 
   if (serpApiKey) {
@@ -374,9 +374,12 @@ async function webSearch(query: string, serperKey?: string, serpApiKey?: string,
         ).join("\n\n");
         return { text, sources };
       }
-    } catch { /* ignore */ }
+    } catch (e) { console.error("[WebSearch] SerpApi failed:", e instanceof Error ? e.message : e); }
   }
 
+  if (serperKey || serpApiKey) {
+    console.error("[WebSearch] ค้นหาไม่สำเร็จ — ทั้ง Serper และ SerpApi ล้มเหลว, query:", query.slice(0, 80));
+  }
   return { text: "", sources: [] };
 }
 
@@ -725,7 +728,7 @@ export async function POST(req: NextRequest) {
               agentId: chairman.id,
               agentName: chairman.name,
               agentEmoji: chairman.emoji,
-              role: "thinking",
+              role: "finding",
               content: `🏛️ **เปิดการประชุม**\n\n${openingResult.content}`,
               tokensUsed: openingResult.inputTokens + openingResult.outputTokens,
               timestamp: new Date().toISOString(),
@@ -773,7 +776,8 @@ export async function POST(req: NextRequest) {
             agentName: agent.name,
             agentEmoji: agent.emoji,
             role: "thinking",
-            content: `กำลังวิเคราะห์: "${question}"${agent.useWebSearch ? " (พร้อมข้อมูลจากอินเทอร์เน็ต)" : ""}`,
+            content: `กำลังวิเคราะห์: "${question.slice(0, 80)}${question.length > 80 ? "..." : ""}"`,
+
             tokensUsed: 0,
             timestamp: new Date().toISOString(),
           };

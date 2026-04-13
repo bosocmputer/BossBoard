@@ -442,41 +442,6 @@ export default function AgentsPage() {
           </button>
         </div>
 
-        {/* Tips for accounting firms */}
-        <div className="border rounded-xl p-4 sm:p-5 mb-4" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-          <div className="font-bold text-sm mb-2" style={{ color: "var(--accent)" }}>💡 เคล็ดลับเพื่อให้ AI ตอบได้แม่นยำขึ้น</div>
-          <ul className="text-xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
-            <li>📌 <b style={{ color: "var(--text)" }}>เปิดค้นข้อมูลออนไลน์ (Web Search)</b> — ให้ AI ค้นข้อมูลล่าสุดจากเว็บไซต์ที่เชื่อถือได้ เช่น กรมสรรพากร สภาวิชาชีพบัญชี ก.ล.ต.</li>
-            <li>🌐 <b style={{ color: "var(--text)" }}>ตั้ง Trusted URLs</b> — จำกัดการค้นหาเฉพาะเว็บที่น่าเชื่อถือ เช่น <code style={{ color: "var(--accent)" }}>rd.go.th</code> <code style={{ color: "var(--accent)" }}>tfac.or.th</code> ป้องกัน AI ไปเอาข้อมูลจากแหล่งที่ไม่น่าเชื่อถือ</li>
-            <li>📂 <b style={{ color: "var(--text)" }}>อัปโหลดฐานความรู้ (Knowledge)</b> — ใส่ข้อมูลเฉพาะทาง เช่น สรุปมาตรา คู่มือบัญชี ระเบียบสำนักงาน สูงสุด 100,000 ตัวอักษร</li>
-            <li>✍️ <b style={{ color: "var(--text)" }}>ใส่คำสั่งใน Soul ให้ชัดเจน</b> — ระบุบทบาท กฎเกณฑ์ ข้อห้าม และแหล่งอ้างอิงที่ต้องใช้</li>
-            <li>🧠 <b style={{ color: "var(--text)" }}>ระบบฝังความรู้อัตโนมัติ</b> — ภาษี (ประมวลรัษฎากร) บัญชี (TFRS/TAS) แรงงาน (ประกันสังคม) จะถูกส่งให้ AI อัตโนมัติเมื่อคำถามตรง</li>
-            <li>⚠️ <b style={{ color: "var(--text)" }}>คำตอบจาก AI เป็นข้อมูลเบื้องต้น</b> — ควรตรวจสอบกับผู้เชี่ยวชาญก่อนนำไปใช้จริงเสมอ</li>
-          </ul>
-        </div>
-
-        {/* Agent Health Summary */}
-        {!loading && agents.length > 0 && (() => {
-          const noWebSearch = agents.filter((a) => a.active && !a.useWebSearch);
-          const noKnowledge = agents.filter((a) => a.active && (!a.knowledge || a.knowledge.length === 0));
-          const noTrustedUrls = agents.filter((a) => a.active && (!a.trustedUrls || a.trustedUrls.length === 0));
-          const issues = noWebSearch.length + noKnowledge.length;
-          if (issues === 0) return null;
-          return (
-            <div className="border rounded-xl p-4 mb-4" style={{ borderColor: "color-mix(in srgb, orange 30%, transparent)", background: "color-mix(in srgb, orange 5%, transparent)" }}>
-              <div className="font-bold text-sm mb-2" style={{ color: "orange" }}>⚡ แนะนำเพื่อเพิ่มความแม่นยำ</div>
-              <ul className="text-xs space-y-1" style={{ color: "var(--text-muted)" }}>
-                {noWebSearch.length > 0 && (
-                  <li>🔍 <b style={{ color: "var(--text)" }}>{noWebSearch.length} agent ยังไม่เปิด Web Search</b> — {noWebSearch.map((a) => `${a.emoji} ${a.name}`).join(", ")} <span style={{ color: "orange" }}>(แนะนำเปิดเพื่อให้ค้นข้อมูลล่าสุดได้)</span></li>
-                )}
-                {noTrustedUrls.length > 0 && (
-                  <li>🌐 <b style={{ color: "var(--text)" }}>{noTrustedUrls.length} agent ยังไม่ตั้ง Trusted URLs</b> — <span style={{ color: "orange" }}>กด Edit แล้วเพิ่มเว็บที่น่าเชื่อถือใน "ขั้นสูง"</span></li>
-                )}
-              </ul>
-            </div>
-          );
-        })()}
-
         {/* Agent List */}
         {loading ? (
           <div className="text-center py-20" style={{ color: "var(--text-muted)" }}>Loading...</div>

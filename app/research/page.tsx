@@ -52,6 +52,7 @@ interface ConversationRound {
   chairmanId?: string;
   isSynthesis?: boolean;
   webSources?: WebSource[];
+  clarificationAnswers?: { question: string; answer: string }[];
 }
 
 interface ConversationTurn {
@@ -263,32 +264,52 @@ function MessageContent({ content }: { content: string }) {
 function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): string {
   const agentMap = Object.fromEntries(agents.map((a) => [a.id, a]));
   const lines: string[] = [
-    "# รายงานการประชุม (Meeting Minutes)",
+    "# รายงานการประชุม",
     `> วันที่: ${new Date().toLocaleString("th-TH")}`,
     "",
   ];
+
+  // Attendees (unique agents across all rounds)
+  const attendeeIds = new Set<string>();
+  rounds.forEach((r) => r.messages.forEach((m) => attendeeIds.add(m.agentId)));
+  if (attendeeIds.size > 0) {
+    lines.push("## ผู้เข้าร่วมประชุม", "");
+    attendeeIds.forEach((id) => {
+      const a = agentMap[id];
+      if (a) lines.push(`- ${a.emoji} **${a.name}** (${a.role})`);
+    });
+    lines.push("");
+  }
 
   rounds.forEach((round, i) => {
     lines.push(`---`, `## วาระที่ ${i + 1}: ${round.question}`, "");
 
     if (round.chairmanId) {
       const ch = agentMap[round.chairmanId];
-      if (ch) lines.push(`**ประธานที่ประชุม:** ${ch.emoji} ${ch.name} (${ch.role})`, "");
+      if (ch) lines.push(`**ประธานที่ประชุม:** ${ch.emoji} ${ch.name}`, "");
+    }
+
+    // Clarification Q&A
+    if (round.clarificationAnswers && round.clarificationAnswers.length > 0) {
+      lines.push("### ข้อมูลเพิ่มเติมจากผู้ถาม", "");
+      round.clarificationAnswers.forEach((qa) => {
+        lines.push(`- **ถาม:** ${qa.question}`, `  **ตอบ:** ${qa.answer}`, "");
+      });
     }
 
     // Phase 1 — presentations
     const findings = round.messages.filter((m) => m.role === "finding");
     if (findings.length > 0) {
-      lines.push("### 📋 ความเห็นจากที่ประชุม", "");
+      lines.push("### ความเห็นจากที่ประชุม", "");
       findings.forEach((m) => {
-        lines.push(`#### ${m.agentEmoji} ${m.agentName} (${m.role})`, m.content, "");
+        lines.push(`#### ${m.agentEmoji} ${m.agentName}`, m.content, "");
       });
     }
 
     // Phase 2 — discussion
     const chats = round.messages.filter((m) => m.role === "chat");
     if (chats.length > 0) {
-      lines.push("### 💬 อภิปราย", "");
+      lines.push("### อภิปราย", "");
       chats.forEach((m) => {
         lines.push(`#### ${m.agentEmoji} ${m.agentName}`, m.content, "");
       });
@@ -296,7 +317,22 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
 
     // Phase 3 — synthesis/resolution
     if (round.finalAnswer) {
-      lines.push("### 🏛️ มติที่ประชุม", round.finalAnswer.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(), "");
+      lines.push("### มติที่ประชุม", round.finalAnswer.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(), "");
+    }
+
+    // Web Sources
+    if (round.webSources && round.webSources.length > 0) {
+      lines.push("### แหล่งอ้างอิง", "");
+      round.webSources.forEach((src, si) => {
+        lines.push(`${si + 1}. [${src.title}](${src.url}) — ${src.domain}`);
+      });
+      lines.push("");
+    }
+
+    // Token summary
+    if (round.agentTokens && Object.keys(round.agentTokens).length > 0) {
+      const totalTokens = Object.values(round.agentTokens).reduce((sum, t) => sum + t.totalTokens, 0);
+      lines.push(`> Token ที่ใช้ในวาระนี้: ${totalTokens.toLocaleString()}`, "");
     }
   });
 
@@ -322,6 +358,7 @@ export default function ResearchPage() {
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
   const [pendingClarification, setPendingClarification] = useState(false);
   const pendingClarificationQuestionRef = useRef<string>("");
+  const lastClarificationAnswersRef = useRef<{ question: string; answer: string }[] | undefined>(undefined);
 
   // Web sources state
   const [currentWebSources, setCurrentWebSources] = useState<WebSource[]>([]);
@@ -580,6 +617,7 @@ export default function ResearchPage() {
     setAgentTokens({});
     setCurrentWebSources([]);
     currentWebSourcesRef.current = [];
+    lastClarificationAnswersRef.current = withClarificationAnswers;
     setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "💬 กำลังตอบ..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
@@ -701,6 +739,7 @@ export default function ResearchPage() {
             chairmanId: chairmanIdRef.current ?? undefined,
             isSynthesis: closeMode,
             webSources: currentWebSourcesRef.current.length > 0 ? currentWebSourcesRef.current : undefined,
+            clarificationAnswers: lastClarificationAnswersRef.current?.length ? lastClarificationAnswersRef.current : undefined,
           },
         ]);
       }
@@ -797,28 +836,30 @@ export default function ResearchPage() {
   };
 
   const exportMinutes = () => {
+    let exportRounds: ConversationRound[];
     if (viewingSession) {
-      const lines = [
-        "# รายงานการประชุม (Meeting Minutes)",
-        `> ${viewingSession.question}`,
-        `> ${new Date(viewingSession.startedAt).toLocaleString("th-TH")}`,
-        "",
-        "### ความเห็นจากที่ประชุม",
-        "",
-      ];
-      viewingSession.messages.forEach((m) => {
-        if (m.role === "thinking") return;
-        lines.push(`#### ${m.agentEmoji} ${m.agentName} (${ROLE_LABEL[m.role] ?? m.role})`, m.content, "");
-      });
-      if (viewingSession.finalAnswer) lines.push("### 🏛️ มติที่ประชุม", viewingSession.finalAnswer, "");
-      const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `minutes-${Date.now()}.md`; a.click();
-      URL.revokeObjectURL(url);
-      return;
+      // Convert server session to ConversationRound format for unified export
+      exportRounds = [{
+        question: viewingSession.question,
+        messages: viewingSession.messages.map((m) => ({
+          id: m.id,
+          agentId: m.agentId,
+          agentName: m.agentName,
+          agentEmoji: m.agentEmoji,
+          role: m.role,
+          content: m.content,
+          tokensUsed: m.tokensUsed,
+          timestamp: m.timestamp || new Date().toISOString(),
+        })),
+        finalAnswer: viewingSession.finalAnswer || "",
+        agentTokens: {},
+        suggestions: [],
+      }];
+    } else {
+      if (rounds.length === 0) return;
+      exportRounds = rounds;
     }
-    if (rounds.length === 0) return;
-    const md = buildMinutesMarkdown(rounds, agents);
+    const md = buildMinutesMarkdown(exportRounds, agents);
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `minutes-${Date.now()}.md`; a.click();
