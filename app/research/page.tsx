@@ -321,6 +321,7 @@ export default function ResearchPage() {
   const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
   const [pendingClarification, setPendingClarification] = useState(false);
+  const pendingClarificationQuestionRef = useRef<string>("");
 
   // Web sources state
   const [currentWebSources, setCurrentWebSources] = useState<WebSource[]>([]);
@@ -582,6 +583,7 @@ export default function ResearchPage() {
     setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "💬 กำลังตอบ..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
+    pendingClarificationQuestionRef.current = q;
     if (!overrideQuestion && !closeMode) setQuestion("");
 
     abortRef.current = new AbortController();
@@ -734,13 +736,13 @@ export default function ResearchPage() {
     }));
     setPendingClarification(false);
     setClarificationQuestions([]);
-    handleRun(undefined, false, answers);
+    handleRun(pendingClarificationQuestionRef.current || undefined, false, answers);
   };
 
   const handleSkipClarification = () => {
     setPendingClarification(false);
     setClarificationQuestions([]);
-    handleRun(undefined, false, []);
+    handleRun(pendingClarificationQuestionRef.current || undefined, false, []);
   };
 
   const handleCloseMeeting = () => handleRun(undefined, true);
