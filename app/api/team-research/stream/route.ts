@@ -384,7 +384,14 @@ async function webSearch(query: string, serperKey?: string, serpApiKey?: string,
 }
 
 // Detect chairman from role seniority
-const CHAIRMAN_ROLES = ["ceo", "chief executive", "president", "md", "managing director", "chairman", "director", "vp", "vice president", "cfo", "coo", "cto", "cmo", "chro"];
+const CHAIRMAN_ROLES = [
+  // English
+  "ceo", "chief executive", "president", "md", "managing director", "chairman",
+  "director", "vp", "vice president", "cfo", "coo", "cto", "cmo", "chro",
+  // Thai accounting firm roles (ordered by seniority)
+  "ผู้สอบบัญชี", "cpa", "ประธาน", "หัวหน้า", "ผู้อำนวยการ", "กรรมการ",
+  "อาวุโส", "senior", "ที่ปรึกษา", "consultant", "ผู้จัดการ", "manager",
+];
 
 function detectChairman(agents: AgentPublic[]): AgentPublic {
   // Use explicit seniority if set
