@@ -2,10 +2,27 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const AGENTS_FILE = path.join(process.env.HOME || "", ".bossboard", "agents.json");
-const RESEARCH_FILE = path.join(process.env.HOME || "", ".bossboard", "research-history.json");
+const BOSSBOARD_DIR = path.join(process.env.HOME || "", ".bossboard");
+const AGENTS_FILE = path.join(BOSSBOARD_DIR, "agents.json");
+const RESEARCH_FILE = path.join(BOSSBOARD_DIR, "research-history.json");
 
-const ENCRYPT_KEY = process.env.AGENT_ENCRYPT_KEY || "bossboard-default-key-32bytesss";
+// Generate a random encryption key on first run and persist it
+function getOrCreateEncryptKey(): string {
+  if (process.env.AGENT_ENCRYPT_KEY) return process.env.AGENT_ENCRYPT_KEY;
+  const keyFile = path.join(BOSSBOARD_DIR, ".encrypt-key");
+  try {
+    if (fs.existsSync(keyFile)) return fs.readFileSync(keyFile, "utf-8").trim();
+  } catch { /* regenerate */ }
+  const newKey = crypto.randomBytes(32).toString("hex").slice(0, 32);
+  try {
+    if (!fs.existsSync(BOSSBOARD_DIR)) fs.mkdirSync(BOSSBOARD_DIR, { recursive: true });
+    fs.writeFileSync(keyFile, newKey, { mode: 0o600 });
+  } catch { /* fallback to in-memory key */ }
+  console.warn("[BossBoard] ⚠️ Generated new encryption key. Set AGENT_ENCRYPT_KEY env var for production.");
+  return newKey;
+}
+
+const ENCRYPT_KEY = getOrCreateEncryptKey();
 const IV_LENGTH = 16;
 
 export type AgentProvider = "anthropic" | "openai" | "gemini" | "ollama" | "openrouter" | "custom";
@@ -669,4 +686,70 @@ export function getCompanyInfoContext(): string {
   if (c.employeeCount) parts.push(`จำนวนพนักงาน: ${c.employeeCount}`);
   if (c.notes) parts.push(`หมายเหตุ: ${c.notes}`);
   return `\n\n---\n🏢 ข้อมูลบริษัท:\n${parts.join("\n")}\n---\n`;
+}
+
+// === Cross-session memory ===
+export interface MemoryFact {
+  id: string;
+  key: string;       // e.g. "vat_status", "company_type"
+  value: string;      // e.g. "จดทะเบียน VAT", "บริษัทจำกัด"
+  source: string;     // which session extracted this
+  createdAt: string;
+  updatedAt: string;
+}
+
+const MEMORY_FILE = path.join(BOSSBOARD_DIR, "client-memory.json");
+
+function readMemory(): MemoryFact[] {
+  try {
+    if (fs.existsSync(MEMORY_FILE)) return JSON.parse(fs.readFileSync(MEMORY_FILE, "utf-8"));
+  } catch { /* corrupted */ }
+  return [];
+}
+
+function writeMemory(facts: MemoryFact[]) {
+  ensureDir(MEMORY_FILE);
+  fs.writeFileSync(MEMORY_FILE, JSON.stringify(facts, null, 2));
+}
+
+export function getMemoryFacts(): MemoryFact[] {
+  return readMemory();
+}
+
+export function upsertMemoryFact(key: string, value: string, source: string): MemoryFact {
+  const facts = readMemory();
+  const existing = facts.find((f) => f.key === key);
+  if (existing) {
+    existing.value = value;
+    existing.source = source;
+    existing.updatedAt = new Date().toISOString();
+    writeMemory(facts);
+    return existing;
+  }
+  const newFact: MemoryFact = {
+    id: crypto.randomBytes(4).toString("hex"),
+    key,
+    value,
+    source,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  facts.push(newFact);
+  writeMemory(facts);
+  return newFact;
+}
+
+export function deleteMemoryFact(id: string): boolean {
+  const facts = readMemory();
+  const filtered = facts.filter((f) => f.id !== id);
+  if (filtered.length === facts.length) return false;
+  writeMemory(filtered);
+  return true;
+}
+
+export function getMemoryContext(): string {
+  const facts = readMemory();
+  if (facts.length === 0) return "";
+  const lines = facts.map((f) => `- ${f.key}: ${f.value}`).join("\n");
+  return `\n\n---\n🧠 ข้อมูลจากการประชุมครั้งก่อน (Cross-Session Memory):\n${lines}\n---\n`;
 }

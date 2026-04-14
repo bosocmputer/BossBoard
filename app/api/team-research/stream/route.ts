@@ -12,6 +12,8 @@ import {
   incrementAgentSessionCount,
   getCompanyInfoContext,
   getAgentKnowledgeContent,
+  getMemoryContext,
+  upsertMemoryFact,
 } from "@/lib/agents-store";
 import { getDomainKnowledge, isDomainQuestion } from "@/lib/domain-knowledge";
 import crypto from "crypto";
@@ -36,12 +38,13 @@ async function callLLM(
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
         "content-type": "application/json",
       },
       body: JSON.stringify({
         model,
         max_tokens: 4096,
-        system: systemMsg?.content,
+        system: systemMsg ? [{ type: "text", text: systemMsg.content, cache_control: { type: "ephemeral" } }] : undefined,
         messages: userMsgs,
       }),
     });
@@ -49,7 +52,7 @@ async function callLLM(
     const data = await res.json();
     return {
       content: data.content?.[0]?.text ?? "",
-      inputTokens: data.usage?.input_tokens ?? 0,
+      inputTokens: (data.usage?.input_tokens ?? 0) + (data.usage?.cache_read_input_tokens ?? 0),
       outputTokens: data.usage?.output_tokens ?? 0,
     };
   }
@@ -383,6 +386,29 @@ async function webSearch(query: string, serperKey?: string, serpApiKey?: string,
   return { text: "", sources: [] };
 }
 
+// Rewrite user question into optimized search query
+async function rewriteSearchQuery(
+  question: string,
+  provider: string,
+  model: string,
+  apiKey: string,
+  baseUrl: string | undefined,
+): Promise<string> {
+  try {
+    const result = await callLLM(provider, model, apiKey, baseUrl, [
+      {
+        role: "system",
+        content: "แปลงคำถามภาษาไทยเป็น search query สำหรับ Google ที่จะได้ผลลัพธ์ดีที่สุด ตอบเฉพาะ query เท่านั้น ไม่ต้องมีคำอธิบาย ใช้ keywords ภาษาไทยผสมอังกฤษ ถ้าเป็นเรื่องกฎหมาย/ภาษี ให้ใส่ keyword เช่น กรมสรรพากร พ.ร.บ. ประมวลรัษฎากร ตามความเหมาะสม",
+      },
+      { role: "user", content: question },
+    ]);
+    const rewritten = result.content.trim().replace(/^["']|["']$/g, "");
+    return rewritten.length > 5 ? rewritten : question;
+  } catch {
+    return question; // fallback to original
+  }
+}
+
 // Detect chairman from role seniority
 const CHAIRMAN_ROLES = [
   // English
@@ -521,9 +547,15 @@ export async function POST(req: NextRequest) {
     let turns = history;
     if (historyMode === "none") return "";
     if (historyMode === "last3") turns = history.slice(-3);
-    if (historyMode === "summary") {
-      // Summarize: just questions + first 200 chars of answers
-      return `\n\n---\nสรุปประวัติการประชุมก่อนหน้า:\n${turns.map((t, i) => `[วาระที่ ${i + 1}] ${t.question}\nสรุป: ${t.answer.slice(0, 200)}...`).join("\n\n")}\n---\n`;
+    if (historyMode === "summary" || (historyMode === "full" && history.length > 5)) {
+      // Auto-summarize when many rounds: keep last 2 in full, summarize older
+      const older = turns.slice(0, -2);
+      const recent = turns.slice(-2);
+      const olderText = older.length > 0
+        ? older.map((t, i) => `[วาระที่ ${i + 1}] ${t.question} → ${t.answer.slice(0, 150)}...`).join("\n")
+        : "";
+      const recentText = recent.map((t, i) => `[วาระที่ ${older.length + i + 1}] คำถาม: ${t.question}\nสรุปมติ: ${t.answer}`).join("\n\n");
+      return `\n\n---\nสรุปประวัติการประชุมก่อนหน้า:\n${olderText ? olderText + "\n\nรายละเอียดวาระล่าสุด:\n" : ""}${recentText}\n---\n`;
     }
     return `\n\n---\nประวัติการประชุมก่อนหน้า:\n${turns.map((t, i) => `[วาระที่ ${i + 1}] คำถาม: ${t.question}\nสรุปมติ: ${t.answer}`).join("\n\n")}\n---\n`;
   }
@@ -553,6 +585,7 @@ export async function POST(req: NextRequest) {
 
   // Company & knowledge context
   const companyContext = getCompanyInfoContext();
+  const memoryContext = getMemoryContext();
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -600,8 +633,9 @@ export async function POST(req: NextRequest) {
         }
         let searchContext = "";
         if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
-          send("agent_searching", { agentId: agent.id, query: question });
-          const { text: searchResults, sources } = await webSearch(question, serperKey, serpApiKeyVal, agent.trustedUrls);
+          const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl);
+          send("agent_searching", { agentId: agent.id, query: searchQuery });
+          const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
           if (searchResults) searchContext = `\n\n🔍 ผลการค้นหา:\n${searchResults}\n`;
           if (sources.length > 0) send("web_sources", { agentId: agent.id, sources });
         }
@@ -611,7 +645,7 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${antiHallucinationRules}\n\nรูปแบบการตอบ:\n1. **ตอบคำตอบหลักให้ชัดเจนก่อนเลยในย่อหน้าแรก** (ใช่/ไม่ใช่/มี/ไม่มี + สรุปสั้น 1-2 ประโยค)\n2. จากนั้นค่อยอธิบายเหตุผล หลักกฎหมาย หรือรายละเอียดสนับสนุน\n3. ถ้ามีเงื่อนไขพิเศษหรือข้อยกเว้น ให้ระบุชัดเจนว่ากรณีของผู้ถามเข้าเงื่อนไขไหน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ที่เกี่ยวข้องก่อนเสมอ\n- คำตอบต้องสอดคล้องกันตลอด — ห้ามเปิดด้วยข้อมูลที่ขัดกับข้อสรุป\n- อ้างอิงมาตรากฎหมาย มาตรฐานบัญชี หรือแนวปฏิบัติที่เกี่ยวข้อง\n- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ`,
+              content: `${companyContext}${memoryContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${antiHallucinationRules}\n\nรูปแบบการตอบ:\n1. **ตอบคำตอบหลักให้ชัดเจนก่อนเลยในย่อหน้าแรก** (ใช่/ไม่ใช่/มี/ไม่มี + สรุปสั้น 1-2 ประโยค)\n2. จากนั้นค่อยอธิบายเหตุผล หลักกฎหมาย หรือรายละเอียดสนับสนุน\n3. ถ้ามีเงื่อนไขพิเศษหรือข้อยกเว้น ให้ระบุชัดเจนว่ากรณีของผู้ถามเข้าเงื่อนไขไหน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ที่เกี่ยวข้องก่อนเสมอ\n- คำตอบต้องสอดคล้องกันตลอด — ห้ามเปิดด้วยข้อมูลที่ขัดกับข้อสรุป\n- อ้างอิงมาตรากฎหมาย มาตรฐานบัญชี หรือแนวปฏิบัติที่เกี่ยวข้อง\n- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ`,
             },
             { role: "user", content: question },
           ]);
@@ -722,7 +756,7 @@ export async function POST(req: NextRequest) {
             const openingResult = await callLLM(chairman.provider, chairman.model, apiKey, chairman.baseUrl, [
               {
                 role: "system",
-                content: `${companyContext}${chairman.soul}${dataSourceContext}${historyContext}${fileContext}${clarificationContext}\n\nคุณเป็นประธานการประชุม มีหน้าที่เปิดประชุม กำหนดวาระ และนำทีมหาข้อสรุป`,
+                content: `${companyContext}${memoryContext}${chairman.soul}${dataSourceContext}${historyContext}${fileContext}${clarificationContext}\n\nคุณเป็นประธานการประชุม มีหน้าที่เปิดประชุม กำหนดวาระ และนำทีมหาข้อสรุป`,
               },
               {
                 role: "user",
@@ -769,8 +803,9 @@ export async function POST(req: NextRequest) {
           // Web search if agent has it enabled or question is about law/tax
           let searchContext = "";
           if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
-            send("agent_searching", { agentId: agent.id, query: question });
-            const { text: searchResults, sources } = await webSearch(question, serperKey, serpApiKeyVal, agent.trustedUrls);
+            const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl);
+            send("agent_searching", { agentId: agent.id, query: searchQuery });
+            const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
             if (searchResults) {
               searchContext = `\n\n🔍 ผลการค้นหาเพิ่มเติมจากอินเทอร์เน็ต:\n${searchResults}\n`;
             }
@@ -809,7 +844,7 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${previousFindingsContext}${clarificationContext}${antiHallucinationRules}`,
+              content: `${companyContext}${memoryContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${previousFindingsContext}${clarificationContext}${antiHallucinationRules}`,
             },
             {
               role: "user",
@@ -872,8 +907,38 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Phase 2: Cross-discussion — agents respond to each other based on their actual soul/role
+      // Consensus check: chairman evaluates if agents agree → skip Phase 2
+      let skipDiscussion = false;
       if (agentFindings.length > 1) {
+        const chairApiKeyCC = getAgentApiKey(chairman.id);
+        if (chairApiKeyCC) {
+          try {
+            const findingsSummary = agentFindings
+              .map((f) => `[${f.emoji} ${f.name}]: ${f.content.slice(0, 400)}`)
+              .join("\n\n");
+            const consensusResult = await callLLM(chairman.provider, chairman.model, chairApiKeyCC, chairman.baseUrl, [
+              {
+                role: "system",
+                content: 'ประเมินว่าผู้เชี่ยวชาญเห็นตรงกันหรือไม่ ตอบเป็น JSON เท่านั้น: {"consensus": true/false, "reason": "เหตุผลสั้นๆ"}\n\nconsensus=true หมายถึง ทุกคนเห็นตรงกันในสาระสำคัญ เช่น ข้อสรุปเหมือนกัน แม้จะมีรายละเอียดเสริมที่ต่างกัน\nconsensus=false หมายถึง มีความเห็นขัดแย้งจริงๆ เช่น สรุปตรงข้ามกัน ตีความกฎหมายต่างกัน แนะนำวิธีต่างกัน',
+              },
+              { role: "user", content: `วาระ: ${question}\n\nข้อสรุปของแต่ละคน:\n${findingsSummary}` },
+            ]);
+            try {
+              const jsonMatch = consensusResult.content.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.consensus === true) {
+                  skipDiscussion = true;
+                  send("status", { message: `✅ ผู้เชี่ยวชาญเห็นพ้องกัน — ข้ามขั้นอภิปราย (${parsed.reason || "consensus"})` });
+                }
+              }
+            } catch { /* proceed with discussion */ }
+          } catch { /* proceed with discussion */ }
+        }
+      }
+
+      // Phase 2: Cross-discussion — agents respond to each other based on their actual soul/role
+      if (agentFindings.length > 1 && !skipDiscussion) {
         send("status", { message: "💬 Phase 2 — อภิปรายแลกเปลี่ยนความเห็น (ตามบทบาทจริง)" });
 
         for (let i = 0; i < orderedAgents.length; i++) {
@@ -895,7 +960,7 @@ export async function POST(req: NextRequest) {
             const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
               {
                 role: "system",
-                content: `${companyContext}${agent.soul}${knowledgeCtx}${domainKnowledge}${clarificationContext}${antiHallucinationRules}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา\n\n⚠️ กฎเหล็กของการอภิปราย:\n1. ห้ามพูดแค่ "เห็นด้วย" โดยไม่มีเนื้อหาใหม่ — ถ้าเห็นด้วยต้องเสริมมุมมองใหม่ที่คนอื่นยังไม่ได้พูด\n2. คุณต้องระบุอย่างน้อย 1 จุดที่ไม่เห็นด้วยหรือมีข้อกังวล พร้อมเหตุผลจากประสบการณ์ในบทบาท ${agent.role}\n3. คุณต้องชี้อย่างน้อย 1 ความเสี่ยงหรือข้อควรระวังที่คนอื่นอาจมองข้าม\n4. พูดกระชับ เน้นเฉพาะจุดที่ต่างจากคนอื่น ไม่ต้องสรุปซ้ำสิ่งที่ทุกคนเห็นตรงกันแล้ว\n5. ถ้าพบว่าคนอื่นให้ข้อมูลที่ไม่ถูกต้องหรืออ้างกฎหมายผิด ต้องชี้แจงและแก้ไขทันที พร้อมอ้างอิงมาตราที่ถูกต้อง\n6. ถ้าคนอื่นสรุปว่าต้องเสียภาษี/ปฏิบัติตามกฎใด โดยยังไม่ได้ตรวจสอบข้อยกเว้นตามกฎหมาย ต้องชี้ให้ตรวจสอบทันที\n7. ห้ามให้ข้อมูลที่ขัดแย้งกับข้อสรุปของตัวเอง`,
+                content: `${companyContext}${memoryContext}${agent.soul}${knowledgeCtx}${domainKnowledge}${clarificationContext}${antiHallucinationRules}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา\n\n⚠️ กฎเหล็กของการอภิปราย:\n1. ห้ามพูดแค่ "เห็นด้วย" โดยไม่มีเนื้อหาใหม่ — ถ้าเห็นด้วยต้องเสริมมุมมองใหม่ที่คนอื่นยังไม่ได้พูด\n2. คุณต้องระบุอย่างน้อย 1 จุดที่ไม่เห็นด้วยหรือมีข้อกังวล พร้อมเหตุผลจากประสบการณ์ในบทบาท ${agent.role}\n3. คุณต้องชี้อย่างน้อย 1 ความเสี่ยงหรือข้อควรระวังที่คนอื่นอาจมองข้าม\n4. พูดกระชับ เน้นเฉพาะจุดที่ต่างจากคนอื่น ไม่ต้องสรุปซ้ำสิ่งที่ทุกคนเห็นตรงกันแล้ว\n5. ถ้าพบว่าคนอื่นให้ข้อมูลที่ไม่ถูกต้องหรืออ้างกฎหมายผิด ต้องชี้แจงและแก้ไขทันที พร้อมอ้างอิงมาตราที่ถูกต้อง\n6. ถ้าคนอื่นสรุปว่าต้องเสียภาษี/ปฏิบัติตามกฎใด โดยยังไม่ได้ตรวจสอบข้อยกเว้นตามกฎหมาย ต้องชี้ให้ตรวจสอบทันที\n7. ห้ามให้ข้อมูลที่ขัดแย้งกับข้อสรุปของตัวเอง`,
               },
               {
                 role: "user",
@@ -943,6 +1008,41 @@ export async function POST(req: NextRequest) {
 
       } // end if (mode !== "close") — Phase 1+2
 
+      // === Fact-checking phase: verify cited laws/facts before synthesis ===
+      let factCheckNote = "";
+      if (agentFindings.length > 0 && mode !== "close") {
+        const chairApiKeyFC = getAgentApiKey(chairman.id);
+        if (chairApiKeyFC) {
+          try {
+            send("status", { message: "🔎 ตรวจสอบความถูกต้องของข้อมูลที่อ้างอิง..." });
+            const citedContent = agentFindings
+              .map((f) => `[${f.emoji} ${f.name}]: ${f.content.slice(0, 600)}`)
+              .join("\n\n");
+            const fcResult = await callLLM(chairman.provider, chairman.model, chairApiKeyFC, chairman.baseUrl, [
+              {
+                role: "system",
+                content: `คุณเป็นผู้ตรวจสอบข้อเท็จจริง (Fact Checker) สำหรับการประชุมที่ปรึกษาบัญชี/ภาษีไทย
+ตรวจสอบข้อมูลที่ผู้เชี่ยวชาญอ้างอิง:
+1. เลขมาตรากฎหมาย/พ.ร.บ. ตรงกับเนื้อหาจริงหรือไม่
+2. มีข้อมูลที่ขัดแย้งกันระหว่างผู้เชี่ยวชาญหรือไม่
+3. มีการอ้างอิงที่อาจไม่ถูกต้อง (fabricated references) หรือไม่
+
+ตอบกระชับ ระบุเฉพาะข้อที่พบปัญหา ถ้าทุกอย่างถูกต้อง ตอบว่า "ไม่พบข้อผิดพลาด"
+ห้ามอธิบายยาว ระบุเป็นข้อๆ สั้นๆ${domainKnowledge}`,
+              },
+              { role: "user", content: `วาระ: ${question}\n\nข้อมูลจากผู้เชี่ยวชาญ:\n${citedContent}` },
+            ]);
+            const fcContent = fcResult.content.trim();
+            if (fcContent && !fcContent.includes("ไม่พบข้อผิดพลาด")) {
+              factCheckNote = `\n\n⚠️ ผลการตรวจสอบข้อเท็จจริง (Fact Check):\n${fcContent}\n— กรุณาพิจารณาข้อสังเกตเหล่านี้ในการสรุปมติ`;
+              send("status", { message: "⚠️ พบข้อสังเกตจากการตรวจสอบ — ส่งต่อให้ประธานพิจารณา" });
+            } else {
+              send("status", { message: "✅ ตรวจสอบข้อเท็จจริงแล้ว — ไม่พบข้อผิดพลาด" });
+            }
+          } catch { /* skip fact-check on error */ }
+        }
+      }
+
       // === Phase 3: Chairman synthesis (skip in "discuss" mode) ===
       if (mode !== "discuss") {
 
@@ -953,13 +1053,17 @@ export async function POST(req: NextRequest) {
       // Build allContext from either current round findings or all rounds (close mode)
       let allContext = "";
       if (mode === "close" && allRounds && allRounds.length > 0) {
-        // Close mode: synthesize from all accumulated rounds
+        // Close mode: summarize older rounds, keep last 2 in full
         allContext = allRounds.map((round: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }, i: number) => {
+          const isRecent = i >= allRounds.length - 2;
           const msgs = (round.messages ?? [])
             .filter((m: { role: string }) => m.role !== "thinking")
-            .map((m: { agentEmoji: string; agentName: string; role: string; content: string }) => `[${m.agentEmoji} ${m.agentName} — ${m.role}]:\n${m.content}`)
+            .map((m: { agentEmoji: string; agentName: string; role: string; content: string }) => {
+              const text = isRecent ? m.content : m.content.slice(0, 300) + (m.content.length > 300 ? "..." : "");
+              return `[${m.agentEmoji} ${m.agentName} — ${m.role}]:\n${text}`;
+            })
             .join("\n\n");
-          return `=== วาระที่ ${i + 1}: ${round.question} ===\n${msgs}`;
+          return `=== วาระที่ ${i + 1}: ${round.question} ${!isRecent ? "(สรุปย่อ)" : ""} ===\n${msgs}`;
         }).join("\n\n---\n\n");
       } else {
         // Full/default mode: use current round findings
@@ -980,7 +1084,7 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน ห้ามสรุปผิดจากข้อเท็จจริงที่นำเสนอ${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}${domainKnowledge}${clarificationContext}${antiHallucinationRules}`,
+              content: `${companyContext}${memoryContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน ห้ามสรุปผิดจากข้อเท็จจริงที่นำเสนอ${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}${factCheckNote}${domainKnowledge}${clarificationContext}${antiHallucinationRules}`,
             },
             {
               role: "user",
@@ -1055,6 +1159,28 @@ export async function POST(req: NextRequest) {
               }
             } catch { /* ignore */ }
           } catch { /* ignore */ }
+
+          // Extract key facts for cross-session memory
+          try {
+            const memResult = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
+              {
+                role: "system",
+                content: 'จากการประชุม ให้ดึงข้อเท็จจริงสำคัญเกี่ยวกับผู้ถาม/บริษัทที่ควรจำไว้ ตอบเป็น JSON array เท่านั้น: [{"key":"ชื่อภาษาอังกฤษสั้นๆ","value":"ค่า"}]\n\nตัวอย่าง key: vat_registered, company_type, business_sector, employee_count, accounting_standard, fiscal_year\nถ้าไม่มีข้อมูลใหม่ที่ควรจำ ตอบ []',
+              },
+              { role: "user", content: `วาระ: ${question}\n\nข้อมูลจากผู้ถาม: ${clarificationContext || "ไม่มี"}\n\nมติ: ${result.content.slice(0, 500)}` },
+            ]);
+            try {
+              const jsonMatch = memResult.content.match(/\[[\s\S]*\]/);
+              if (jsonMatch) {
+                const facts: { key: string; value: string }[] = JSON.parse(jsonMatch[0]);
+                for (const f of facts.slice(0, 5)) {
+                  if (f.key && f.value && typeof f.key === "string" && typeof f.value === "string") {
+                    upsertMemoryFact(f.key, f.value, sessionId);
+                  }
+                }
+              }
+            } catch { /* ignore parse error */ }
+          } catch { /* ignore memory extraction error */ }
 
         } catch (err) {
           completeResearchSession(sessionId, String(err), "error");
