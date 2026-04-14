@@ -26,6 +26,23 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ---
 
+## Security
+
+| Feature | Description |
+|---|---|
+| **Encryption** | API keys encrypted at rest (AES-256-CBC), key auto-generated if not set |
+| **Rate Limiting** | Sliding-window 5 req/60s per IP on stream endpoint (429) |
+| **Body Size Limit** | 100KB max request body on stream endpoint (413) |
+| **SSRF Protection** | Agent base URLs validated — blocks private IPs, localhost, cloud metadata |
+| **Security Headers** | CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy |
+| **Error Sanitization** | Internal errors logged server-side only, generic messages to client |
+| **File Upload Validation** | Magic bytes check (PDF/Excel/Word) + extension + 10MB size limit |
+| **Client Disconnect** | AbortSignal cancels in-flight LLM calls when client disconnects |
+| **Docker Non-Root** | Container runs as `node` user (uid 1000) |
+| **Healthcheck** | `GET /api/health` + Docker HEALTHCHECK auto-restart |
+
+---
+
 ## Features
 
 ### 🏠 Dashboard (`/`)
@@ -191,6 +208,8 @@ Open [http://localhost:3000](http://localhost:3000)
 | `~/.bossboard/settings.json`         | Web Search API keys (encrypted)                      |
 | `~/.bossboard/research-history.json` | Research session history (last 100)                  |
 | `~/.bossboard/agent-stats.json`      | Per-agent token usage & session stats (last 90 days) |
+| `~/.bossboard/client-memory.json`    | Cross-session memory facts                           |
+| `~/.bossboard/.encryption-key`       | Auto-generated encryption key (if no env var)        |
 
 ---
 
@@ -198,8 +217,18 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ```env
 # Custom encryption key for API keys (recommended for production)
+# If not set, auto-generated and saved to ~/.bossboard/.encryption-key
 AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
+
+# Override data directory (default: ~/.bossboard)
+# OPENCLAW_HOME=/custom/path
+
+# Node.js settings (set in Dockerfile)
+# PORT=3000
+# HOSTNAME=0.0.0.0
 ```
+
+ดูตัวอย่างเต็มที่ [.env.example](.env.example)
 
 ---
 
@@ -219,6 +248,9 @@ AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
 | `/api/team-settings`         | GET, POST     | Web search API keys                  |
 | `/api/team-websearch`        | POST          | Perform web search                   |
 | `/api/agent-stats`           | GET           | Agent usage statistics               |
+| `/api/health`                | GET           | Healthcheck (status + timestamp)     |
+| `/api/client-memory`         | GET, POST, DELETE | Cross-session memory facts       |
+| `/api/token-usage`           | GET           | Token usage tracking                 |
 
 ---
 
@@ -243,7 +275,7 @@ git clone https://github.com/bosocmputer/BossBoard.git
 cd BossBoard
 docker build -t bossboard .
 docker run -d --name bossboard -p 3003:3000 \
-  -v ~/.bossboard:/root/.bossboard \
+  -v ~/.bossboard:/home/node/.bossboard \
   --restart unless-stopped bossboard
 ```
 
@@ -254,7 +286,7 @@ git pull origin main
 docker build -t bossboard .
 docker rm -f bossboard
 docker run -d --name bossboard -p 3003:3000 \
-  -v ~/.bossboard:/root/.bossboard \
+  -v ~/.bossboard:/home/node/.bossboard \
   --restart unless-stopped bossboard
 ```
 

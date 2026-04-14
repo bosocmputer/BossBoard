@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-04-14 — v1.7: Security & Reliability Hardening
+
+- **Rate Limiting** — Sliding-window rate limiter (5 req/60s per IP) บน stream endpoint → ป้องกัน abuse, return 429
+- **Request Body Size Limit** — จำกัด request body 100KB บน stream endpoint → return 413
+- **Client Disconnect Handling** — ตรวจจับเมื่อ client ตัดการเชื่อมต่อ ส่ง AbortSignal ไปยัง callLLM ทุกจุด (~11 calls) เพื่อหยุดเรียก LLM ทันที ประหยัด tokens
+- **Healthcheck Endpoint** — `GET /api/health` + Dockerfile `HEALTHCHECK` instruction (auto-restart on failure)
+- **Error Message Sanitization** — ทุก API route ไม่ส่งรายละเอียด error ดิบไปยัง client แล้ว → log ฝั่ง server แทน (ป้องกัน information disclosure)
+- **File Upload MIME Validation** — ตรวจ magic bytes (PDF `%PDF`, Excel/Word `PK`/`OLE2`) ก่อน parse → ป้องกันไฟล์ปลอมนามสกุล
+- **`.env.example`** — เพิ่มไฟล์เอกสาร environment variables ทั้งหมด
+
+## 2026-04-13 — v1.6: Security & Intelligence Upgrade (10 Features)
+
+- **Encryption Key Auto-Generation** — ถ้าไม่ตั้ง `AGENT_ENCRYPT_KEY` ระบบจะสร้าง key อัตโนมัติ + เก็บลง `~/.bossboard/.encryption-key`
+- **Input Validation & SSRF Protection** — ป้องกัน SSRF บน base URL ของ agents (block private IPs, localhost, metadata endpoints)
+- **Security Headers** — เพิ่ม CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+- **Docker Non-Root User** — container ทำงานภายใต้ user `node` (uid 1000) ไม่ใช่ root
+- **Anthropic Prompt Caching** — ใช้ `cache_control: { type: "ephemeral" }` บน system message สำหรับ Anthropic models
+- **Search Query Rewriting** — AI rewrite คำถามเป็น search query ที่ดีขึ้นก่อนค้นเว็บ
+- **Consensus Skip** — ถ้า agents เห็นตรงกัน ข้ามขั้นตอน discussion ไปสรุปเลย
+- **Auto-Summarize Old Rounds** — สรุป history เก่าอัตโนมัติเมื่อยาวเกิน 2000 ตัวอักษร
+- **Cross-Session Memory** — จดจำ facts จากการประชุมก่อนหน้า นำมาใช้ในครั้งถัดไป (`/api/client-memory`)
+- **Fact-Checking Before Synthesis** — ประธานตรวจสอบข้อเท็จจริงจาก web search ก่อนสรุปมติ
+
 ## 2025-04-13 — v1.5: Quality & Export Upgrade
 
 - **Fix: Chairman opening** — ข้อความเปิดประชุมของประธานแสดงเป็นการ์ดเต็ม ไม่ถูกตัดทอนอีกต่อไป

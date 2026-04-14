@@ -24,7 +24,7 @@ npm run dev
 ```bash
 docker build -t bossboard .
 docker run -d --name bossboard -p 3003:3000 \
-  -v ~/.bossboard:/root/.bossboard \
+  -v ~/.bossboard:/home/node/.bossboard \
   --restart unless-stopped bossboard
 # เปิด http://localhost:3003
 ```
