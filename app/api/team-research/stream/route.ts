@@ -16,7 +16,11 @@ import {
   upsertMemoryFact,
 } from "@/lib/agents-store";
 import { getDomainKnowledge, isDomainQuestion } from "@/lib/domain-knowledge";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import crypto from "crypto";
+
+// Max request body size (100KB — questions + history + file contexts)
+const MAX_BODY_SIZE = 100 * 1024;
 
 interface LLMMessage {
   role: "user" | "assistant" | "system";
@@ -28,7 +32,8 @@ async function callLLM(
   model: string,
   apiKey: string,
   baseUrl: string | undefined,
-  messages: LLMMessage[]
+  messages: LLMMessage[],
+  signal?: AbortSignal
 ): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
   if (provider === "anthropic") {
     const systemMsg = messages.find((m) => m.role === "system");
@@ -47,6 +52,7 @@ async function callLLM(
         system: systemMsg ? [{ type: "text", text: systemMsg.content, cache_control: { type: "ephemeral" } }] : undefined,
         messages: userMsgs,
       }),
+      signal,
     });
     if (!res.ok) throw new Error(`Anthropic error: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -69,6 +75,7 @@ async function callLLM(
       method: "POST",
       headers,
       body: JSON.stringify({ model, messages, max_tokens: 4096 }),
+      signal,
     });
     // Fallback to gpt-4o-mini if model is invalid (400/404)
     if (!res.ok && (res.status === 400 || res.status === 404)) {
@@ -76,6 +83,7 @@ async function callLLM(
         method: "POST",
         headers,
         body: JSON.stringify({ model: "openai/gpt-4o-mini", messages, max_tokens: 4096 }),
+        signal,
       });
     }
     if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${await res.text()}`);
@@ -96,6 +104,7 @@ async function callLLM(
         "content-type": "application/json",
       },
       body: JSON.stringify({ model, messages, max_tokens: 4096 }),
+      signal,
     });
     if (!res.ok) throw new Error(`OpenAI error: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -107,9 +116,9 @@ async function callLLM(
   }
 
   if (provider === "gemini") {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const systemMsg = messages.find((m) => m.role === "system");
     const userMsgs = messages.filter((m) => m.role !== "system");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -121,6 +130,7 @@ async function callLLM(
         })),
         generationConfig: { maxOutputTokens: 4096 },
       }),
+      signal,
     });
     if (!res.ok) throw new Error(`Gemini error: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -137,6 +147,7 @@ async function callLLM(
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ model, messages, stream: false }),
+      signal,
     });
     if (!res.ok) throw new Error(`Ollama error: ${res.status} ${await res.text()}`);
     const data = await res.json();
@@ -393,6 +404,7 @@ async function rewriteSearchQuery(
   model: string,
   apiKey: string,
   baseUrl: string | undefined,
+  signal?: AbortSignal,
 ): Promise<string> {
   try {
     const result = await callLLM(provider, model, apiKey, baseUrl, [
@@ -401,7 +413,7 @@ async function rewriteSearchQuery(
         content: "แปลงคำถามภาษาไทยเป็น search query สำหรับ Google ที่จะได้ผลลัพธ์ดีที่สุด ตอบเฉพาะ query เท่านั้น ไม่ต้องมีคำอธิบาย ใช้ keywords ภาษาไทยผสมอังกฤษ ถ้าเป็นเรื่องกฎหมาย/ภาษี ให้ใส่ keyword เช่น กรมสรรพากร พ.ร.บ. ประมวลรัษฎากร ตามความเหมาะสม",
       },
       { role: "user", content: question },
-    ]);
+    ], signal);
     const rewritten = result.content.trim().replace(/^["']|["']$/g, "");
     return rewritten.length > 5 ? rewritten : question;
   } catch {
@@ -464,6 +476,18 @@ interface ConversationTurn {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: max 5 stream requests per IP per 60 seconds
+  const clientIp = getClientIp(req.headers);
+  if (!rateLimit(clientIp, { maxRequests: 5, windowMs: 60_000 })) {
+    return new Response(JSON.stringify({ error: "Too many requests. Please wait before starting a new meeting." }), { status: 429 });
+  }
+
+  // Body size limit
+  const contentLength = parseInt(req.headers.get("content-length") || "0", 10);
+  if (contentLength > MAX_BODY_SIZE) {
+    return new Response(JSON.stringify({ error: "Request body too large (max 100KB)" }), { status: 413 });
+  }
+
   const body = await req.json();
   const {
     question,
@@ -587,11 +611,21 @@ export async function POST(req: NextRequest) {
   const companyContext = getCompanyInfoContext();
   const memoryContext = getMemoryContext();
 
+  // Client disconnect detection — abort LLM calls when client disconnects
+  const abortController = new AbortController();
+  const clientSignal = abortController.signal;
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: string, data: unknown) => {
-        controller.enqueue(sseEvent(encoder, event, data));
+        if (clientSignal.aborted) return;
+        try {
+          controller.enqueue(sseEvent(encoder, event, data));
+        } catch {
+          // Client likely disconnected
+          abortController.abort();
+        }
       };
 
       send("session", { sessionId });
@@ -633,7 +667,7 @@ export async function POST(req: NextRequest) {
         }
         let searchContext = "";
         if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
-          const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl);
+          const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl, clientSignal);
           send("agent_searching", { agentId: agent.id, query: searchQuery });
           const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
           if (searchResults) searchContext = `\n\n🔍 ผลการค้นหา:\n${searchResults}\n`;
@@ -643,12 +677,11 @@ export async function POST(req: NextRequest) {
         const knowledgeContext = getAgentKnowledgeContent(agent.id, question);
         try {
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
-            {
-              role: "system",
+            { role: "system",
               content: `${companyContext}${memoryContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${antiHallucinationRules}\n\nรูปแบบการตอบ:\n1. **ตอบคำตอบหลักให้ชัดเจนก่อนเลยในย่อหน้าแรก** (ใช่/ไม่ใช่/มี/ไม่มี + สรุปสั้น 1-2 ประโยค)\n2. จากนั้นค่อยอธิบายเหตุผล หลักกฎหมาย หรือรายละเอียดสนับสนุน\n3. ถ้ามีเงื่อนไขพิเศษหรือข้อยกเว้น ให้ระบุชัดเจนว่ากรณีของผู้ถามเข้าเงื่อนไขไหน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ที่เกี่ยวข้องก่อนเสมอ\n- คำตอบต้องสอดคล้องกันตลอด — ห้ามเปิดด้วยข้อมูลที่ขัดกับข้อสรุป\n- อ้างอิงมาตรากฎหมาย มาตรฐานบัญชี หรือแนวปฏิบัติที่เกี่ยวข้อง\n- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ`,
             },
             { role: "user", content: question },
-          ]);
+          ], clientSignal);
 
           const answerMsg: ResearchMessage = {
             id: crypto.randomUUID(),
@@ -678,13 +711,14 @@ export async function POST(req: NextRequest) {
             agentName: agent.name,
             agentEmoji: agent.emoji,
             role: "finding",
-            content: `⚠️ เกิดข้อผิดพลาด: ${String(err).slice(0, 200)}`,
+            content: `⚠️ เกิดข้อผิดพลาดในการประมวลผล`,
             tokensUsed: 0,
             timestamp: new Date().toISOString(),
           };
+          console.error("QA mode error:", err);
           appendResearchMessage(sessionId, errorMsg);
           send("message", errorMsg);
-          completeResearchSession(sessionId, String(err), "error");
+          completeResearchSession(sessionId, "QA processing error", "error");
         }
         send("done", { sessionId });
         controller.close();
@@ -703,7 +737,7 @@ export async function POST(req: NextRequest) {
             const clarifyResult = await callLLM(chairman.provider, chairman.model, chairApiKeyP0, chairman.baseUrl, [
               {
                 role: "system",
-                content: `คุณเป็นผู้เชี่ยวชาญด้านบัญชีและภาษีไทย ก่อนเริ่มประชุมคุณต้องประเมินว่าคำถามมีข้อมูลเพียงพอหรือไม่
+                content: `คุณเป็นผู้เชี่ยวชาญด้านบัญชีและภาษีไทย ก่อนเริ่มประชุมคุณต้องประเมินว่าคำถามมีข้อมูลเพียงพอหรือไม่ 
 ตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น:
 {
   "needsClarification": true/false,
@@ -728,7 +762,7 @@ export async function POST(req: NextRequest) {
                 role: "user",
                 content: `ประเมินคำถามนี้: "${question}"${fileContexts?.length ? "\n(มีเอกสารแนบมาด้วย)" : ""}${conversationHistory?.length ? "\n(มีประวัติการประชุมก่อนหน้า)" : ""}`,
               },
-            ]);
+            ], clientSignal);
 
             try {
               const jsonMatch = clarifyResult.content.match(/\{[\s\S]*\}/);
@@ -762,7 +796,7 @@ export async function POST(req: NextRequest) {
                 role: "user",
                 content: `กรุณาเปิดการประชุมสำหรับวาระ: "${question}"\n\nชี้แจงวัตถุประสงค์สั้นกระชับ (3-5 ประโยค) และกำหนดประเด็นหลัก 2-3 ข้อที่ต้องการหาคำตอบ เพื่อให้ทีมงานวิเคราะห์ในทิศทางเดียวกัน\n\n⚠️ สำคัญ: พูดกระชับ ไม่ต้องอธิบายรายละเอียดยาว เพราะทีมจะนำเสนอข้อมูลเชิงลึกเอง`,
               },
-            ]);
+            ], clientSignal);
 
             const openingMsg: ResearchMessage = {
               id: crypto.randomUUID(),
@@ -803,7 +837,7 @@ export async function POST(req: NextRequest) {
           // Web search if agent has it enabled or question is about law/tax
           let searchContext = "";
           if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
-            const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl);
+            const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl, clientSignal);
             send("agent_searching", { agentId: agent.id, query: searchQuery });
             const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
             if (searchResults) {
@@ -850,7 +884,7 @@ export async function POST(req: NextRequest) {
               role: "user",
               content: `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์เชิงลึกจากมุมมองเฉพาะทางของ ${agent.role} พร้อมระบุ:\n1. ประเด็นสำคัญที่คนอื่นยังไม่ได้พูดถึง\n2. ความเสี่ยงหรือข้อกังวลจากมุมมองของคุณ\n3. ข้อเสนอแนะเฉพาะทาง${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ตอบเจาะจงกรณีที่ผู้ถามถาม อย่าพูดหลักการทั่วไปที่ไม่ตรงกับกรณีของเขา\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ตามกฎหมายก่อนเสมอ (เช่น ม.81 สำหรับ VAT, ม.65 ทวิ/ตรี สำหรับ CIT)\n- ถ้ามีข้อยกเว้นที่ทำให้กรณีนี้ต่างจากกฎทั่วไป ให้ระบุข้อยกเว้นนั้นเป็นจุดหลัก ไม่ใช่แค่หมายเหตุท้าย\n- อ้างอิงมาตรากฎหมาย พ.ร.ก. คำวินิจฉัย หรือแนวปฏิบัติที่เกี่ยวข้องให้ชัดเจน\n- ห้ามให้ข้อมูลที่ขัดแย้งกันในคำตอบเดียวกัน\n- เน้นวิเคราะห์เชิงลึกเฉพาะบทบาทของคุณ ไม่ต้องสร้างตารางเปรียบเทียบทั่วไปที่คนอื่นทำแล้ว`,
             },
-          ]);
+          ], clientSignal);
 
           const prevTokens = agentTokens[agent.id] ?? { input: 0, output: 0 };
           agentTokens[agent.id] = {
@@ -887,8 +921,8 @@ export async function POST(req: NextRequest) {
             searchResults: searchContext || undefined,
           });
         } catch (err) {
-          const errorDetail = String(err);
-          send("agent_error", { agentId: agent.id, error: errorDetail });
+          console.error(`Agent ${agent.id} Phase 1 error:`, err);
+          send("agent_error", { agentId: agent.id, error: "LLM connection error" });
           failedAgents.push(`${agent.emoji} ${agent.name} (${agent.role})`);
 
           // Send a visible error message so user knows this agent failed
@@ -898,7 +932,7 @@ export async function POST(req: NextRequest) {
             agentName: agent.name,
             agentEmoji: agent.emoji,
             role: "finding",
-            content: `⚠️ ไม่สามารถวิเคราะห์ได้ — เกิดข้อผิดพลาดในการเชื่อมต่อกับ model ${agent.model} (${agent.provider})\n\nข้อผิดพลาด: ${errorDetail.slice(0, 200)}`,
+            content: `⚠️ ไม่สามารถวิเคราะห์ได้ — เกิดข้อผิดพลาดในการเชื่อมต่อกับ model`,
             tokensUsed: 0,
             timestamp: new Date().toISOString(),
           };
@@ -922,7 +956,7 @@ export async function POST(req: NextRequest) {
                 content: 'ประเมินว่าผู้เชี่ยวชาญเห็นตรงกันหรือไม่ ตอบเป็น JSON เท่านั้น: {"consensus": true/false, "reason": "เหตุผลสั้นๆ"}\n\nconsensus=true หมายถึง ทุกคนเห็นตรงกันในสาระสำคัญ เช่น ข้อสรุปเหมือนกัน แม้จะมีรายละเอียดเสริมที่ต่างกัน\nconsensus=false หมายถึง มีความเห็นขัดแย้งจริงๆ เช่น สรุปตรงข้ามกัน ตีความกฎหมายต่างกัน แนะนำวิธีต่างกัน',
               },
               { role: "user", content: `วาระ: ${question}\n\nข้อสรุปของแต่ละคน:\n${findingsSummary}` },
-            ]);
+            ], clientSignal);
             try {
               const jsonMatch = consensusResult.content.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
@@ -966,7 +1000,7 @@ export async function POST(req: NextRequest) {
                 role: "user",
                 content: `วาระ: ${question}\n\nสรุปมุมมองของคุณ:\n${myFinding.content.slice(0, 500)}${myFinding.content.length > 500 ? "..." : ""}\n\n---\nมุมมองจากสมาชิกคนอื่น:\n${otherFindings}\n\n---\nในฐานะ ${agent.role}:\n1. ระบุจุดที่คุณไม่เห็นด้วยกับใคร เพราะอะไร?\n2. มีความเสี่ยงอะไรที่คนอื่นมองข้าม?\n3. มีข้อเสนอเพิ่มเติมจากมุมมอง ${agent.role} ของคุณไหม?`,
               },
-            ]);
+            ], clientSignal);
 
             const tokens = agentTokens[agent.id] ?? { input: 0, output: 0 };
             agentTokens[agent.id] = {
@@ -994,7 +1028,8 @@ export async function POST(req: NextRequest) {
             });
             updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
           } catch (err) {
-            send("agent_error", { agentId: agent.id, error: String(err) });
+            console.error(`Agent ${agent.id} Phase 2 error:`, err);
+            send("agent_error", { agentId: agent.id, error: "LLM connection error" });
             failedAgents.push(`${agent.emoji} ${agent.name} (${agent.role})`);
           }
         }
@@ -1031,7 +1066,7 @@ export async function POST(req: NextRequest) {
 ห้ามอธิบายยาว ระบุเป็นข้อๆ สั้นๆ${domainKnowledge}`,
               },
               { role: "user", content: `วาระ: ${question}\n\nข้อมูลจากผู้เชี่ยวชาญ:\n${citedContent}` },
-            ]);
+            ], clientSignal);
             const fcContent = fcResult.content.trim();
             if (fcContent && !fcContent.includes("ไม่พบข้อผิดพลาด")) {
               factCheckNote = `\n\n⚠️ ผลการตรวจสอบข้อเท็จจริง (Fact Check):\n${fcContent}\n— กรุณาพิจารณาข้อสังเกตเหล่านี้ในการสรุปมติ`;
@@ -1090,7 +1125,7 @@ export async function POST(req: NextRequest) {
               role: "user",
               content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
             },
-          ]);
+          ], clientSignal);
 
           const synthMsg: ResearchMessage = {
             id: crypto.randomUUID(),
@@ -1150,7 +1185,7 @@ export async function POST(req: NextRequest) {
                 role: "user",
                 content: `${historyForFollowup}วาระล่าสุด: ${question}\n\nมติที่ประชุม: ${result.content.slice(0, 500)}\n\nแนะนำ 3 วาระต่อเนื่องที่ควรพิจารณาต่อ ตอบเป็น JSON array เท่านั้น ไม่ต้องมีข้อความอื่น`,
               },
-            ]);
+            ], clientSignal);
             try {
               const jsonMatch = followupResult.content.match(/\[[\s\S]*\]/);
               const suggestions: string[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
@@ -1168,7 +1203,7 @@ export async function POST(req: NextRequest) {
                 content: 'จากการประชุม ให้ดึงข้อเท็จจริงสำคัญเกี่ยวกับผู้ถาม/บริษัทที่ควรจำไว้ ตอบเป็น JSON array เท่านั้น: [{"key":"ชื่อภาษาอังกฤษสั้นๆ","value":"ค่า"}]\n\nตัวอย่าง key: vat_registered, company_type, business_sector, employee_count, accounting_standard, fiscal_year\nถ้าไม่มีข้อมูลใหม่ที่ควรจำ ตอบ []',
               },
               { role: "user", content: `วาระ: ${question}\n\nข้อมูลจากผู้ถาม: ${clarificationContext || "ไม่มี"}\n\nมติ: ${result.content.slice(0, 500)}` },
-            ]);
+            ], clientSignal);
             try {
               const jsonMatch = memResult.content.match(/\[[\s\S]*\]/);
               if (jsonMatch) {
@@ -1183,8 +1218,9 @@ export async function POST(req: NextRequest) {
           } catch { /* ignore memory extraction error */ }
 
         } catch (err) {
-          completeResearchSession(sessionId, String(err), "error");
-          send("error", { message: String(err) });
+          console.error("Research session error:", err);
+          completeResearchSession(sessionId, "Processing error", "error");
+          send("error", { message: "เกิดข้อผิดพลาดในการประมวลผล" });
         }
       } else if (mode !== "close") {
         // Only auto-complete for "full" mode when no chairman API key
@@ -1196,6 +1232,10 @@ export async function POST(req: NextRequest) {
 
       send("done", { sessionId });
       controller.close();
+    },
+    cancel() {
+      // Client disconnected — abort any in-flight LLM calls
+      abortController.abort();
     },
   });
 

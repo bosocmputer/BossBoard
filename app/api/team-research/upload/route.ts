@@ -6,6 +6,22 @@ const MAX_BYTES = 10 * 1024 * 1024;
 // Max characters to inject into prompt (to stay within token limits)
 const MAX_CONTEXT_CHARS = 40000;
 
+// Magic bytes for file type validation
+const MAGIC_BYTES: Record<string, number[][]> = {
+  pdf: [[0x25, 0x50, 0x44, 0x46]], // %PDF
+  xlsx: [[0x50, 0x4b, 0x03, 0x04]], // PK (ZIP)
+  xls: [[0xd0, 0xcf, 0x11, 0xe0]], // OLE2
+  docx: [[0x50, 0x4b, 0x03, 0x04]], // PK (ZIP)
+};
+
+function validateMagicBytes(buffer: Buffer, ext: string): boolean {
+  const signatures = MAGIC_BYTES[ext];
+  if (!signatures) return true; // no signature check for text-based formats
+  return signatures.some((sig) =>
+    sig.every((byte, i) => buffer.length > i && buffer[i] === byte)
+  );
+}
+
 type ParseResult = { text: string; meta: string };
 
 async function parseExcel(buffer: Buffer, filename: string): Promise<ParseResult> {
@@ -96,6 +112,14 @@ export async function POST(req: NextRequest) {
     const filename = file.name;
     const ext = filename.split(".").pop()?.toLowerCase() ?? "";
 
+    // Validate magic bytes for binary formats
+    if (!validateMagicBytes(buffer, ext)) {
+      return NextResponse.json(
+        { error: `ไฟล์ไม่ตรงกับนามสกุล .${ext} ที่ระบุ` },
+        { status: 400 }
+      );
+    }
+
     let result: ParseResult;
 
     if (["xlsx", "xls", "xlsm", "xlsb"].includes(ext)) {
@@ -132,6 +156,7 @@ export async function POST(req: NextRequest) {
       chars: trimmed.length,
     });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error("Upload error:", err);
+    return NextResponse.json({ error: "ไม่สามารถประมวลผลไฟล์ได้" }, { status: 500 });
   }
 }

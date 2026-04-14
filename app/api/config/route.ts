@@ -551,6 +551,7 @@ export async function GET() {
     setConfigCache({ data, ts: Date.now() });
     return NextResponse.json(data);
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Config error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
