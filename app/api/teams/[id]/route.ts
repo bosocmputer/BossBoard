@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server";
-import { updateTeam, deleteTeam } from "@/lib/agents-store";
+import { listTeams, updateTeam, deleteTeam } from "@/lib/agents-store";
+
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const team = listTeams().find(t => t.id === id);
+    if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    return NextResponse.json({ team });
+  } catch (e) {
+    console.error("GET /api/teams/[id] error", e);
+    return NextResponse.json({ error: "Failed to get team" }, { status: 500 });
+  }
+}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

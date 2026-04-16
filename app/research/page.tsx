@@ -468,11 +468,23 @@ export default function ResearchPage() {
     fetch("/api/team-settings").then(r => r.json()).then(d => { if (d.settings?.companyInfo?.name) setCompanyName(d.settings.companyInfo.name); }).catch(() => {});
   }, [fetchAgents, fetchServerHistory]);
 
-  // Handle ?q= from dashboard quick-start templates
+  // Handle ?q= and ?teamId= from dashboard/teams page
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
     if (q) setQuestion(q);
+
+    const teamId = params.get("teamId");
+    if (teamId) {
+      fetch(`/api/teams/${teamId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.team?.agentIds?.length) {
+            setSelectedIds(new Set(data.team.agentIds));
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   // Meeting timer
