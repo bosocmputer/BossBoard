@@ -274,7 +274,7 @@ export default function SettingsPage() {
         </div>
 
         {state.companyInfo?.name && (
-          <div className="mt-4 px-3 py-2.5 rounded-lg text-xs" style={{ background: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" }}>
+          <div className="mt-4 px-3 py-2.5 rounded-lg text-xs" style={{ background: "var(--accent-8)", border: "1px solid var(--accent-20)" }}>
             <span className="font-medium" style={{ color: "var(--accent)" }}>ตัวอย่าง Context ที่ AI จะเห็น:</span>
             <p className="mt-1" style={{ color: "var(--text-muted)" }}>
               &quot;บริษัท: {state.companyInfo.name}
@@ -301,12 +301,12 @@ export default function SettingsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1">
             <label className="text-sm font-medium">
               Serper API Key
-              <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}>Primary</span>
+              <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>Primary</span>
             </label>
             {state.hasSerperKey && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{state.serperKeyPreview}</span>
-                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--success) 15%, transparent)", color: "var(--success)" }}>✓ บันทึกแล้ว</span>
+                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--success-15)", color: "var(--success)" }}>✓ บันทึกแล้ว</span>
                 <button onClick={() => handleClear("serper")} className="text-xs px-3 py-1.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
               </div>
             )}
@@ -329,12 +329,12 @@ export default function SettingsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1">
             <label className="text-sm font-medium">
               SerpApi API Key
-              <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--text-muted) 15%, transparent)", color: "var(--text-muted)" }}>Fallback</span>
+              <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--text-muted-15)", color: "var(--text-muted)" }}>Fallback</span>
             </label>
             {state.hasSerpApiKey && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{state.serpApiKeyPreview}</span>
-                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--success) 15%, transparent)", color: "var(--success)" }}>✓ บันทึกแล้ว</span>
+                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--success-15)", color: "var(--success)" }}>✓ บันทึกแล้ว</span>
                 <button onClick={() => handleClear("serpapi")} className="text-xs px-3 py-1.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>ลบ</button>
               </div>
             )}
@@ -388,7 +388,7 @@ export default function SettingsPage() {
 
         {testResult && (
           <div className="mt-3 text-sm px-3 py-2 rounded-lg" style={{
-            background: testResult.ok ? "color-mix(in srgb, var(--success) 10%, transparent)" : "color-mix(in srgb, var(--danger) 10%, transparent)",
+            background: testResult.ok ? "var(--success-10)" : "var(--danger-10)",
             border: `1px solid ${testResult.ok ? "var(--success)" : "var(--danger)"}`,
             color: testResult.ok ? "var(--success)" : "var(--danger)",
           }}>

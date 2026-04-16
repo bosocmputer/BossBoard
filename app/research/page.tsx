@@ -4,6 +4,13 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { showToast } from "../components/Toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  Building2, Settings, Users, FileText, MessageSquare, History,
+  Brain, Paperclip, Lightbulb, Send, Square, SkipForward,
+  ChevronDown, ChevronRight, X, Download, Search, Check,
+  AlertTriangle, Edit3, Clock, Coins, PlugZap,
+  BarChart3, FileSpreadsheet, File, Trash2, RefreshCw,
+} from "lucide-react";
 
 interface Agent {
   id: string;
@@ -145,7 +152,7 @@ function SimpleBarChart({ data }: { data: ChartData }) {
 
   return (
     <div className="mt-4 p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-      <div className="text-xs font-bold mb-3" style={{ color: "var(--accent)" }}>📊 {data.title}</div>
+      <div className="text-xs font-bold mb-3 flex items-center gap-1" style={{ color: "var(--accent)" }}><BarChart3 size={12} /> {data.title}</div>
       {data.type === "pie" ? (
         // Simple pie-like display as percentage bars
         <div className="space-y-2">
@@ -169,7 +176,7 @@ function SimpleBarChart({ data }: { data: ChartData }) {
           {data.datasets.map((dataset, di) => (
             <div key={di} className="space-y-1.5">
               {dataset.label && (
-                <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{dataset.label}</div>
+                <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>{dataset.label}</div>
               )}
               {data.labels.map((label, i) => {
                 const val = dataset.data[i] ?? 0;
@@ -179,7 +186,7 @@ function SimpleBarChart({ data }: { data: ChartData }) {
                     <div className="text-xs w-28 truncate text-right" style={{ color: "var(--text-muted)" }}>{label}</div>
                     <div className="flex-1 h-5 rounded overflow-hidden" style={{ background: "var(--bg)" }}>
                       <div className="h-full rounded flex items-center px-2 transition-all" style={{ width: `${Math.max(pct, 2)}%`, background: colors[di % colors.length] }}>
-                        <span className="text-[10px] text-white truncate">{val.toLocaleString()}</span>
+                        <span className="text-[11px] text-white truncate">{val.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -225,7 +232,7 @@ function MessageContent({ content }: { content: string }) {
                 <table className="w-full text-xs border-collapse" style={{ borderColor: "var(--border)" }}>{children}</table>
               </div>
             ),
-            thead: ({ children }) => <thead style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}>{children}</thead>,
+            thead: ({ children }) => <thead style={{ background: "var(--accent-10)" }}>{children}</thead>,
             th: ({ children }) => <th className="px-2 py-1.5 text-left border font-semibold text-xs" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{children}</th>,
             td: ({ children }) => <td className="px-2 py-1.5 border text-xs" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{children}</td>,
             blockquote: ({ children }) => (
@@ -236,7 +243,7 @@ function MessageContent({ content }: { content: string }) {
               if (isBlock) {
                 return <pre className="text-xs p-3 rounded-lg my-2 overflow-x-auto" style={{ background: "var(--bg)", color: "var(--text)" }}><code>{children}</code></pre>;
               }
-              return <code className="text-xs px-1 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>{children}</code>;
+              return <code className="text-xs px-1 py-0.5 rounded" style={{ background: "var(--accent-12)", color: "var(--accent)" }}>{children}</code>;
             },
             hr: () => <hr className="my-3" style={{ borderColor: "var(--border)" }} />,
           }}
@@ -352,6 +359,9 @@ export default function ResearchPage() {
   const [status, setStatus] = useState("");
   const [chairmanId, setChairmanId] = useState<string | null>(null);
   const [searchingAgents, setSearchingAgents] = useState<Set<string>>(new Set());
+  const [activeAgentIds, setActiveAgentIds] = useState<Set<string>>(new Set());
+  const [currentPhase, setCurrentPhase] = useState<0 | 1 | 2 | 3>(0);
+  const [phase1DoneCount, setPhase1DoneCount] = useState(0);
 
   // Clarification state
   const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
@@ -618,10 +628,13 @@ export default function ResearchPage() {
     setCurrentWebSources([]);
     currentWebSourcesRef.current = [];
     lastClarificationAnswersRef.current = withClarificationAnswers;
-    setStatus(closeMode ? "🏛️ ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "💬 กำลังตอบ..." : "");
+    setStatus(closeMode ? "ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "กำลังตอบ..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
     pendingClarificationQuestionRef.current = q;
+    setActiveAgentIds(new Set());
+    setCurrentPhase(0);
+    setPhase1DoneCount(0);
     if (!overrideQuestion && !closeMode) setQuestion("");
 
     abortRef.current = new AbortController();
@@ -683,13 +696,25 @@ export default function ResearchPage() {
               }
             } else if (currentEvent === "status" || ("message" in payload && typeof payload.message === "string")) {
               setStatus(payload.message);
+              // Track current phase from status messages
+              const msg = payload.message as string;
+              if (msg.includes("Phase 1")) setCurrentPhase(1);
+              else if (msg.includes("Phase 2") || msg.includes("อภิปราย")) setCurrentPhase(2);
+              else if (msg.includes("Phase 3") || msg.includes("สรุปมติ")) setCurrentPhase(3);
             } else if (currentEvent === "chairman") {
               setChairmanId(payload.agentId);
               chairmanIdRef.current = payload.agentId;
-            } else if (currentEvent === "agent_searching") {
-              setSearchingAgents((prev) => new Set([...prev, payload.agentId]));
+            } else if (currentEvent === "agent_start" || currentEvent === "agent_searching") {
+              setActiveAgentIds((prev) => new Set([...prev, payload.agentId]));
+              if (currentEvent === "agent_searching") {
+                setSearchingAgents((prev) => new Set([...prev, payload.agentId]));
+              }
             } else if (currentEvent === "message" || ("content" in payload && "agentId" in payload)) {
               setSearchingAgents((prev) => { const n = new Set(prev); n.delete(payload.agentId); return n; });
+              if ((payload as ResearchMessage).role !== "thinking") {
+                setActiveAgentIds((prev) => { const n = new Set(prev); n.delete(payload.agentId); return n; });
+                if ((payload as ResearchMessage).role === "finding") setPhase1DoneCount((c) => c + 1);
+              }
               setCurrentMessages((prev) => [...prev, payload as ResearchMessage]);
             } else if (currentEvent === "final_answer" || ("content" in payload && !("agentId" in payload))) {
               setCurrentFinalAnswer(payload.content);
@@ -725,6 +750,9 @@ export default function ResearchPage() {
     } finally {
       setRunning(false);
       setSearchingAgents(new Set());
+      setActiveAgentIds(new Set());
+      setCurrentPhase(0);
+      setPhase1DoneCount(0);
       // Only add a round if there are messages (close mode may have only synthesis)
       if (currentMessagesRef.current.length > 0 || currentFinalAnswerRef.current) {
         setRounds((prev) => [
@@ -883,7 +911,7 @@ export default function ResearchPage() {
                 if (selectedIds.size === agents.length) setSelectedIds(new Set());
                 else setSelectedIds(new Set(agents.map(a => a.id)));
               }}
-              className="text-[10px] px-2 py-0.5 rounded border transition-all mb-2"
+              className="text-[11px] px-2 py-0.5 rounded border transition-all mb-2"
               style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
             >
               {selectedIds.size === agents.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
@@ -892,9 +920,8 @@ export default function ResearchPage() {
         </div>
         {agents.length === 0 ? (
           <div className="text-center py-6 px-3">
-            <div className="text-2xl mb-2">🏛️</div>
+                  <div className="text-2xl mb-2"><Building2 size={28} style={{ color: "var(--accent)" }} /></div>
             <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>ยังไม่มี agent — สร้างทีมก่อนเพื่อเริ่มประชุม</p>
-            <a href="/agents" className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-block" style={{ background: "var(--accent)", color: "white", textDecoration: "none" }}>ไปสร้างทีม →</a>
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -902,14 +929,15 @@ export default function ResearchPage() {
               const tokens = agentTokens[agent.id];
               const isChairman = agent.id === chairmanId;
               const isSearching = searchingAgents.has(agent.id);
+              const isSpeaking = activeAgentIds.has(agent.id);
               return (
                 <button
                   key={agent.id}
                   onClick={() => toggleAgent(agent.id)}
-                  className="w-full text-left p-2 rounded-lg border transition-all"
+                  className={`w-full text-left p-2 rounded-lg border transition-all ${isSpeaking ? "ring-1 ring-[var(--accent)]" : ""}`}
                   style={{
-                    borderColor: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)",
-                    background: selectedIds.has(agent.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                    borderColor: isSpeaking ? "var(--accent)" : selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)",
+                    background: isSpeaking ? "var(--accent-15)" : selectedIds.has(agent.id) ? "var(--accent-8)" : "transparent",
                   }}
                 >
                   <div className="flex items-center gap-1.5">
@@ -917,19 +945,25 @@ export default function ResearchPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1">
                         <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{agent.name}</div>
-                        {isChairman && <span className="text-[9px] px-1 rounded" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>}
-                        {agent.useWebSearch && <span className="text-[9px]" title="Web Search">🔍</span>}
+                        {isChairman && <span className="text-[10px] px-1 rounded" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>}
+                        {agent.useWebSearch && <span className="text-[10px]" title="Web Search"><Search size={10} /></span>}
                       </div>
-                      <div className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{agent.role}</div>
+                      <div className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
+                        {isSpeaking ? (
+                          <span style={{ color: "var(--accent)" }}>กำลังพูด...</span>
+                        ) : agent.role}
+                      </div>
                     </div>
                     {isSearching ? (
-                      <span className="text-[9px] animate-pulse" style={{ color: "var(--accent)" }}>ค้นหา...</span>
+                      <span className="text-[10px] animate-pulse" style={{ color: "var(--accent)" }}>ค้นหา...</span>
+                    ) : isSpeaking ? (
+                      <span className="inline-block w-2 h-2 rounded-full animate-pulse flex-shrink-0" style={{ background: "var(--accent)" }} />
                     ) : (
                       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: selectedIds.has(agent.id) ? "var(--accent)" : "var(--border)" }} />
                     )}
                   </div>
                   {tokens && (
-                    <div className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                    <div className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
                       {tokens.totalTokens.toLocaleString()} tokens
                     </div>
                   )}
@@ -943,14 +977,14 @@ export default function ResearchPage() {
       {/* Advanced: History Mode + Data Source */}
       <button
         onClick={() => setShowAdvanced(v => !v)}
-        className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all"
+        className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all flex items-center gap-1"
         style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
       >
-        {showAdvanced ? "▾" : "▸"} ตั้งค่าขั้นสูง
+        {showAdvanced ? <ChevronDown size={12} /> : <ChevronRight size={12} />} <Settings size={11} /> ตั้งค่าขั้นสูง
       </button>
       {showAdvanced && (
       <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <div className="text-xs mb-1 font-bold" style={{ color: "var(--text-muted)" }}>🧠 ความจำการประชุม</div>
+        <div className="text-xs mb-1 font-bold flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Brain size={12} /> ความจำการประชุม</div>
         <select
           value={historyMode}
           onChange={(e) => setHistoryMode(e.target.value as typeof historyMode)}
@@ -964,14 +998,14 @@ export default function ResearchPage() {
         <div className="flex flex-col gap-1.5">
           {/* File toggle */}
           <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useFileContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-            <span className="text-xs" style={{ color: useFileContext ? "var(--text)" : "var(--text-muted)" }}>📎 เอกสารที่แนบ</span>
+            <span className="text-xs flex items-center gap-1" style={{ color: useFileContext ? "var(--text)" : "var(--text-muted)" }}><Paperclip size={11} /> เอกสารที่แนบ</span>
             <div onClick={() => setUseFileContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useFileContext ? "var(--accent)" : "var(--border)" }}>
               <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useFileContext ? "17px" : "2px" }} />
             </div>
           </label>
           {/* MCP toggle */}
           <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: useMcpContext ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-            <span className="text-xs" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}>🔌 เชื่อมต่อระบบ ERP</span>
+            <span className="text-xs flex items-center gap-1" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}><PlugZap size={12} /> เชื่อมต่อระบบ ERP</span>
             <div onClick={() => setUseMcpContext(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: useMcpContext ? "var(--accent)" : "var(--border)" }}>
               <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useMcpContext ? "17px" : "2px" }} />
             </div>
@@ -989,7 +1023,7 @@ export default function ResearchPage() {
       >
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
-            📎 เอกสารอ้างอิง ({attachedFiles.length})
+            <Paperclip size={12} /> เอกสารอ้างอิง ({attachedFiles.length})
           </div>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -1013,7 +1047,7 @@ export default function ResearchPage() {
         {attachedFiles.length === 0 && !uploadingFile && (
           <div
             className="border-2 border-dashed rounded-lg p-3 text-center text-xs transition-all"
-            style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", color: "var(--text-muted)", background: isDragOver ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "transparent" }}
+            style={{ borderColor: isDragOver ? "var(--accent)" : "var(--border)", color: "var(--text-muted)", background: isDragOver ? "var(--accent-5)" : "transparent" }}
           >
             {isDragOver ? "ปล่อยไฟล์เลย!" : "Drag & Drop หรือกด + แนบ"}
             <div className="mt-1 opacity-60">xlsx · pdf · docx · csv · json · txt</div>
@@ -1025,16 +1059,16 @@ export default function ResearchPage() {
         {attachedFiles.length > 0 && (
           <div className="space-y-2 mt-1">
             {attachedFiles.map((f, i) => (
-              <div key={i} className="p-2 rounded-lg border" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+              <div key={i} className="p-2 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--accent-5)" }}>
                 <div className="flex items-start gap-2">
                   <span className="text-sm flex-shrink-0">
-                    {f.filename.endsWith(".xlsx") || f.filename.endsWith(".xls") || f.filename.endsWith(".csv") ? "📊" :
-                     f.filename.endsWith(".pdf") ? "📄" :
-                     f.filename.endsWith(".docx") || f.filename.endsWith(".doc") ? "📝" : "📋"}
+                    {f.filename.endsWith(".xlsx") || f.filename.endsWith(".xls") || f.filename.endsWith(".csv") ? <FileSpreadsheet size={14} /> :
+                     f.filename.endsWith(".pdf") ? <FileText size={14} /> :
+                     <File size={14} />}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{f.filename}</div>
-                    <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                    <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                       {formatBytes(f.size)} · {f.chars.toLocaleString()} chars
                     </div>
                   </div>
@@ -1050,7 +1084,7 @@ export default function ResearchPage() {
                 {/* Sheet selector for Excel */}
                 {f.sheets && f.sheets.length > 1 && (
                   <div className="mt-2">
-                    <div className="text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>เลือก Sheet:</div>
+                    <div className="text-[11px] mb-1" style={{ color: "var(--text-muted)" }}>เลือก Sheet:</div>
                     <div className="flex flex-wrap gap-1">
                       {f.sheets.map((sheet) => {
                         const selected = f.selectedSheets?.includes(sheet) ?? true;
@@ -1058,10 +1092,10 @@ export default function ResearchPage() {
                           <button
                             key={sheet}
                             onClick={() => toggleSheet(i, sheet)}
-                            className="text-[10px] px-1.5 py-0.5 rounded border transition-all"
+                            className="text-[11px] px-1.5 py-0.5 rounded border transition-all"
                             style={{
                               borderColor: selected ? "var(--accent)" : "var(--border)",
-                              background: selected ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
+                              background: selected ? "var(--accent-15)" : "transparent",
                               color: selected ? "var(--accent)" : "var(--text-muted)",
                             }}
                           >
@@ -1076,7 +1110,7 @@ export default function ResearchPage() {
             ))}
             <button
               onClick={() => setAttachedFiles([])}
-              className="w-full text-[10px] py-1 rounded border"
+              className="w-full text-[11px] py-1 rounded border"
               style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
             >
               ลบทั้งหมด
@@ -1094,14 +1128,14 @@ export default function ResearchPage() {
             className="flex-1 py-2 text-xs transition-all"
             style={{ color: historyTab === "current" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "current" ? "2px solid var(--accent)" : "2px solid transparent" }}
           >
-            💬 วาระ ({rounds.length})
+            <MessageSquare size={12} className="inline" /> วาระ ({rounds.length})
           </button>
           <button
             onClick={() => setHistoryTab("history")}
             className="flex-1 py-2 text-xs transition-all"
             style={{ color: historyTab === "history" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "history" ? "2px solid var(--accent)" : "2px solid transparent" }}
           >
-            📋 ประวัติ ({serverSessions.length})
+            <History size={12} className="inline" /> ประวัติ ({serverSessions.length})
           </button>
         </div>
 
@@ -1117,8 +1151,8 @@ export default function ResearchPage() {
                     <div className="line-clamp-2" style={{ color: "var(--text-muted)" }}>{r.question}</div>
                   </div>
                 ))}
-                <button onClick={clearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                  🗑 เริ่มการประชุมใหม่
+                <button onClick={clearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1 flex items-center justify-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                  <Trash2 size={12} /> เริ่มการประชุมใหม่
                 </button>
               </div>
             )}
@@ -1136,12 +1170,12 @@ export default function ResearchPage() {
                     className="w-full text-left p-2 rounded-lg border transition-all"
                     style={{
                       borderColor: viewingSession?.id === s.id ? "var(--accent)" : "var(--border)",
-                      background: viewingSession?.id === s.id ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                      background: viewingSession?.id === s.id ? "var(--accent-8)" : "transparent",
                     }}
                   >
                     <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
-                    <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-                      {s.status === "completed" ? "✅" : s.status === "error" ? "❌" : "⏳"}{" "}
+                    <div className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+                      {s.status === "completed" ? <Check size={10} className="inline text-green-500" /> : s.status === "error" ? <X size={10} className="inline text-red-500" /> : <Clock size={10} className="inline" />}{" "}
                       {new Date(s.startedAt).toLocaleDateString("th")}
                       {s.totalTokens > 0 && ` · ${s.totalTokens.toLocaleString()} tokens`}
                     </div>
@@ -1161,7 +1195,7 @@ export default function ResearchPage() {
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold" style={{ color: "var(--text)" }}>🏛️ Meeting Room{companyName ? ` — ${companyName}` : ""}</h1>
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2" style={{ color: "var(--text)" }}><Building2 size={22} style={{ color: "var(--accent)" }} /><span>ห้องประชุม{companyName ? ` — ${companyName}` : ""}</span></h1>
             <p className="text-xs sm:text-sm mt-1 hidden sm:block" style={{ color: "var(--text-muted)" }}>
               ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
             </p>
@@ -1170,27 +1204,27 @@ export default function ResearchPage() {
             <button
               onClick={() => setMobileSidebarOpen(true)}
               className="md:hidden px-3 py-2 rounded-lg text-xs border flex items-center gap-1.5"
-              style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}
+              style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}
             >
-              ⚙️ ตั้งค่า · 👥 {selectedIds.size}/{agents.length}
+              <Settings size={14} /> ตั้งค่า ({selectedIds.size})
             </button>
             {(rounds.length > 0 || viewingSession) && (
               <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                📄 <span className="hidden sm:inline">Export Minutes</span><span className="sm:hidden">Export</span>
+                <Download size={14} /> <span className="hidden sm:inline">Export</span>
               </button>
             )}
           </div>
         </div>
 
         {/* ── Mobile quick-info strip ── */}
-        <div className="flex md:hidden items-center gap-2 px-3 py-2 rounded-xl border text-[10px] flex-wrap" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}>
+        <div className="flex md:hidden items-center gap-2 px-3 py-2 rounded-xl border text-[11px] flex-wrap" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}>
           <button onClick={() => setMobileSidebarOpen(true)} className="flex items-center gap-1 px-2 py-1 rounded-lg border" style={{ borderColor: selectedIds.size > 0 ? "var(--accent)" : "var(--border)", color: selectedIds.size > 0 ? "var(--accent)" : "var(--text-muted)" }}>
-            👥 {selectedIds.size} agent{selectedIds.size !== 1 ? "s" : ""}
+            <Users size={12} /> {selectedIds.size} สมาชิก
           </button>
-          {useMcpContext && <span className="px-2 py-1 rounded-lg" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)" }}>🔌 MCP</span>}
-          {useFileContext && attachedFiles.length > 0 && <span className="px-2 py-1 rounded-lg" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)" }}>📎 {attachedFiles.length} ไฟล์</span>}
-          {!useMcpContext && !useFileContext && selectedIds.size > 0 && <span className="opacity-60">กดปุ่ม ⚙️ ตั้งค่า เพื่อเปิด MCP หรือแนบไฟล์</span>}
-          {selectedIds.size === 0 && <span className="opacity-60">กดปุ่ม ⚙️ เพื่อเลือก Agent เข้าประชุม</span>}
+          {useMcpContext && <span className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ background: "var(--accent-10)", color: "var(--accent)" }}><PlugZap size={10} /> MCP</span>}
+          {useFileContext && attachedFiles.length > 0 && <span className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ background: "var(--accent-10)", color: "var(--accent)" }}><Paperclip size={10} /> {attachedFiles.length} ไฟล์</span>}
+          {!useMcpContext && !useFileContext && selectedIds.size > 0 && <span className="opacity-60">กดปุ่มตั้งค่าเพื่อเปิด MCP หรือแนบไฟล์</span>}
+          {selectedIds.size === 0 && <span className="opacity-60">กดตั้งค่าเพื่อเลือก Agent เข้าประชุม</span>}
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
@@ -1205,7 +1239,7 @@ export default function ResearchPage() {
               />
               <aside className="absolute top-0 left-0 bottom-0 w-[300px] max-w-[88vw] border-r flex flex-col" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
                 <div className="h-14 px-3 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
-                  <div className="font-semibold text-sm" style={{ color: "var(--text)" }}>👥 ตั้งค่าการประชุม</div>
+                  <div className="font-semibold text-sm flex items-center gap-1.5" style={{ color: "var(--text)" }}><Settings size={14} /> ตั้งค่าการประชุม</div>
                   <button
                     onClick={() => setMobileSidebarOpen(false)}
                     className="w-8 h-8 rounded-lg border text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}
@@ -1228,15 +1262,15 @@ export default function ResearchPage() {
 
             {/* Viewing server session banner */}
             {viewingSession && (
-              <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs" style={{ borderColor: "color-mix(in srgb, var(--accent) 35%, transparent)", background: "color-mix(in srgb, var(--accent) 7%, transparent)", color: "var(--text-muted)" }}>
-                <span style={{ color: "var(--accent)" }}>📋 ดูประวัติ</span>
+              <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs" style={{ borderColor: "var(--accent-35)", background: "var(--accent-7)", color: "var(--text-muted)" }}>
+                <span className="flex items-center gap-1" style={{ color: "var(--accent)" }}><History size={12} /> ดูประวัติ</span>
                 <span className="flex-1 truncate">{viewingSession.question}</span>
                 <button
                   onClick={() => { setViewingSession(null); setHistoryTab("current"); }}
                   className="ml-2 px-2 py-0.5 rounded border opacity-60 hover:opacity-100"
                   style={{ borderColor: "var(--border)" }}
                 >
-                  ✕ ปิด
+                  <X size={12} /> ปิด
                 </button>
               </div>
             )}
@@ -1247,12 +1281,54 @@ export default function ResearchPage() {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 min-h-[200px] sm:min-h-[300px] relative"
             >
-              {/* Sticky status bar — shows which agent is speaking */}
+              {/* Sticky status bar — progress stepper + who's speaking */}
               {running && status && (
                 <div className="sticky top-0 z-10 mx-1">
-                  <div className="text-xs px-3 py-2 rounded-lg border flex items-center gap-2" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, var(--border))", color: "var(--text-muted)", background: "var(--surface)" }}>
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-                    <span className="truncate">{status}</span>
+                  <div className="px-3 py-2 rounded-lg border" style={{ borderColor: "var(--accent-30)", background: "var(--surface)" }}>
+                    {/* Phase stepper */}
+                    {effectiveMode !== "qa" && currentPhase > 0 && (
+                      <div className="flex items-center gap-1 mb-1.5">
+                        {[
+                          { phase: 1, label: "นำเสนอ", icon: "1" },
+                          { phase: 2, label: "อภิปราย", icon: "2" },
+                          { phase: 3, label: "สรุปมติ", icon: "3" },
+                        ].map((step, i) => (
+                          <div key={step.phase} className="flex items-center gap-1 flex-1">
+                            <div className="flex items-center gap-1 flex-1">
+                              <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold transition-all ${currentPhase > step.phase ? "bg-green-500 text-white" : currentPhase === step.phase ? "animate-pulse text-[10px]" : ""}`}
+                                style={currentPhase === step.phase ? { background: "var(--accent)", color: "#000" } : currentPhase < step.phase ? { background: "var(--border)", color: "var(--text-muted)" } : {}}>
+                                {currentPhase > step.phase ? "✓" : step.icon}
+                              </span>
+                              <span className="text-[11px] hidden sm:inline" style={{ color: currentPhase >= step.phase ? "var(--text)" : "var(--text-muted)", fontWeight: currentPhase === step.phase ? 700 : 400 }}>
+                                {step.label}{step.phase === 1 && currentPhase === 1 && selectedIds.size > 1 ? ` (${phase1DoneCount}/${selectedIds.size})` : ""}
+                              </span>
+                            </div>
+                            {i < 2 && (
+                              <div className="w-4 sm:w-8 h-px flex-shrink-0" style={{ background: currentPhase > step.phase ? "var(--green)" : "var(--border)" }} />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Progress bar — Phase 1 */}
+                    {currentPhase === 1 && selectedIds.size > 1 && (
+                      <div className="mb-1.5">
+                        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.round((phase1DoneCount / selectedIds.size) * 100)}%`, background: "var(--accent)" }}
+                          />
+                        </div>
+                        <div className="text-[11px] mt-0.5 text-right" style={{ color: "var(--text-muted)" }}>
+                          {phase1DoneCount}/{selectedIds.size} agents เสร็จ ({Math.round((phase1DoneCount / selectedIds.size) * 100)}%)
+                        </div>
+                      </div>
+                    )}
+                    {/* Status text */}
+                    <div className="text-xs flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                      <span className="truncate">{status}</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1260,9 +1336,9 @@ export default function ResearchPage() {
               {/* Clarification Questions UI */}
               {pendingClarification && clarificationQuestions.length > 0 && (
                 <div className="mx-1 space-y-3">
-                  <div className="border-2 rounded-xl p-4 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                  <div className="border-2 rounded-xl p-4 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg">💬</span>
+                      <MessageSquare size={18} style={{ color: "var(--accent)" }} />
                       <div>
                         <div className="font-bold text-sm" style={{ color: "var(--accent)" }}>ต้องการข้อมูลเพิ่มเติม</div>
                         <div className="text-xs" style={{ color: "var(--text-muted)" }}>กรุณาตอบคำถามเหล่านี้เพื่อให้ได้คำตอบที่แม่นยำขึ้น</div>
@@ -1285,7 +1361,7 @@ export default function ResearchPage() {
                                     className="text-xs px-3 py-1.5 rounded-lg border transition-all"
                                     style={{
                                       borderColor: clarificationAnswers[q.id] === opt ? "var(--accent)" : "var(--border)",
-                                      background: clarificationAnswers[q.id] === opt ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
+                                      background: clarificationAnswers[q.id] === opt ? "var(--accent-15)" : "transparent",
                                       color: clarificationAnswers[q.id] === opt ? "var(--accent)" : "var(--text)",
                                       fontWeight: clarificationAnswers[q.id] === opt ? 600 : 400,
                                     }}
@@ -1337,28 +1413,59 @@ export default function ResearchPage() {
                 </div>
               )}
 
-              {/* Empty state */}
+              {/* Empty state — guide + examples */}
               {!viewingSession && displayRounds.length === 0 && currentMessages.length === 0 && !running && !pendingClarification && (
-                <div className="text-center py-16 text-sm" style={{ color: "var(--text-muted)" }}>
-                  🏛️ ห้องประชุมพร้อมแล้ว — พิมพ์วาระแรกเพื่อเริ่มประชุม<br />
-                  <span className="text-xs opacity-60">ประธานจะถูกเลือกอัตโนมัติจาก Role · agents จำ context ทุกวาระ</span>
+                <div className="flex flex-col items-center justify-center py-10 sm:py-16 px-4">
+                  {/* Step guide */}
+                  <div className="flex items-center gap-2 sm:gap-4 mb-6">
+                    {[
+                      { step: "1", icon: "users", label: "เลือกทีม" },
+                      { step: "2", icon: "edit", label: "พิมพ์วาระ" },
+                      { step: "3", icon: "check", label: "รอผลสรุป" },
+                    ].map((s, i) => (
+                      <div key={s.step} className="flex items-center gap-2 sm:gap-4">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: i === 0 && selectedIds.size > 0 ? "var(--accent)" : i === 0 ? "var(--danger-15)" : "var(--accent-10)", color: i === 0 && selectedIds.size > 0 ? "#000" : "var(--text)" }}>
+                            {i === 0 && selectedIds.size > 0 ? <Check size={18} /> : s.icon === "users" ? <Users size={18} /> : s.icon === "edit" ? <Edit3 size={18} /> : <Check size={18} />}
+                          </div>
+                          <span className="text-[11px] sm:text-xs" style={{ color: "var(--text-muted)" }}>{s.label}</span>
+                        </div>
+                        {i < 2 && <div className="w-6 sm:w-10 h-px mb-4" style={{ background: "var(--border)" }} />}
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedIds.size === 0 && (
+                    <div className="text-xs px-3 py-1.5 rounded-full border mb-4 flex items-center gap-1.5" style={{ borderColor: "var(--danger-40)", color: "var(--danger)", background: "var(--danger-8)" }}>
+                      <AlertTriangle size={12} /> ยังไม่ได้เลือกสมาชิก — เลือกอย่างน้อย 1 คนจากแถบซ้าย
+                    </div>
+                  )}
+
+                  <div className="text-sm mb-1 font-bold flex items-center gap-1.5 justify-center" style={{ color: "var(--text)" }}><Building2 size={16} style={{ color: "var(--accent)" }} /> ห้องประชุม AI พร้อมแล้ว</div>
+                  <div className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>
+                    พิมพ์วาระด้านล่าง แล้วกดส่ง — ทีมจะวิเคราะห์พร้อมกัน แล้วประธานสรุปมติให้
+                  </div>
+
                   {selectedIds.size > 0 && (
-                    <div className="mt-6 flex flex-wrap justify-center gap-2">
-                      {[
-                        "วิเคราะห์งบการเงินปี 2567 ของบริษัทนี้ — จุดแข็ง จุดอ่อน และข้อเสนอแนะ",
-                        "วางแผนภาษีนิติบุคคลปี 2568 ให้ประหยัดสูงสุดตามกฎหมาย",
-                        "ตรวจ compliance งบการเงินตาม TFRS — มีจุดไหนเสี่ยงบ้าง?",
-                        "เปรียบเทียบ ratio ทางการเงิน 3 ปีย้อนหลัง และสรุปแนวโน้ม",
-                      ].map((q) => (
-                        <button
-                          key={q}
-                          onClick={() => handleRun(q)}
-                          className="text-xs px-3 py-2 rounded-lg border transition-all hover:opacity-80 text-left max-w-xs"
-                          style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}
-                        >
-                          {q}
-                        </button>
-                      ))}
+                    <div className="w-full max-w-lg">
+                      <div className="text-[11px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Lightbulb size={12} /> ลองถามเรื่องเหล่านี้</div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {[
+                          "วิเคราะห์งบการเงินปี 2567 — จุดแข็ง จุดอ่อน",
+                          "วางแผนภาษีนิติบุคคลปี 2568",
+                          "ตรวจ compliance งบตาม TFRS",
+                          "เปรียบเทียบ ratio 3 ปีย้อนหลัง",
+                        ].map((q) => (
+                          <button
+                            key={q}
+                            onClick={() => handleRun(q)}
+                            className="text-xs px-3 py-2.5 rounded-lg border transition-all hover:opacity-80 text-left"
+                            style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1392,8 +1499,8 @@ export default function ResearchPage() {
                     )
                   ))}
                   {viewingSession.finalAnswer && (
-                    <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                      <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
+                    <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
+                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}><Building2 size={16} /> มติที่ประชุม</div>
                       <MessageContent content={viewingSession.finalAnswer} />
                       <button
                         onClick={() => {
@@ -1431,7 +1538,7 @@ export default function ResearchPage() {
                         className="mt-3 text-xs px-3 py-1.5 rounded-lg border"
                         style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                       >
-                        🔄 นำวาระนี้กลับมาประชุมอีกครั้ง
+                        <RefreshCw size={12} /> นำวาระนี้กลับมาประชุมอีกครั้ง
                       </button>
                     </div>
                   )}
@@ -1446,10 +1553,10 @@ export default function ResearchPage() {
                     <div className="text-xs px-3 py-1 rounded-full border" style={{
                       borderColor: "var(--accent)",
                       color: round.isSynthesis ? "#000" : "var(--accent)",
-                      background: round.isSynthesis ? "var(--accent)" : "color-mix(in srgb, var(--accent) 8%, transparent)",
+                      background: round.isSynthesis ? "var(--accent)" : "var(--accent-8)",
                       fontWeight: round.isSynthesis ? 700 : 400,
                     }}>
-                      {round.isSynthesis ? "📋 สรุปมติที่ประชุม" : `วาระที่ ${roundIndex + 1}`}
+                      {round.isSynthesis ? "สรุปมติที่ประชุม" : `วาระที่ ${roundIndex + 1}`}
                     </div>
                     <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
                   </div>
@@ -1462,39 +1569,68 @@ export default function ResearchPage() {
                     </div>
                   )}
 
-                  {round.messages.map((msg) => (
-                    msg.role === "thinking" ? (
-                      <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs opacity-50" style={{ color: "var(--text-muted)" }}>
-                        <span>{msg.agentEmoji}</span>
-                        <span className="italic">{msg.content.slice(0, 100)}</span>
-                      </div>
-                    ) : (
-                    <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-lg">{msg.agentEmoji}</span>
-                        <span className="font-bold text-sm" style={{ color: "var(--text)" }}>{msg.agentName}</span>
-                        {round.chairmanId === msg.agentId && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>
-                        )}
-                        <span className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                          {ROLE_LABEL[msg.role] ?? msg.role}
-                        </span>
-                      </div>
-                      <MessageContent content={msg.content} />
-                    </div>
-                    )
-                  ))}
+                  {(() => {
+                    let lastPhaseRole = "";
+                    return round.messages.map((msg) => {
+                      const elements: React.ReactNode[] = [];
+                      if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
+                        const phaseLabels: Record<string, { icon: string; label: string; color: string }> = {
+                          chat: { icon: "▶", label: "Phase 2 — อภิปรายแลกเปลี่ยนความเห็น", color: "var(--orange)" },
+                          synthesis: { icon: "▶", label: "Phase 3 — ประธานสรุปมติ", color: "var(--accent)" },
+                        };
+                        const separator = phaseLabels[msg.role];
+                        if (separator) {
+                          elements.push(
+                            <div key={`sep-${msg.id}`} className="flex items-center gap-3 py-2">
+                              <div className="flex-1 h-px" style={{ background: separator.color }} />
+                              <div className="text-xs px-3 py-1.5 rounded-full border font-bold" style={{ borderColor: separator.color, color: separator.color, background: "var(--surface)" }}>
+                                {separator.icon} {separator.label}
+                              </div>
+                              <div className="flex-1 h-px" style={{ background: separator.color }} />
+                            </div>
+                          );
+                        }
+                      }
+                      if (msg.role !== "thinking") lastPhaseRole = msg.role;
+
+                      if (msg.role === "thinking") {
+                        elements.push(
+                          <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs opacity-50" style={{ color: "var(--text-muted)" }}>
+                            <span>{msg.agentEmoji}</span>
+                            <span className="italic">{msg.content.slice(0, 100)}</span>
+                          </div>
+                        );
+                      } else {
+                        elements.push(
+                          <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="text-lg">{msg.agentEmoji}</span>
+                              <span className="font-bold text-sm" style={{ color: "var(--text)" }}>{msg.agentName}</span>
+                              {round.chairmanId === msg.agentId && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>
+                              )}
+                              <span className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                                {ROLE_LABEL[msg.role] ?? msg.role}
+                              </span>
+                            </div>
+                            <MessageContent content={msg.content} />
+                          </div>
+                        );
+                      }
+                      return elements;
+                    });
+                  })()}
 
                   {round.finalAnswer && (
-                    <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                      <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
+                    <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
+                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}><Building2 size={16} /> มติที่ประชุม</div>
                       <MessageContent content={round.finalAnswer} />
                       {round.chartData && <SimpleBarChart data={round.chartData} />}
 
                       {/* Web Sources */}
                       {round.webSources && round.webSources.length > 0 && (
-                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)" }}>
-                          <div className="text-xs font-bold mb-2" style={{ color: "var(--text-muted)" }}>📎 แหล่งอ้างอิง</div>
+                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--accent-20)" }}>
+                          <div className="text-xs font-bold mb-2 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Paperclip size={11} /> แหล่งอ้างอิง</div>
                           <div className="flex flex-wrap gap-1.5">
                             {round.webSources.map((src, si) => (
                               <a
@@ -1507,15 +1643,15 @@ export default function ResearchPage() {
                                 title={src.snippet}
                               >
                                 <span className="font-medium truncate max-w-[180px]">{src.title}</span>
-                                <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>{src.domain}</span>
+                                <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: "var(--accent-12)", color: "var(--accent)" }}>{src.domain}</span>
                               </a>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      <div className="mt-3 pt-3 border-t text-[11px] leading-relaxed" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)", color: "var(--text-muted)" }}>
-                        ⚠️ คำตอบจาก AI เป็นข้อมูลเบื้องต้นเท่านั้น ควรตรวจสอบกับผู้เชี่ยวชาญหรืออ้างอิงกฎหมาย/มาตรฐานที่เกี่ยวข้องก่อนนำไปใช้จริง
+                      <div className="mt-3 pt-3 border-t text-[11px] leading-relaxed flex items-start gap-1" style={{ borderColor: "var(--accent-20)", color: "var(--text-muted)" }}>
+                        <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" /> คำตอบจาก AI เป็นข้อมูลเบื้องต้นเท่านั้น ควรตรวจสอบกับผู้เชี่ยวชาญหรืออ้างอิงกฎหมาย/มาตรฐานที่เกี่ยวข้องก่อนนำไปใช้จริง
                       </div>
                     </div>
                   )}
@@ -1541,44 +1677,93 @@ export default function ResearchPage() {
                   {displayRounds.length > 0 && (
                     <div className="flex items-center gap-3">
                       <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
-                      <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
+                      <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}>
                         วาระที่ {displayRounds.length + 1}
                       </div>
                       <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
                     </div>
                   )}
-                  {currentMessages.map((msg) => (
-                    msg.role === "thinking" ? (
-                      <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs animate-pulse" style={{ color: "var(--text-muted)" }}>
-                        <span>{msg.agentEmoji}</span>
-                        <span className="italic">{msg.content.slice(0, 100)}</span>
-                      </div>
-                    ) : (
-                    <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-lg">{msg.agentEmoji}</span>
-                        <span className="font-bold text-sm" style={{ color: "var(--text)" }}>{msg.agentName}</span>
-                        {chairmanId === msg.agentId && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>
-                        )}
-                        <span className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                          {ROLE_LABEL[msg.role] ?? msg.role}
-                        </span>
-                      </div>
-                      <MessageContent content={msg.content} />
-                    </div>
-                    )
-                  ))}
+                  {(() => {
+                    let lastPhaseRole = "";
+                    let thinkingIdx = 0;
+                    return currentMessages.map((msg) => {
+                      const elements: React.ReactNode[] = [];
+                      // Phase separator: detect transition between finding→chat→synthesis
+                      if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
+                        const phaseLabels: Record<string, { icon: string; label: string; color: string }> = {
+                          chat: { icon: "▶", label: "Phase 2 — อภิปรายแลกเปลี่ยนความเห็น", color: "var(--orange)" },
+                          synthesis: { icon: "▶", label: "Phase 3 — ประธานสรุปมติ", color: "var(--accent)" },
+                        };
+                        const separator = phaseLabels[msg.role];
+                        if (separator) {
+                          elements.push(
+                            <div key={`sep-${msg.id}`} className="flex items-center gap-3 py-2 animate-phase-reveal">
+                              <div className="flex-1 h-px" style={{ background: separator.color }} />
+                              <div className="text-xs px-3 py-1.5 rounded-full border font-bold" style={{ borderColor: separator.color, color: separator.color, background: "var(--surface)" }}>
+                                {separator.icon} {separator.label}
+                              </div>
+                              <div className="flex-1 h-px" style={{ background: separator.color }} />
+                            </div>
+                          );
+                        }
+                      }
+                      if (msg.role !== "thinking") lastPhaseRole = msg.role;
+
+                      if (msg.role === "thinking") {
+                        if (thinkingIdx === 0) {
+                          const allThinking = currentMessages.filter(m => m.role === "thinking");
+                          if (allThinking.length > 1) {
+                            elements.push(
+                              <div key="thinking-group" className="flex items-center gap-3 px-4 py-2.5 rounded-xl border animate-message-in" style={{ borderColor: "var(--accent-20)", background: "var(--accent-3)" }}>
+                                <div className="flex -space-x-1">{allThinking.map(t => <span key={t.id} className="text-base">{(t as any).agentEmoji}</span>)}</div>
+                                <span className="text-xs flex-1" style={{ color: "var(--text-muted)" }}>{allThinking.length} agents กำลังวิเคราะห์...</span>
+                                <span className="thinking-dots text-base font-bold" style={{ color: "var(--accent)" }}><span>.</span><span>.</span><span>.</span></span>
+                              </div>
+                            );
+                          } else {
+                            elements.push(
+                              <div key={msg.id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl border animate-message-in" style={{ borderColor: "var(--accent-20)", background: "var(--accent-3)" }}>
+                                <span className="text-lg">{msg.agentEmoji}</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs font-bold" style={{ color: "var(--text)" }}>{msg.agentName}</span>
+                                  <span className="text-xs ml-2" style={{ color: "var(--text-muted)" }}>กำลังวิเคราะห์</span>
+                                </div>
+                                <span className="thinking-dots text-base font-bold" style={{ color: "var(--accent)" }}><span>.</span><span>.</span><span>.</span></span>
+                              </div>
+                            );
+                          }
+                        }
+                        thinkingIdx++;
+                      } else {
+                        elements.push(
+                          <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 animate-message-in ${ROLE_COLOR[msg.role] ?? ""}`}>
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="text-lg">{msg.agentEmoji}</span>
+                              <span className="font-bold text-sm" style={{ color: "var(--text)" }}>{msg.agentName}</span>
+                              {chairmanId === msg.agentId && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: "var(--accent)", color: "#000" }}>ประธาน</span>
+                              )}
+                              <span className="text-xs px-2 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                                {ROLE_LABEL[msg.role] ?? msg.role}
+                              </span>
+                            </div>
+                            <MessageContent content={msg.content} />
+                          </div>
+                        );
+                      }
+                      return elements;
+                    });
+                  })()}
                   {currentFinalAnswer && (
-                    <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
-                      <div className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>🏛️ มติที่ประชุม</div>
+                    <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
+                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}><Building2 size={16} /> มติที่ประชุม</div>
                       <MessageContent content={currentFinalAnswer} />
                       {currentChartData && <SimpleBarChart data={currentChartData} />}
 
                       {/* Web Sources for current round */}
                       {currentWebSources.length > 0 && (
-                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "color-mix(in srgb, var(--accent) 20%, transparent)" }}>
-                          <div className="text-xs font-bold mb-2" style={{ color: "var(--text-muted)" }}>📎 แหล่งอ้างอิง</div>
+                        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--accent-20)" }}>
+                          <div className="text-xs font-bold mb-2 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Paperclip size={11} /> แหล่งอ้างอิง</div>
                           <div className="flex flex-wrap gap-1.5">
                             {currentWebSources.map((src, si) => (
                               <a
@@ -1591,7 +1776,7 @@ export default function ResearchPage() {
                                 title={src.snippet}
                               >
                                 <span className="font-medium truncate max-w-[180px]">{src.title}</span>
-                                <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>{src.domain}</span>
+                                <span className="text-[10px] px-1 py-0.5 rounded" style={{ background: "var(--accent-12)", color: "var(--accent)" }}>{src.domain}</span>
                               </a>
                             ))}
                           </div>
@@ -1599,6 +1784,19 @@ export default function ResearchPage() {
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Sticky jump-to-summary button */}
+              {currentFinalAnswer && !autoScroll && (
+                <div className="sticky bottom-3 flex justify-center z-10 pointer-events-none">
+                  <button
+                    onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
+                    className="pointer-events-auto px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-all hover:scale-105 animate-message-in"
+                    style={{ background: "var(--accent)", color: "#000" }}
+                  >
+                    ↓ ดูผลสรุป
+                  </button>
                 </div>
               )}
 
@@ -1624,7 +1822,7 @@ export default function ResearchPage() {
                     onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleRun(); } }}
                     disabled={running}
                     rows={1}
-                    placeholder={effectiveMode === "qa" ? "พิมพ์คำถาม... (⌘+Enter ส่ง)" : meetingSessionId ? "ถามต่อได้เลย หรือกด 'สรุปมติ / ปิดประชุม' เมื่อพร้อม... (⌘+Enter ส่ง)" : rounds.length > 0 ? "พิมพ์วาระต่อไป... (⌘+Enter ส่ง)" : "พิมพ์วาระแรกเพื่อเริ่มประชุม... (⌘+Enter ส่ง)"}
+                    placeholder={effectiveMode === "qa" ? "พิมพ์คำถาม..." : meetingSessionId ? "ถามต่อได้เลย หรือกด 'สรุปมติ' เมื่อพร้อม..." : rounds.length > 0 ? "พิมพ์วาระต่อไป..." : "พิมพ์วาระแรกเพื่อเริ่มประชุม..."}
                     className="w-full bg-transparent text-sm resize-none outline-none px-4 pt-3 pb-1"
                     style={{ color: "var(--text)", minHeight: 36, maxHeight: 160 }}
                   />
@@ -1636,27 +1834,27 @@ export default function ResearchPage() {
                         style={{ color: showAdvanced ? "var(--accent)" : "var(--text-muted)" }}
                         title="ตั้งค่าขั้นสูง"
                       >
-                        ⚙️
+                        <Settings size={14} />
                       </button>
                       <button
                         onClick={() => setForceMode(prev => prev === "auto" ? (effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
-                        className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded transition-all"
-                        style={{ background: forceMode !== "auto" ? "color-mix(in srgb, var(--accent) 18%, transparent)" : "color-mix(in srgb, var(--accent) 8%, transparent)", color: "var(--accent)" }}
+                        className="text-[11px] sm:text-xs px-1.5 py-0.5 rounded transition-all"
+                        style={{ background: forceMode !== "auto" ? "var(--accent-18)" : "var(--accent-8)", color: "var(--accent)" }}
                         title={effectiveMode === "qa" ? "โหมดถามตอบ — คลิกเพื่อสลับ" : "โหมดประชุม — คลิกเพื่อสลับ"}
                         disabled={running}
                       >
-                        {effectiveMode === "qa" ? "💬" : "🏛️"}
+                        {effectiveMode === "qa" ? <MessageSquare size={12} /> : <Building2 size={12} />}
                       </button>
-                      <div className="text-[10px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                      <div className="text-[11px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
                         {meetingSessionId && effectiveMode !== "qa" && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
                         {selectedIds.size}/{agents.length} สมาชิก
-                        {attachedFiles.length > 0 && <span> · 📎 {attachedFiles.length}</span>}
+                        {attachedFiles.length > 0 && <span className="inline-flex items-center gap-0.5"> · <Paperclip size={10} /> {attachedFiles.length}</span>}
                         {(() => {
                           const totalTk = rounds.reduce((s, r) => s + Object.values(r.agentTokens).reduce((a, t) => a + t.totalTokens, 0), 0);
                           if (totalTk > 0) {
                             const costEst = totalTk * 0.000003; // rough average $/token
-                            return <span> · 🪙 {totalTk > 1000 ? (totalTk / 1000).toFixed(1) + "K" : totalTk} tokens {costEst > 0.001 && `(~$${costEst.toFixed(3)})`}</span>;
+                            return <span className="inline-flex items-center gap-0.5"> · <Coins size={10} /> {totalTk > 1000 ? (totalTk / 1000).toFixed(1) + "K" : totalTk} tk {costEst > 0.001 && `(~$${costEst.toFixed(3)})`}</span>;
                           }
                           return null;
                         })()}
@@ -1666,11 +1864,11 @@ export default function ResearchPage() {
                       {rounds.length > 0 && !running && meetingSessionId && effectiveMode !== "qa" && (
                         <button
                           onClick={handleCloseMeeting}
-                          className="h-8 px-3 rounded-lg flex items-center justify-center border text-xs font-bold transition-all hover:opacity-80"
-                          style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
-                          title="สรุปมติและปิดการประชุม"
+                          className="h-8 px-3 rounded-lg flex items-center justify-center text-xs font-bold transition-all hover:opacity-80"
+                          style={{ color: "#000", background: "var(--accent)" }}
+                          title="ให้ประธานสรุปมติที่ประชุม"
                         >
-                          📋 สรุปมติ / ปิดประชุม
+                          <Building2 size={14} /> สรุปมติ
                         </button>
                       )}
                       {running ? (
@@ -1679,10 +1877,10 @@ export default function ResearchPage() {
                             <button
                               onClick={handleSkipToSummary}
                               className="h-8 px-3 rounded-lg flex items-center justify-center border text-xs font-bold transition-all hover:opacity-80"
-                              style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
+                              style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-10)" }}
                               title="ข้ามไปสรุปมติเลย"
                             >
-                              📋 ข้ามไปสรุป
+                              <SkipForward size={14} /> ข้ามไปสรุป
                             </button>
                           )}
                           <button
@@ -1691,18 +1889,18 @@ export default function ResearchPage() {
                             style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
                             title="หยุด"
                           >
-                            ⏹
+                            <Square size={14} />
                           </button>
                         </>
                       ) : (
                         <button
                           onClick={() => handleRun()}
                           disabled={!question.trim() || selectedIds.size === 0}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all"
+                          className="h-8 px-3 rounded-lg flex items-center justify-center gap-1 text-xs font-bold disabled:opacity-30 transition-all"
                           style={{ background: "var(--accent)", color: "#000" }}
                           title={effectiveMode === "qa" ? "ส่งคำถาม (⌘+Enter)" : "เปิดวาระ (⌘+Enter)"}
                         >
-                          ▶
+                          <Send size={14} /> ส่ง
                         </button>
                       )}
                     </div>

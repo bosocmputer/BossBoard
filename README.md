@@ -60,14 +60,15 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 - **Emoji Picker** — เลือก emoji จาก grid 80 ตัวใน 4 หมวด (คน, ธุรกิจ, วิเคราะห์, กฎหมาย) — ไม่ต้องพิมพ์เอง
 - **Agent Cards** — แสดง model badge, ลำดับอาวุโส 🏛️, web search 🔍, MCP 🔌 indicators
 - **Toast Notifications** — แจ้งเตือนเมื่อ save/delete/toggle agent สำเร็จ
-- **11 Agent Templates** ใน 2 หมวด (เน้นสำนักงานบัญชี):
-  - **สำนักงานบัญชี (10):** นักบัญชีอาวุโส, ผู้สอบบัญชี CPA, ที่ปรึกษาภาษี, นักวิเคราะห์งบการเงิน, ที่ปรึกษาบัญชีนิติบุคคล, เจ้าหน้าที่บัญชี, ผู้ตรวจสอบภายใน, ที่ปรึกษาต้นทุน, ที่ปรึกษาบัญชีระหว่างประเทศ, ที่ปรึกษาระบบบัญชี
+- **6 Agent Templates** ใน 2 หมวด (เน้นสำนักงานบัญชี):
+  - **สำนักงานบัญชี (5):** นักบัญชีอาวุโส, ผู้สอบบัญชี CPA, ที่ปรึกษาภาษี, นักวิเคราะห์งบการเงิน, ผู้ตรวจสอบภายใน
   - **Custom (1):** สร้าง agent ตามต้องการ
 - **6 Providers:** Anthropic, OpenAI, Google Gemini, Ollama, OpenRouter, Custom (OpenAI-compatible)
 - **19 Skills** per agent: web_search, code_execution, data_analysis, financial_modeling, legal_research, case_analysis, contract_review ฯลฯ
 - **Soul (System Prompt)** — กำหนดบุคลิก จุดยืน และวิธีถกเถียงของ agent
 - **MCP Endpoint** — เชื่อม MCP Server per agent เพื่อดึงข้อมูลจากระบบภายนอก (admin/sales/purchase/stock/general)
 - **Seniority (1–99)** — ลำดับพูดในการประชุม + กำหนดประธาน
+- **Knowledge Base** — อัปโหลดไฟล์เอกสารเฉพาะ agent (PDF/Excel/Word) เป็นฐานความรู้เพิ่มเติม
 - API keys encrypted (AES-256-CBC)
 
 ### 🏛️ Meeting Room (`/research`)
@@ -76,8 +77,8 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 - **5-Phase Meeting Flow:**
   0. **ถามกลับ (clarification)** — ประธานถามคำถามเพิ่มเติมก่อนเริ่มประชุม เพื่อให้ได้ข้อมูลครบถ้วน
-  1. **คิด (thinking)** — agents วิเคราะห์โจทย์
-  2. **นำเสนอ (finding)** — agents พูดตามลำดับ seniority จาก soul/role
+  1. **วิเคราะห์พร้อมกัน (parallel analysis)** — ทุก agent วิเคราะห์โจทย์พร้อมกัน (`Promise.allSettled`) แล้วส่งผลตาม seniority พร้อม stagger delay 120ms
+  2. **นำเสนอ (finding)** — ผลวิเคราะห์แสดงตามลำดับ seniority + consensus check (ข้ามอภิปรายได้ถ้าเห็นพ้อง)
   3. **อภิปราย (chat)** — agents อ่านความเห็นกัน แสดงจุดยืน เห็นด้วย/ไม่เห็นด้วย
   4. **มติประธาน (synthesis)** — Chairman สรุป + Action Items
 - **Pre-flight Clarification** — ก่อนเริ่มประชุม ประธานจะวิเคราะห์คำถามและขอข้อมูลเพิ่มเติม (ประเภทกิจการ, ทุนจดทะเบียน, ฯลฯ) เพื่อลดการสมมติข้อมูล
@@ -85,13 +86,20 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 - **Web Source Display** — แสดง URL แหล่งข้อมูลที่ agent ค้นหาจากอินเทอร์เน็ต พร้อมลิงก์คลิกได้
 - **Professional Markdown Rendering** — render ข้อความ agent ด้วย Markdown (หัวข้อ, ตาราง, bullet, bold/italic, code block)
 - **Chairman Auto-Detection** จาก role/seniority
-- **Real-time SSE Streaming** — ดูทุก agent ตอบ real-time
+- **Real-time SSE Streaming** — ดูทุก agent ตอบ real-time, แสดงหลาย agent กำลังคิดพร้อมกัน
+- **Parallel Phase 1** — agents วิเคราะห์พร้อมกัน (Promise.allSettled) + rate-limit retry, ลดเวลาประชุมได้ ~15–30%
+- **Agent Voice System** — แต่ละ agent มีสไตล์การพูดเฉพาะตัว (อ้างอิงกฎหมาย, ตั้งคำถามเชิงท้าทาย, วิเคราะห์ตัวเลข ฯลฯ)
+- **Phase Progress Stepper** — แถบสถานะแสดง Phase ปัจจุบัน พร้อม sub-count "นำเสนอ (3/5)" ระหว่าง Phase 1
+- **Phase Separators** — แสดงเส้นแบ่ง Phase พร้อม label สี (นำเสนอ / อภิปราย / สรุปมติ)
+- **Thinking Animation** — แสดง card กำลังวิเคราะห์ พร้อม staggered animation เมื่อหลาย agent คิดพร้อมกัน
 - **Data Sources:**
   - 📎 File Attachment (xlsx/xls/xlsm/pdf/docx/doc/csv/json/txt/md/log, max 10MB)
   - 🔌 MCP per Agent (ดึงข้อมูลจาก MCP Server อัตโนมัติ)
   - 🌐 Web Search (Serper/SerpAPI) per agent
 - **History Modes:** Full, Last 3, Summary, None (ประหยัด token)
 - **Token Tracking** per agent (input/output/total) + stats dashboard
+- **Optimized LLM Calls** — max_tokens 2048, temperature 0.3, word limits per phase เพื่อลดค่าใช้จ่ายและเวลา
+- **LLM Retry with Backoff** — auto-retry 1 ครั้งเมื่อเจอ rate limit (429) พร้อม 2s delay
 - **Charts**: Auto-render Bar/Line/Pie จาก `chart` blocks ใน AI output
 - **History**: ดูประวัติ sessions เก่า (เก็บ 100 sessions ล่าสุด)
 - **Follow-up Suggestions** จาก AI
@@ -103,6 +111,14 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 ### 📋 Teams (`/teams`)
 
 จัดกลุ่ม agents เป็น teams เพื่อเลือกใช้ใน Research — เปิด meeting room พร้อมทีมที่เลือกได้ทันที
+
+### 📊 Token Analytics (`/tokens`)
+
+แดชบอร์ดวิเคราะห์การใช้งาน tokens — แสดงสถิติรวม, กราฟใช้งานรายวัน (30 วัน), รายละเอียดตาม agent, sessions ล่าสุด
+
+### 📖 User Guide (`/guide`)
+
+คู่มือใช้งาน 8 ขั้นตอน — ตั้งแต่สร้าง agent ครั้งแรก จนถึงเริ่มประชุม AI ได้ด้วยตัวเอง (ภาษาไทย)
 
 ### 💰 Benefits & Pricing (`/benefits`)
 
@@ -153,10 +169,10 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ### 🧭 Navigation (Sidebar)
 
-- **Icons:** Lucide React (ไม่ใช้ pixel art แล้ว)
+- **Icons:** Lucide React
 - **Desktop:** Collapsible sidebar (224px ↔ 64px)
 - **Mobile:** Header + slide-out drawer
-- **Groups:** Dashboard → AI Tools (Research) → Management (Agents, Teams) → System (Settings)
+- **8 Items:** Dashboard, Research (ห้องประชุม), Agents (จัดการ AI), Teams (ทีม), Tokens (สถิติ), Settings (ตั้งค่า), Guide (คู่มือ), Benefits (แพ็คเกจ)
 
 ---
 
@@ -234,58 +250,47 @@ AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
 
 ## API Endpoints
 
-| Route                        | Method        | Description                          |
-| ---------------------------- | ------------- | ------------------------------------ |
-| `/api/team-agents`           | GET, POST     | List / Create agents                 |
-| `/api/team-agents/[id]`      | PATCH, DELETE | Update / Delete agent                |
-| `/api/team-models?provider=` | GET           | Available models per provider        |
-| `/api/teams`                 | GET, POST     | List / Create teams                  |
-| `/api/teams/[id]`            | PATCH, DELETE | Update / Delete team                 |
-| `/api/team-research`         | GET           | List research sessions               |
-| `/api/team-research/[id]`    | GET           | Get specific session                 |
-| `/api/team-research/stream`  | POST          | SSE streaming multi-agent research   |
-| `/api/team-research/upload`  | POST          | Parse uploaded files to text context |
-| `/api/team-settings`         | GET, POST     | Web search API keys                  |
-| `/api/team-websearch`        | POST          | Perform web search                   |
-| `/api/agent-stats`           | GET           | Agent usage statistics               |
-| `/api/health`                | GET           | Healthcheck (status + timestamp)     |
-| `/api/client-memory`         | GET, POST, DELETE | Cross-session memory facts       |
-| `/api/token-usage`           | GET           | Token usage tracking                 |
+| Route                              | Method            | Description                          |
+| ---------------------------------- | ----------------- | ------------------------------------ |
+| `/api/team-agents`                 | GET, POST         | List / Create agents                 |
+| `/api/team-agents/[id]`            | PATCH, DELETE      | Update / Delete agent                |
+| `/api/team-agents/[id]/knowledge`  | GET, POST, DELETE  | Agent knowledge base files           |
+| `/api/team-models?provider=`       | GET               | Available models per provider        |
+| `/api/teams`                       | GET, POST         | List / Create teams                  |
+| `/api/teams/[id]`                  | PATCH, DELETE      | Update / Delete team                 |
+| `/api/team-research`               | GET               | List research sessions               |
+| `/api/team-research/[id]`          | GET               | Get specific session                 |
+| `/api/team-research/stream`        | POST              | SSE streaming multi-agent research   |
+| `/api/team-research/upload`        | POST              | Parse uploaded files to text context |
+| `/api/team-settings`               | GET, POST         | Web search API keys                  |
+| `/api/team-websearch`              | POST              | Perform web search                   |
+| `/api/agent-stats`                 | GET               | Agent usage statistics               |
+| `/api/token-usage`                 | GET               | Token usage tracking                 |
+| `/api/client-memory`               | GET, POST, DELETE | Cross-session memory facts           |
+| `/api/health`                      | GET               | Healthcheck (status + timestamp)     |
 
 ---
 
-## Deploy to Server
+## Deployment
 
-### Production Server
-
-| Item      | Detail                              |
-| --------- | ----------------------------------- |
-| Host      | `192.168.2.109` (Ubuntu 24.04 LTS)  |
-| Port      | `3003`                              |
-| Runtime   | Docker container                    |
-| Image     | `bossboard` (built from Dockerfile) |
-| URL       | `http://192.168.2.109:3003`         |
-| Data      | `/home/bosscatdog/.bossboard`       |
-
-### Docker Deploy (recommended)
+### Docker (recommended)
 
 ```bash
-# First time
+# Build and run
 git clone https://github.com/bosocmputer/BossBoard.git
 cd BossBoard
 docker build -t bossboard .
-docker run -d --name bossboard -p 3003:3000 \
+docker run -d --name bossboard -p 3000:3000 \
   -v ~/.bossboard:/home/node/.bossboard \
   --restart unless-stopped bossboard
 ```
 
 ```bash
 # Update
-cd ~/BossBoard
 git pull origin main
 docker build -t bossboard .
 docker rm -f bossboard
-docker run -d --name bossboard -p 3003:3000 \
+docker run -d --name bossboard -p 3000:3000 \
   -v ~/.bossboard:/home/node/.bossboard \
   --restart unless-stopped bossboard
 ```
@@ -293,7 +298,6 @@ docker run -d --name bossboard -p 3003:3000 \
 ```bash
 # View logs
 docker logs -f bossboard
-docker logs bossboard | grep WebSearch   # ← ตรวจสอบ Web Search API
 ```
 
 ### Standalone (alternative)
@@ -302,22 +306,8 @@ docker logs bossboard | grep WebSearch   # ← ตรวจสอบ Web Search 
 npm install && npm run build
 cp -r .next/static .next/standalone/.next/static
 cp -r public .next/standalone/public
-cd .next/standalone && PORT=3003 nohup node server.js > /tmp/bossboard.log 2>&1 &
+cd .next/standalone && PORT=3000 node server.js
 ```
-
-### Server Services Overview (192.168.2.109)
-
-| Port       | Service                      |
-| ---------- | ---------------------------- |
-| 3000       | OpenClaw Admin (Docker)      |
-| 3001       | Other Next.js app            |
-| 3002       | Centrix Web (Docker)         |
-| **3003**   | **BossBoard** ← this project |
-| 4000       | OpenClaw API                 |
-| 5001       | Centrix API (Docker)         |
-| 5432, 5434 | PostgreSQL (Docker)          |
-| 6380       | Redis (Docker)               |
-| 18789      | OpenClaw Gateway             |
 
 ---
 

@@ -17,6 +17,36 @@
   --success: #4ade80;
   --info: #60a5fa;
   --purple: #a78bfa;
+  /* Accent shades */
+  --accent-3: color-mix(in srgb, var(--accent) 3%, transparent);
+  --accent-4: color-mix(in srgb, var(--accent) 4%, transparent);
+  --accent-5: color-mix(in srgb, var(--accent) 5%, transparent);
+  --accent-7: color-mix(in srgb, var(--accent) 7%, transparent);
+  --accent-8: color-mix(in srgb, var(--accent) 8%, transparent);
+  --accent-10: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-15: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-18: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-20: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-30: color-mix(in srgb, var(--accent) 30%, var(--border));
+  --accent-35: color-mix(in srgb, var(--accent) 35%, transparent);
+  --accent-40: color-mix(in srgb, var(--accent) 40%, transparent);
+  /* Danger shades */
+  --danger-8: color-mix(in srgb, var(--danger) 8%, transparent);
+  --danger-10: color-mix(in srgb, var(--danger) 10%, transparent);
+  --danger-15: color-mix(in srgb, var(--danger) 15%, transparent);
+  --danger-30: color-mix(in srgb, var(--danger) 30%, transparent);
+  --danger-40: color-mix(in srgb, var(--danger) 40%, var(--border));
+  /* Success shades */
+  --success-8: color-mix(in srgb, var(--success) 8%, transparent);
+  --success-10: color-mix(in srgb, var(--success) 10%, transparent);
+  --success-15: color-mix(in srgb, var(--success) 15%, transparent);
+  --success-30: color-mix(in srgb, var(--success) 30%, transparent);
+  /* Text-muted shades */
+  --text-muted-15: color-mix(in srgb, var(--text-muted) 15%, transparent);
+  /* Other shades */
+  --border-50: color-mix(in srgb, var(--border) 50%, transparent);
+  --orange-8: color-mix(in srgb, orange 8%, transparent);
 }
 
 /* ── Ocean Light ── */
@@ -36,6 +66,36 @@
   --success: #059669;
   --info: #2563eb;
   --purple: #7c3aed;
+  /* Accent shades */
+  --accent-3: color-mix(in srgb, var(--accent) 3%, transparent);
+  --accent-4: color-mix(in srgb, var(--accent) 4%, transparent);
+  --accent-5: color-mix(in srgb, var(--accent) 5%, transparent);
+  --accent-7: color-mix(in srgb, var(--accent) 7%, transparent);
+  --accent-8: color-mix(in srgb, var(--accent) 8%, transparent);
+  --accent-10: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-15: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-18: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-20: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-30: color-mix(in srgb, var(--accent) 30%, var(--border));
+  --accent-35: color-mix(in srgb, var(--accent) 35%, transparent);
+  --accent-40: color-mix(in srgb, var(--accent) 40%, transparent);
+  /* Danger shades */
+  --danger-8: color-mix(in srgb, var(--danger) 8%, transparent);
+  --danger-10: color-mix(in srgb, var(--danger) 10%, transparent);
+  --danger-15: color-mix(in srgb, var(--danger) 15%, transparent);
+  --danger-30: color-mix(in srgb, var(--danger) 30%, transparent);
+  --danger-40: color-mix(in srgb, var(--danger) 40%, var(--border));
+  /* Success shades */
+  --success-8: color-mix(in srgb, var(--success) 8%, transparent);
+  --success-10: color-mix(in srgb, var(--success) 10%, transparent);
+  --success-15: color-mix(in srgb, var(--success) 15%, transparent);
+  --success-30: color-mix(in srgb, var(--success) 30%, transparent);
+  /* Text-muted shades */
+  --text-muted-15: color-mix(in srgb, var(--text-muted) 15%, transparent);
+  /* Other shades */
+  --border-50: color-mix(in srgb, var(--border) 50%, transparent);
+  --orange-8: color-mix(in srgb, orange 8%, transparent);
 }
 
 /* ── Base styles ── */
@@ -74,12 +134,12 @@ body {
 
 /* ── Animations ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -88,12 +148,59 @@ body {
   100% { background-position: 200% 0; }
 }
 
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes phaseReveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes thinkingDots {
+  0%, 20% { opacity: 0.3; }
+  50% { opacity: 1; }
+  80%, 100% { opacity: 0.3; }
+}
+
 .animate-in {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.15s ease-out;
 }
 
 .animate-slide-in {
-  animation: slideIn 0.2s ease-out;
+  animation: slideIn 0.15s ease-out;
+}
+
+.animate-message-in {
+  animation: messageSlideIn 0.2s ease-out;
+}
+
+.animate-phase-reveal {
+  animation: phaseReveal 0.3s ease-out;
+}
+
+.thinking-dots span {
+  display: inline-block;
+  animation: thinkingDots 1.4s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Staggered parallel thinking animations ── */
+.stagger-0 { animation-delay: 0ms; }
+.stagger-1 { animation-delay: 80ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ── Scrollbar ── */

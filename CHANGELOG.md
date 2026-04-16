@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-04-14 — v1.8: Parallel Phase 1 & UX Enhancement
+
+### Performance
+- **Parallel Phase 1** — agents วิเคราะห์พร้อมกัน (`Promise.allSettled`) แทนทำทีละคน → ลดเวลาประชุม ~15–30%
+- **LLM Retry with Backoff** — `callLLMWithRetry()` auto-retry 1 ครั้งเมื่อเจอ rate limit (429) พร้อม 2s delay
+- **Optimized Token Usage** — `max_tokens: 2048` (ลดจาก 4096), `temperature: 0.3`, word limits per phase (600/400/800 คำ)
+
+### UX Improvements
+- **Phase Progress Stepper** — แถบสถานะแสดง Phase ปัจจุบัน พร้อม sub-count "นำเสนอ (3/5)" ระหว่าง Phase 1
+- **Phase Separators** — เส้นแบ่ง Phase พร้อม label สี (📋 นำเสนอ / 💬 อภิปราย / 🏛️ สรุปมติ)
+- **Thinking Animation** — card กำลังวิเคราะห์ พร้อม animated dots + staggered animation เมื่อหลาย agent คิดพร้อมกัน
+- **Agent Voice System** — `getAgentVoice()` inject สไตล์การพูดเฉพาะ role (อ้างอิงกฎหมาย, ตั้งคำถามท้าทาย, วิเคราะห์ตัวเลข ฯลฯ)
+- **Multi-Agent Thinking UI** — `activeAgentIds: Set<string>` แสดงหลาย agent กำลังคิดพร้อมกันบน sidebar
+- **Speaking Pulse Animation** — sidebar agent card กระพริบเมื่อกำลังพูด
+- **Message Slide-in Animation** — ข้อความใหม่เลื่อนเข้ามาอย่างเป็นธรรมชาติ
+
 ## 2026-04-14 — v1.7: Security & Reliability Hardening
 
 - **Rate Limiting** — Sliding-window rate limiter (5 req/60s per IP) บน stream endpoint → ป้องกัน abuse, return 429

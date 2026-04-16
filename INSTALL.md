@@ -324,10 +324,14 @@ docker run -d \
   --name bossboard \
   --restart unless-stopped \
   -p 3003:3000 \
-  -v ~/.bossboard:/root/.bossboard \
+  -v ~/.bossboard:/home/node/.bossboard \
   -e AGENT_ENCRYPT_KEY="$(cat .env.local | grep AGENT_ENCRYPT_KEY | cut -d= -f2)" \
   bossboard
 ```
+
+> ⚠️ **สำคัญ:** Volume ต้อง mount ไปที่ `/home/node/.bossboard` เท่านั้น  
+> ห้ามใช้ `/root/.bossboard` เพราะ container รันเป็น user `node` (uid=1000) ซึ่งไม่มีสิทธิ์เข้าถึง `/root/`  
+> หาก mount ผิดจะทำให้ agents, teams, settings หายทั้งหมด
 
 ### 8.3 คำสั่ง Docker ที่ใช้บ่อย
 

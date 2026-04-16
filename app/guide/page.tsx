@@ -159,7 +159,7 @@ export default function GuidePage() {
         </div>
 
         {/* Quick Start */}
-        <div className="rounded-xl p-5 mb-8 border" style={{ background: "color-mix(in srgb, var(--accent) 5%, var(--card))", borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)" }}>
+        <div className="rounded-xl p-5 mb-8 border" style={{ background: "var(--accent-5)", borderColor: "var(--accent-35)" }}>
           <h2 className="font-bold text-sm mb-3" style={{ color: "var(--accent)" }}>เริ่มต้นเร็ว (3 นาที)</h2>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {[
@@ -189,7 +189,7 @@ export default function GuidePage() {
                 style={{
                   borderColor: isOpen ? "var(--accent)" : "var(--border)",
                   background: "var(--card)",
-                  boxShadow: isOpen ? "0 0 16px color-mix(in srgb, var(--accent) 10%, transparent)" : undefined,
+                  boxShadow: isOpen ? "0 0 16px var(--accent-10)" : undefined,
                 }}
               >
                 <button
@@ -223,7 +223,7 @@ export default function GuidePage() {
 
                       {/* Tips */}
                       {step.tips && step.tips.length > 0 && (
-                        <div className="rounded-lg p-3 border" style={{ background: "color-mix(in srgb, var(--accent) 3%, var(--bg))", borderColor: "color-mix(in srgb, var(--accent) 15%, transparent)" }}>
+                        <div className="rounded-lg p-3 border" style={{ background: "var(--accent-3)", borderColor: "var(--accent-15)" }}>
                           <p className="text-xs font-bold mb-1.5" style={{ color: "var(--accent)" }}>เคล็ดลับ</p>
                           <ul className="space-y-1">
                             {step.tips.map((tip, i) => (

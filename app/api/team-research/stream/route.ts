@@ -27,6 +27,27 @@ interface LLMMessage {
   content: string;
 }
 
+function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function callLLMWithRetry(
+  provider: string, model: string, apiKey: string, baseUrl: string | undefined,
+  messages: LLMMessage[], signal?: AbortSignal, retries = 1
+): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await callLLM(provider, model, apiKey, baseUrl, messages, signal);
+    } catch (err: unknown) {
+      const isRateLimit = err instanceof Error && (err.message.includes("429") || err.message.includes("rate"));
+      if (isRateLimit && attempt < retries) {
+        await delay(2000 * (attempt + 1));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("callLLMWithRetry: exhausted retries");
+}
+
 async function callLLM(
   provider: string,
   model: string,
@@ -48,7 +69,8 @@ async function callLLM(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 4096,
+        max_tokens: 2048,
+        temperature: 0.3,
         system: systemMsg ? [{ type: "text", text: systemMsg.content, cache_control: { type: "ephemeral" } }] : undefined,
         messages: userMsgs,
       }),
@@ -74,7 +96,7 @@ async function callLLM(
     let res = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ model, messages, max_tokens: 4096 }),
+      body: JSON.stringify({ model, messages, max_tokens: 2048, temperature: 0.3 }),
       signal,
     });
     // Fallback to gpt-4o-mini if model is invalid (400/404)
@@ -82,7 +104,7 @@ async function callLLM(
       res = await fetch(url, {
         method: "POST",
         headers,
-        body: JSON.stringify({ model: "openai/gpt-4o-mini", messages, max_tokens: 4096 }),
+        body: JSON.stringify({ model: "openai/gpt-4o-mini", messages, max_tokens: 2048, temperature: 0.3 }),
         signal,
       });
     }
@@ -103,7 +125,7 @@ async function callLLM(
         Authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ model, messages, max_tokens: 4096 }),
+      body: JSON.stringify({ model, messages, max_tokens: 2048, temperature: 0.3 }),
       signal,
     });
     if (!res.ok) throw new Error(`OpenAI error: ${res.status} ${await res.text()}`);
@@ -128,7 +150,7 @@ async function callLLM(
           role: m.role === "assistant" ? "model" : "user",
           parts: [{ text: m.content }],
         })),
-        generationConfig: { maxOutputTokens: 4096 },
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.3 },
       }),
       signal,
     });
@@ -146,7 +168,7 @@ async function callLLM(
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model, messages, stream: false }),
+      body: JSON.stringify({ model, messages, stream: false, options: { temperature: 0.3 } }),
       signal,
     });
     if (!res.ok) throw new Error(`Ollama error: ${res.status} ${await res.text()}`);
@@ -464,6 +486,22 @@ function sortBySeniority(agents: AgentPublic[], chairman: AgentPublic): AgentPub
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
   return [chairman, ...others];
+}
+
+// Agent speaking personality — gives each role a distinct voice
+function getAgentVoice(role: string): string {
+  const lower = role.toLowerCase();
+  if (lower.includes("cpa") || lower.includes("ผู้สอบบัญชี"))
+    return "\n\n🎯 สไตล์การพูดของคุณ: พูดตรงไปตรงมา กล้าชี้จุดอ่อน ตั้งคำถามเชิงท้าทาย ไม่อ้อมค้อม เหมือนผู้สอบบัญชีที่เน้นความเป็นอิสระ";
+  if (lower.includes("ภาษี") || lower.includes("tax"))
+    return "\n\n🎯 สไตล์การพูดของคุณ: วิเคราะห์ละเอียด ยกตัวอย่างตัวเลขประกอบเสมอ อ้างอิงมาตราเฉพาะ เปรียบเทียบแต่ละทางเลือกอย่างเป็นระบบ";
+  if (lower.includes("วิเคราะห์") || lower.includes("analyst"))
+    return "\n\n🎯 สไตล์การพูดของคุณ: เน้นตัวเลข ratio สถิติ พูดน้อยแต่คมชัด ใช้ข้อมูลเชิงปริมาณสนับสนุนทุกประเด็น";
+  if (lower.includes("ตรวจสอบภายใน") || lower.includes("internal auditor"))
+    return "\n\n🎯 สไตล์การพูดของคุณ: ตั้งคำถามเชิงท้าทาย ชี้ความเสี่ยงที่ซ่อนอยู่ มองหา red flag และ control weakness ที่คนอื่นมองข้าม";
+  if (lower.includes("บัญชี") || lower.includes("accountant"))
+    return "\n\n🎯 สไตล์การพูดของคุณ: พูดเป็นระบบ ชัดเจน อ้างอิงมาตรฐานบัญชีเสมอ เน้นความถูกต้องของตัวเลขและกระบวนการ";
+  return "";
 }
 
 function sseEvent(encoder: TextEncoder, event: string, data: unknown): Uint8Array {
@@ -815,130 +853,148 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Phase 1: Each agent presents their analysis (in seniority order, chairman speaks after opening)
-      send("status", { message: "📋 Phase 1 — แต่ละผู้เชี่ยวชาญนำเสนอมุมมองตามบทบาท" });
+      // Phase 1: Each agent presents their analysis (PARALLEL — all agents analyze simultaneously)
+      send("status", { message: "📋 Phase 1 — ผู้เชี่ยวชาญทุกคนวิเคราะห์พร้อมกัน..." });
 
+      // Step 1: Send all "thinking" messages upfront so UI shows all agents working
       for (const agent of orderedAgents) {
         send("agent_start", { agentId: agent.id, name: agent.name, emoji: agent.emoji, role: agent.role, isChairman: agent.id === chairman.id });
+        const thinkingMsg: ResearchMessage = {
+          id: crypto.randomUUID(),
+          agentId: agent.id,
+          agentName: agent.name,
+          agentEmoji: agent.emoji,
+          role: "thinking",
+          content: `กำลังวิเคราะห์: "${question.slice(0, 80)}${question.length > 80 ? "..." : ""}"`,
+          tokensUsed: 0,
+          timestamp: new Date().toISOString(),
+        };
+        appendResearchMessage(sessionId, thinkingMsg);
+        send("message", thinkingMsg);
+      }
 
+      // Step 2: Fire all LLM calls in parallel
+      interface Phase1Result {
+        agent: typeof orderedAgents[0];
+        result?: { content: string; inputTokens: number; outputTokens: number };
+        searchContext?: string;
+        error?: string;
+      }
+
+      const phase1Promises = orderedAgents.map(async (agent): Promise<Phase1Result> => {
         try {
           const apiKey = getAgentApiKey(agent.id);
-          if (!apiKey) {
-            send("agent_error", { agentId: agent.id, error: "No API key configured" });
-            continue;
-          }
+          if (!apiKey) return { agent, error: "No API key configured" };
 
-          // MCP context if agent has endpoint configured and not disabled by user
+          // MCP context
           let mcpContext = "";
           if (!disableMcp && agent.mcpEndpoint) {
             mcpContext = await fetchMcpContext(agent.mcpEndpoint, agent.mcpAccessMode ?? "general", question);
           }
 
-          // Web search if agent has it enabled or question is about law/tax
+          // Web search
           let searchContext = "";
           if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
             const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl, clientSignal);
             send("agent_searching", { agentId: agent.id, query: searchQuery });
             const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
-            if (searchResults) {
-              searchContext = `\n\n🔍 ผลการค้นหาเพิ่มเติมจากอินเทอร์เน็ต:\n${searchResults}\n`;
-            }
+            if (searchResults) searchContext = `\n\n🔍 ผลการค้นหาเพิ่มเติมจากอินเทอร์เน็ต:\n${searchResults}\n`;
             if (sources.length > 0) send("web_sources", { agentId: agent.id, sources });
           }
-
-          const thinkingMsg: ResearchMessage = {
-            id: crypto.randomUUID(),
-            agentId: agent.id,
-            agentName: agent.name,
-            agentEmoji: agent.emoji,
-            role: "thinking",
-            content: `กำลังวิเคราะห์: "${question.slice(0, 80)}${question.length > 80 ? "..." : ""}"`,
-
-            tokensUsed: 0,
-            timestamp: new Date().toISOString(),
-          };
-          appendResearchMessage(sessionId, thinkingMsg);
-          send("message", thinkingMsg);
 
           const isChairman = agent.id === chairman.id;
           const roleInstruction = isChairman
             ? `คุณเป็นประธานการประชุม นำเสนอมุมมองจากตำแหน่ง ${agent.role} ของคุณ`
             : `นำเสนอมุมมองจากมุมมองของ ${agent.role} อย่างชัดเจนและตรงประเด็น`;
 
-          // Build context of previous agents' findings to avoid repetition
-          let previousFindingsContext = "";
-          if (agentFindings.length > 0) {
-            const summaries = agentFindings.map((f) =>
-              `[${f.emoji} ${f.name} — ${f.role}]: ${f.content.slice(0, 600)}${f.content.length > 600 ? "..." : ""}`
-            ).join("\n\n");
-            previousFindingsContext = `\n\n---\n⚠️ ผู้เชี่ยวชาญก่อนหน้าได้นำเสนอไปแล้ว (สรุปย่อ):\n${summaries}\n\n❌ ห้ามพูดซ้ำสิ่งที่คนอื่นพูดไปแล้ว ห้ามสร้างตารางเปรียบเทียบภาพรวมซ้ำ\n✅ ให้เสริมเฉพาะมุมมองใหม่ ข้อสังเกตใหม่ ความเสี่ยงใหม่ จากบทบาท ${agent.role} ของคุณเท่านั้น\n---\n`;
-          }
-
           const knowledgeContext = getAgentKnowledgeContent(agent.id, question);
-          const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
+          const agentVoice = getAgentVoice(agent.role);
+          const result = await callLLMWithRetry(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${memoryContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${previousFindingsContext}${clarificationContext}${antiHallucinationRules}`,
+              content: `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${antiHallucinationRules}`,
             },
             {
               role: "user",
-              content: `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์เชิงลึกจากมุมมองเฉพาะทางของ ${agent.role} พร้อมระบุ:\n1. ประเด็นสำคัญที่คนอื่นยังไม่ได้พูดถึง\n2. ความเสี่ยงหรือข้อกังวลจากมุมมองของคุณ\n3. ข้อเสนอแนะเฉพาะทาง${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ตอบเจาะจงกรณีที่ผู้ถามถาม อย่าพูดหลักการทั่วไปที่ไม่ตรงกับกรณีของเขา\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ตามกฎหมายก่อนเสมอ (เช่น ม.81 สำหรับ VAT, ม.65 ทวิ/ตรี สำหรับ CIT)\n- ถ้ามีข้อยกเว้นที่ทำให้กรณีนี้ต่างจากกฎทั่วไป ให้ระบุข้อยกเว้นนั้นเป็นจุดหลัก ไม่ใช่แค่หมายเหตุท้าย\n- อ้างอิงมาตรากฎหมาย พ.ร.ก. คำวินิจฉัย หรือแนวปฏิบัติที่เกี่ยวข้องให้ชัดเจน\n- ห้ามให้ข้อมูลที่ขัดแย้งกันในคำตอบเดียวกัน\n- เน้นวิเคราะห์เชิงลึกเฉพาะบทบาทของคุณ ไม่ต้องสร้างตารางเปรียบเทียบทั่วไปที่คนอื่นทำแล้ว`,
+              content: `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์เชิงลึกจากมุมมองเฉพาะทางของ ${agent.role} พร้อมระบุ:\n1. ประเด็นสำคัญจากมุมมองเฉพาะบทบาทของคุณ\n2. ความเสี่ยงหรือข้อกังวลจากมุมมองของคุณ\n3. ข้อเสนอแนะเฉพาะทาง${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}\n\n⚠️ ความยาว: ตอบกระชับไม่เกิน 800 คำ เน้นประเด็นสำคัญที่สุด 3-5 ข้อ ไม่ต้องอารัมภบทยาว\n⚠️ วิเคราะห์เฉพาะในขอบเขตบทบาท ${agent.role} ของคุณเท่านั้น ไม่ต้องรุกล้ำบทบาทผู้เชี่ยวชาญคนอื่น\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ตอบเจาะจงกรณีที่ผู้ถามถาม อย่าพูดหลักการทั่วไปที่ไม่ตรงกับกรณีของเขา\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ตามกฎหมายก่อนเสมอ (เช่น ม.81 สำหรับ VAT, ม.65 ทวิ/ตรี สำหรับ CIT)\n- ถ้ามีข้อยกเว้นที่ทำให้กรณีนี้ต่างจากกฎทั่วไป ให้ระบุข้อยกเว้นนั้นเป็นจุดหลัก ไม่ใช่แค่หมายเหตุท้าย\n- อ้างอิงมาตรากฎหมาย พ.ร.ก. คำวินิจฉัย หรือแนวปฏิบัติที่เกี่ยวข้องให้ชัดเจน\n- ห้ามให้ข้อมูลที่ขัดแย้งกันในคำตอบเดียวกัน`,
             },
           ], clientSignal);
 
-          const prevTokens = agentTokens[agent.id] ?? { input: 0, output: 0 };
-          agentTokens[agent.id] = {
-            input: prevTokens.input + result.inputTokens,
-            output: prevTokens.output + result.outputTokens,
-          };
-
-          const findingMsg: ResearchMessage = {
-            id: crypto.randomUUID(),
-            agentId: agent.id,
-            agentName: agent.name,
-            agentEmoji: agent.emoji,
-            role: "finding",
-            content: result.content,
-            tokensUsed: result.inputTokens + result.outputTokens,
-            timestamp: new Date().toISOString(),
-          };
-          appendResearchMessage(sessionId, findingMsg);
-          send("message", findingMsg);
-          send("agent_tokens", {
-            agentId: agent.id,
-            inputTokens: agentTokens[agent.id].input,
-            outputTokens: agentTokens[agent.id].output,
-            totalTokens: agentTokens[agent.id].input + agentTokens[agent.id].output,
-          });
-          updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
-
-          agentFindings.push({
-            agentId: agent.id,
-            name: agent.name,
-            emoji: agent.emoji,
-            role: agent.role,
-            content: result.content,
-            searchResults: searchContext || undefined,
-          });
+          return { agent, result, searchContext };
         } catch (err) {
           console.error(`Agent ${agent.id} Phase 1 error:`, err);
-          send("agent_error", { agentId: agent.id, error: "LLM connection error" });
+          return { agent, error: "LLM connection error" };
+        }
+      });
+
+      const phase1Results = await Promise.allSettled(phase1Promises);
+
+      // Step 3: Emit results sequentially (staggered) in seniority order for smooth UX
+      for (let i = 0; i < orderedAgents.length; i++) {
+        const settled = phase1Results[i];
+        const agent = orderedAgents[i];
+
+        if (i > 0) await delay(120); // Stagger for natural feel
+
+        send("agent_start", { agentId: agent.id, name: agent.name, emoji: agent.emoji, role: agent.role, isChairman: agent.id === chairman.id });
+
+        if (settled.status === "rejected" || (settled.status === "fulfilled" && settled.value.error)) {
+          const errMsg = settled.status === "rejected" ? "LLM connection error" : settled.value.error!;
+          send("agent_error", { agentId: agent.id, error: errMsg });
           failedAgents.push(`${agent.emoji} ${agent.name} (${agent.role})`);
 
-          // Send a visible error message so user knows this agent failed
           const errorMsg: ResearchMessage = {
             id: crypto.randomUUID(),
             agentId: agent.id,
             agentName: agent.name,
             agentEmoji: agent.emoji,
             role: "finding",
-            content: `⚠️ ไม่สามารถวิเคราะห์ได้ — เกิดข้อผิดพลาดในการเชื่อมต่อกับ model`,
+            content: `⚠️ ไม่สามารถวิเคราะห์ได้ — ${errMsg}`,
             tokensUsed: 0,
             timestamp: new Date().toISOString(),
           };
           appendResearchMessage(sessionId, errorMsg);
           send("message", errorMsg);
+          continue;
         }
+
+        const { result, searchContext } = settled.value;
+        if (!result) continue;
+
+        const prevTokens = agentTokens[agent.id] ?? { input: 0, output: 0 };
+        agentTokens[agent.id] = {
+          input: prevTokens.input + result.inputTokens,
+          output: prevTokens.output + result.outputTokens,
+        };
+
+        const findingMsg: ResearchMessage = {
+          id: crypto.randomUUID(),
+          agentId: agent.id,
+          agentName: agent.name,
+          agentEmoji: agent.emoji,
+          role: "finding",
+          content: result.content,
+          tokensUsed: result.inputTokens + result.outputTokens,
+          timestamp: new Date().toISOString(),
+        };
+        appendResearchMessage(sessionId, findingMsg);
+        send("message", findingMsg);
+        send("agent_tokens", {
+          agentId: agent.id,
+          inputTokens: agentTokens[agent.id].input,
+          outputTokens: agentTokens[agent.id].output,
+          totalTokens: agentTokens[agent.id].input + agentTokens[agent.id].output,
+        });
+        updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
+
+        agentFindings.push({
+          agentId: agent.id,
+          name: agent.name,
+          emoji: agent.emoji,
+          role: agent.role,
+          content: result.content,
+          searchResults: searchContext || undefined,
+        });
       }
 
       // Consensus check: chairman evaluates if agents agree → skip Phase 2
@@ -991,14 +1047,15 @@ export async function POST(req: NextRequest) {
 
           try {
             const knowledgeCtx = getAgentKnowledgeContent(agent.id, question);
+            const agentVoice2 = getAgentVoice(agent.role);
             const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
               {
                 role: "system",
-                content: `${companyContext}${memoryContext}${agent.soul}${knowledgeCtx}${domainKnowledge}${clarificationContext}${antiHallucinationRules}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา\n\n⚠️ กฎเหล็กของการอภิปราย:\n1. ห้ามพูดแค่ "เห็นด้วย" โดยไม่มีเนื้อหาใหม่ — ถ้าเห็นด้วยต้องเสริมมุมมองใหม่ที่คนอื่นยังไม่ได้พูด\n2. คุณต้องระบุอย่างน้อย 1 จุดที่ไม่เห็นด้วยหรือมีข้อกังวล พร้อมเหตุผลจากประสบการณ์ในบทบาท ${agent.role}\n3. คุณต้องชี้อย่างน้อย 1 ความเสี่ยงหรือข้อควรระวังที่คนอื่นอาจมองข้าม\n4. พูดกระชับ เน้นเฉพาะจุดที่ต่างจากคนอื่น ไม่ต้องสรุปซ้ำสิ่งที่ทุกคนเห็นตรงกันแล้ว\n5. ถ้าพบว่าคนอื่นให้ข้อมูลที่ไม่ถูกต้องหรืออ้างกฎหมายผิด ต้องชี้แจงและแก้ไขทันที พร้อมอ้างอิงมาตราที่ถูกต้อง\n6. ถ้าคนอื่นสรุปว่าต้องเสียภาษี/ปฏิบัติตามกฎใด โดยยังไม่ได้ตรวจสอบข้อยกเว้นตามกฎหมาย ต้องชี้ให้ตรวจสอบทันที\n7. ห้ามให้ข้อมูลที่ขัดแย้งกับข้อสรุปของตัวเอง`,
+                content: `${companyContext}${memoryContext}${agent.soul}${agentVoice2}${knowledgeCtx}${domainKnowledge}${clarificationContext}${antiHallucinationRules}\n\nคุณกำลังอยู่ในวงอภิปราย จงแสดงความเห็นตามบทบาท ${agent.role} ของคุณอย่างตรงไปตรงมา\n\n⚠️ กฎเหล็กของการอภิปราย:\n1. ห้ามพูดแค่ "เห็นด้วย" โดยไม่มีเนื้อหาใหม่ — ถ้าเห็นด้วยต้องเสริมมุมมองใหม่ที่คนอื่นยังไม่ได้พูด\n2. คุณต้องระบุอย่างน้อย 1 จุดที่ไม่เห็นด้วยหรือมีข้อกังวล พร้อมเหตุผลจากประสบการณ์ในบทบาท ${agent.role}\n3. คุณต้องชี้อย่างน้อย 1 ความเสี่ยงหรือข้อควรระวังที่คนอื่นอาจมองข้าม\n4. พูดกระชับ เน้นเฉพาะจุดที่ต่างจากคนอื่น ไม่ต้องสรุปซ้ำสิ่งที่ทุกคนเห็นตรงกันแล้ว\n5. ถ้าพบว่าคนอื่นให้ข้อมูลที่ไม่ถูกต้องหรืออ้างกฎหมายผิด ต้องชี้แจงและแก้ไขทันที พร้อมอ้างอิงมาตราที่ถูกต้อง\n6. ถ้าคนอื่นสรุปว่าต้องเสียภาษี/ปฏิบัติตามกฎใด โดยยังไม่ได้ตรวจสอบข้อยกเว้นตามกฎหมาย ต้องชี้ให้ตรวจสอบทันที\n7. ห้ามให้ข้อมูลที่ขัดแย้งกับข้อสรุปของตัวเอง`,
               },
               {
                 role: "user",
-                content: `วาระ: ${question}\n\nสรุปมุมมองของคุณ:\n${myFinding.content.slice(0, 500)}${myFinding.content.length > 500 ? "..." : ""}\n\n---\nมุมมองจากสมาชิกคนอื่น:\n${otherFindings}\n\n---\nในฐานะ ${agent.role}:\n1. ระบุจุดที่คุณไม่เห็นด้วยกับใคร เพราะอะไร?\n2. มีความเสี่ยงอะไรที่คนอื่นมองข้าม?\n3. มีข้อเสนอเพิ่มเติมจากมุมมอง ${agent.role} ของคุณไหม?`,
+                content: `วาระ: ${question}\n\nสรุปมุมมองของคุณ:\n${myFinding.content.slice(0, 500)}${myFinding.content.length > 500 ? "..." : ""}\n\n---\nมุมมองจากสมาชิกคนอื่น:\n${otherFindings}\n\n---\nในฐานะ ${agent.role}:\n1. ระบุจุดที่คุณไม่เห็นด้วยกับใคร เพราะอะไร?\n2. มีความเสี่ยงอะไรที่คนอื่นมองข้าม?\n3. มีข้อเสนอเพิ่มเติมจากมุมมอง ${agent.role} ของคุณไหม?\n\n⚠️ ความยาว: ตอบกระชับไม่เกิน 400 คำ เน้นจุดที่เห็นต่างเท่านั้น ไม่ต้องสรุปซ้ำสิ่งที่ทุกคนเห็นตรงกัน`,
               },
             ], clientSignal);
 
@@ -1123,7 +1180,7 @@ export async function POST(req: NextRequest) {
             },
             {
               role: "user",
-              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
+              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ ความยาว: สรุปไม่เกิน 1500 คำ เน้นความชัดเจนและกระชับ\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
             },
           ], clientSignal);
 

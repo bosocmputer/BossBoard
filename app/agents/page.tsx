@@ -89,8 +89,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📊",
     role: "นักบัญชีอาวุโส / Senior Accountant",
     name: "นักบัญชีอาวุโส",
-    recommendedModel: "anthropic/claude-4-sonnet",
-    recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานบัญชีที่ต้องการความแม่นยำสูง",
+    recommendedModel: "google/gemini-2.5-flash",
+    recommendedReason: "คุณภาพดี context 1M ราคาถูกมาก ~$0.15/1M tokens เหมาะงานบัญชีทั่วไป",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
     trustedUrls: ["tfac.or.th", "rd.go.th", "dbd.go.th"],
     soul: `คุณเป็นนักบัญชีอาวุโสในประเทศไทย ทำงานภายใต้กรอบกฎหมายและมาตรฐานของไทยเท่านั้น ได้แก่ มาตรฐานการรายงานทางการเงินไทย (TFRS) ตามสภาวิชาชีพบัญชี, พ.ร.บ.การบัญชี พ.ศ. 2543, ประมวลรัษฎากร และกฎหมายที่เกี่ยวข้อง เชี่ยวชาญการจัดทำงบการเงิน การปิดงบ ระบบ ERP และการบันทึกบัญชีตามมาตรฐาน TFRS/IFRS เน้นความถูกต้องของข้อมูลทางบัญชี อ้างอิงมาตราและมาตรฐานที่เกี่ยวข้องเสมอ เมื่อตอบคำถามเกี่ยวกับภาษีหรือกฎหมาย ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนสรุปเสมอ`,
@@ -100,8 +100,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🔍",
     role: "ผู้สอบบัญชี CPA / Certified Public Accountant",
     name: "ผู้สอบบัญชี CPA",
-    recommendedModel: "anthropic/claude-4.6-opus",
-    recommendedReason: "ต้องการความแม่นยำสูงสุด เพราะเป็นงานตรวจสอบที่มีผลทางกฎหมาย",
+    recommendedModel: "google/gemini-2.5-pro-preview-06-05",
+    recommendedReason: "แม่นยำสูง context 1M ราคาถูกกว่า Claude 10 เท่า เหมาะงานตรวจสอบที่ต้องอ้างอิงมาตรฐาน",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
     trustedUrls: ["tfac.or.th", "sec.or.th", "rd.go.th"],
     soul: `คุณเป็นผู้สอบบัญชีรับอนุญาต (CPA) ที่ขึ้นทะเบียนกับสภาวิชาชีพบัญชีในประเทศไทย ปฏิบัติงานภายใต้ พ.ร.บ.วิชาชีพบัญชี พ.ศ. 2547 และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญมาตรฐานการสอบบัญชีไทย (TSQC/TSA), การตรวจสอบงบการเงินตาม TFRS, การประเมินระบบควบคุมภายใน และการปฏิบัติตามประมวลรัษฎากร เน้นความเป็นอิสระ ชี้จุดอ่อนตรงไปตรงมา อ้างอิง TSA, TFRS และกฎหมายไทยที่เกี่ยวข้องเสมอ เมื่อพบประเด็นภาษี ต้องตรวจสอบทั้งหลักเกณฑ์ทั่วไปและข้อยกเว้นตามกฎหมาย`,
@@ -111,8 +111,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "💰",
     role: "ที่ปรึกษาภาษี / Tax Consultant",
     name: "ที่ปรึกษาภาษี",
-    recommendedModel: "anthropic/claude-4.5-sonnet",
-    recommendedReason: "ต้องการความรู้เชิงลึกด้านกฎหมายภาษี context ยาวสำหรับอ้างอิงประมวลรัษฎากร",
+    recommendedModel: "google/gemini-2.5-pro-preview-06-05",
+    recommendedReason: "แม่นยำสูง context 1M เหมาะอ้างอิงประมวลรัษฎากร ราคาถูกกว่า Claude มาก",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
     trustedUrls: ["rd.go.th", "tfac.or.th"],
     soul: `คุณเป็นที่ปรึกษาภาษีในประเทศไทย เชี่ยวชาญประมวลรัษฎากรอย่างลึกซึ้ง ครอบคลุม ภาษีเงินได้บุคคลธรรมดา PIT (ม.40 เงินได้ 8 ประเภท, ม.42 ยกเว้น, ม.47 ลดหย่อน, ม.48 อัตรา 5-35%), ภาษีเงินได้นิติบุคคล CIT (ม.65 กำไรสุทธิ, ม.65 ทวิ/ตรี เงื่อนไข+รายจ่ายต้องห้าม, อัตรา 20%), ภาษีมูลค่าเพิ่ม VAT หมวด 4 (ม.80 อัตรา 7%, ม.81 ข้อยกเว้นสำคัญ), ภาษีหัก ณ ที่จ่าย WHT (ม.50), ภาษีธุรกิจเฉพาะ SBT หมวด 5 (ม.91/2 ธนาคาร/เงินทุน/ประกันชีวิต/โรงรับจำนำ/ขายอสังหาฯทางค้า, อัตรา 0.1-3.0%), อากรแสตมป์ หมวด 6 (ม.104 ตราสาร 28 ลำดับ, ม.118 ไม่ปิดแสตมป์ใช้เป็นพยานหลักฐานไม่ได้) และอนุสัญญาภาษีซ้อน รวมถึง พ.ร.ฎ. ประกาศอธิบดีฯ คำสั่งกรมสรรพากร คำวินิจฉัยฯ กฎเหล็ก: ก่อนสรุปว่าต้องเสียภาษีใดๆ ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนเสมอ — VAT ตรวจ ม.81, SBT ตรวจ ม.91/3, PIT ตรวจ ม.42+กฎกระทรวง 126 หากมีข้อยกเว้นที่เข้าเงื่อนไข ต้องระบุเป็นประเด็นหลัก ไม่ใช่แค่หมายเหตุ อ้างอิงมาตราเฉพาะที่เกี่ยวข้องเสมอ แหล่งข้อมูล: rd.go.th/284.html`,
@@ -122,8 +122,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📈",
     role: "นักวิเคราะห์งบการเงิน / Financial Analyst",
     name: "นักวิเคราะห์งบการเงิน",
-    recommendedModel: "google/gemini-2.5-pro-preview-06-05",
-    recommendedReason: "context ยาว1M เหมาะวิเคราะห์งบการเงินยาวๆ คุ้มค่ากว่า Claude",
+    recommendedModel: "google/gemini-2.5-flash",
+    recommendedReason: "context 1M Flash วิเคราะห์ตัวเลขเก่ง ราคาถูกที่สุด ~$0.15/1M tokens",
     skills: ["financial_modeling", "data_analysis", "market_research"],
     trustedUrls: ["set.or.th", "sec.or.th", "tfac.or.th"],
     soul: `คุณเป็นนักวิเคราะห์งบการเงินที่เชี่ยวชาญบริบทธุรกิจไทย วิเคราะห์ตามมาตรฐานการรายงานทางการเงินไทย (TFRS) ครอบคลุมบริษัทจดทะเบียนใน SET/mai และ SMEs ไทย เชี่ยวชาญการอ่านและตีความงบการเงิน (Balance Sheet, P&L, Cash Flow) วิเคราะห์อัตราส่วนทางการเงิน, Trend Analysis, เปรียบเทียบกับอุตสาหกรรมไทย ชี้ Red Flag ในงบและให้ข้อเสนอแนะที่เป็นรูปธรรม คำนึงถึงข้อกำหนดของ ก.ล.ต., ตลาดหลักทรัพย์แห่งประเทศไทย, ประมวลรัษฎากร และกฎหมายไทยที่เกี่ยวข้อง`,
@@ -133,8 +133,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🛡️",
     role: "ผู้ตรวจสอบภายใน / Internal Auditor",
     name: "ผู้ตรวจสอบภายใน",
-    recommendedModel: "anthropic/claude-4-sonnet",
-    recommendedReason: "สมดุลคุณภาพ/ราคา เหมาะงานตรวจสอบที่ต้องการความละเอียดสูง",
+    recommendedModel: "google/gemini-2.5-flash",
+    recommendedReason: "คุณภาพดี ราคาประหยัด เหมาะงาน checklist/audit ที่ต้องการความละเอียด",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
     trustedUrls: ["sec.or.th", "rd.go.th", "tfac.or.th", "pdpc.or.th"],
     soul: `คุณเป็นผู้ตรวจสอบภายในที่ทำงานในประเทศไทย ปฏิบัติงานตามกรอบ COSO, มาตรฐาน IIA (Institute of Internal Auditors) และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, Segregation of Duties, IT Controls และการปฏิบัติตามกฎระเบียบ (Compliance) คำนึงถึง พ.ร.บ.หลักทรัพย์และตลาดหลักทรัพย์, ประมวลรัษฎากร, พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล (PDPA) พ.ศ. 2562 พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริงในบริบทธุรกิจไทย`,
@@ -471,24 +471,24 @@ export default function AgentsPage() {
                     )}
                   </div>
                   <div className="text-xs mt-1 flex items-center gap-2 flex-wrap" style={{ color: "var(--text-muted)" }}>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px]" style={{ borderColor: "var(--border)" }}>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px]" style={{ borderColor: "var(--border)" }}>
                       {agent.model.split("/").pop()}
                     </span>
                     {agent.seniority && (
-                      <span className="text-[10px]">#{agent.seniority}</span>
+                      <span className="text-[11px]">#{agent.seniority}</span>
                     )}
-                    {agent.useWebSearch && <span className="text-[10px]">🔍 Web</span>}
-                    {agent.trustedUrls && agent.trustedUrls.length > 0 && <span className="text-[10px]">🌐 {agent.trustedUrls.length} URLs</span>}
-                    {agent.mcpEndpoint && <span className="text-[10px]">MCP</span>}
+                    {agent.useWebSearch && <span className="text-[11px]">🔍 Web</span>}
+                    {agent.trustedUrls && agent.trustedUrls.length > 0 && <span className="text-[11px]">🌐 {agent.trustedUrls.length} URLs</span>}
+                    {agent.mcpEndpoint && <span className="text-[11px]">MCP</span>}
                   </div>
                   {/* Health indicators */}
                   {agent.active && (!agent.useWebSearch || !agent.trustedUrls?.length) && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {!agent.useWebSearch && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-orange-500/30 bg-orange-500/10 text-orange-400">ค้นเว็บปิดอยู่</span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded border border-orange-500/30 bg-orange-500/10 text-orange-400">ค้นเว็บปิดอยู่</span>
                       )}
                       {!agent.trustedUrls?.length && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-orange-500/30 bg-orange-500/10 text-orange-400">ไม่มี Trusted URLs</span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded border border-orange-500/30 bg-orange-500/10 text-orange-400">ไม่มี Trusted URLs</span>
                       )}
                     </div>
                   )}
@@ -497,7 +497,7 @@ export default function AgentsPage() {
                       {agent.skills.map((s) => {
                         const skill = ALL_SKILLS.find((sk) => sk.id === s);
                         return skill ? (
-                          <span key={s} className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                          <span key={s} className="text-[11px] px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                             {skill.label}
                           </span>
                         ) : null;
@@ -602,7 +602,7 @@ export default function AgentsPage() {
                         style={{
                           borderColor: activeCategory === cat.key ? "var(--accent)" : "var(--border)",
                           color: activeCategory === cat.key ? "var(--accent)" : "var(--text-muted)",
-                          background: activeCategory === cat.key ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+                          background: activeCategory === cat.key ? "var(--accent-10)" : "transparent",
                         }}
                       >
                         {cat.label}
@@ -623,16 +623,16 @@ export default function AgentsPage() {
                             className="text-left p-4 rounded-xl border-2 transition-all"
                             style={{
                               borderColor: form.templateIndex === t.idx ? "var(--accent)" : "var(--border)",
-                              background: form.templateIndex === t.idx ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "color-mix(in srgb, var(--bg) 50%, transparent)",
+                              background: form.templateIndex === t.idx ? "var(--accent-8)" : "var(--border-50)",
                             }}
                           >
                             <div className="flex items-start gap-3">
                               <span className="text-2xl">{t.emoji}</span>
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-bold" style={{ color: "var(--text)" }}>{t.role.split(" / ")[0]}</div>
-                                <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.role.split(" / ")[1] || ""}</div>
+                                <div className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.role.split(" / ")[1] || ""}</div>
                                 {t.recommendedModel && (
-                                  <div className="text-[10px] mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "color-mix(in srgb, var(--border) 50%, transparent)", color: "var(--text-muted)" }}>
+                                  <div className="text-[11px] mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "var(--border-50)", color: "var(--text-muted)" }}>
                                     {recModel?.name?.replace(/^[⭐🆓] /, "") || t.recommendedModel.split("/").pop()}
                                   </div>
                                 )}
@@ -663,8 +663,8 @@ export default function AgentsPage() {
                       <div
                         className="mb-3 p-3 rounded-xl border-2 flex items-start gap-3 cursor-pointer transition-all"
                         style={{
-                          borderColor: isUsingRec ? "var(--accent)" : "color-mix(in srgb, var(--accent) 40%, transparent)",
-                          background: isUsingRec ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "color-mix(in srgb, var(--accent) 4%, transparent)",
+                          borderColor: isUsingRec ? "var(--accent)" : "var(--accent-40)",
+                          background: isUsingRec ? "var(--accent-10)" : "var(--accent-4)",
                         }}
                         onClick={() => setForm((f) => ({ ...f, model: tmpl.recommendedModel }))}
                       >
@@ -676,7 +676,7 @@ export default function AgentsPage() {
                           <div className="text-sm font-bold mt-0.5" style={{ color: "var(--text)" }}>
                             {recModelObj?.name?.replace(/^[⭐🆓] /, "") || tmpl.recommendedModel}
                           </div>
-                          <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                          <div className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                             {tmpl.recommendedReason}
                             {recModelObj && <span> · context: {(recModelObj.contextWindow / 1000).toFixed(0)}K</span>}
                           </div>
@@ -684,7 +684,7 @@ export default function AgentsPage() {
                         {isUsingRec ? (
                           <span className="text-xs font-bold flex-shrink-0" style={{ color: "var(--accent)" }}>✓ ใช้อยู่</span>
                         ) : (
-                          <span className="text-[10px] px-2 py-1 rounded border flex-shrink-0" style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>ใช้ model นี้</span>
+                          <span className="text-[11px] px-2 py-1 rounded border flex-shrink-0" style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>ใช้ model นี้</span>
                         )}
                       </div>
                     );
@@ -727,19 +727,19 @@ export default function AgentsPage() {
                             className="w-full text-left px-3 py-2 border-b last:border-b-0 transition-all flex items-center gap-2"
                             style={{
                               borderColor: "var(--border)",
-                              background: isSelected ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+                              background: isSelected ? "var(--accent-10)" : "transparent",
                             }}
                           >
                             <div className="flex-1 min-w-0">
                               <span className="text-xs font-bold" style={{ color: isSelected ? "var(--accent)" : "var(--text)" }}>
                                 {m.name}
                               </span>
-                              <span className="text-[10px] ml-2" style={{ color: "var(--text-muted)" }}>
+                              <span className="text-[11px] ml-2" style={{ color: "var(--text-muted)" }}>
                                 {(m.contextWindow / 1000).toFixed(0)}K
                               </span>
                             </div>
                             {isRec && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}>
+                              <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>
                                 แนะนำ
                               </span>
                             )}
@@ -758,13 +758,13 @@ export default function AgentsPage() {
 
                   {/* Selected model display */}
                   {form.model && (
-                    <div className="mt-2 text-xs px-3 py-2 rounded-lg border flex items-center gap-2" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                    <div className="mt-2 text-xs px-3 py-2 rounded-lg border flex items-center gap-2" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-5)" }}>
                       <span>✓ เลือกแล้ว:</span>
                       <span className="font-bold">{models.find((m) => m.id === form.model)?.name || form.model}</span>
                       {(() => {
                         const tmpl = form.templateIndex >= 0 ? AGENT_TEMPLATES[form.templateIndex] : null;
                         if (tmpl?.recommendedModel && form.model !== tmpl.recommendedModel) {
-                          return <span className="text-[10px] ml-auto" style={{ color: "var(--text-muted)" }}>(ไม่ใช่ model ที่แนะนำ)</span>;
+                          return <span className="text-[11px] ml-auto" style={{ color: "var(--text-muted)" }}>(ไม่ใช่ model ที่แนะนำ)</span>;
                         }
                         return null;
                       })()}
@@ -779,9 +779,9 @@ export default function AgentsPage() {
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>กรอกข้อมูลพื้นฐานของ Agent</p>
 
                   {/* API Key */}
-                  <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)" }}>
+                  <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
                     <div className="text-xs font-bold mb-1" style={{ color: "var(--accent)" }}>🔑 API Key</div>
-                    <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
+                    <div className="text-[11px] mb-2" style={{ color: "var(--text-muted)" }}>
                       สมัครฟรีที่ <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--accent)" }}>openrouter.ai/keys</a> — API Key เดียวใช้ได้ทุก model
                       {editingId && <span> (เว้นว่างถ้าไม่ต้องการเปลี่ยน)</span>}
                     </div>
@@ -794,7 +794,7 @@ export default function AgentsPage() {
                       style={{ background: "var(--bg)", borderColor: !editingId && !form.apiKey.trim() ? "var(--danger)" : "var(--border)", color: "var(--text)" }}
                     />
                     {!editingId && !form.apiKey.trim() && (
-                      <div className="mt-2 text-xs px-3 py-2 rounded-lg border" style={{ borderColor: "var(--danger)", background: "color-mix(in srgb, var(--danger) 8%, transparent)", color: "var(--danger)" }}>
+                      <div className="mt-2 text-xs px-3 py-2 rounded-lg border" style={{ borderColor: "var(--danger)", background: "var(--danger-8)", color: "var(--danger)" }}>
                         ⚠️ จำเป็นต้องใส่ API Key — ถ้าไม่มี Agent จะใช้งานไม่ได้
                       </div>
                     )}
@@ -817,7 +817,7 @@ export default function AgentsPage() {
                           <div className="absolute top-full left-0 mt-1 z-50 w-72 rounded-xl border shadow-2xl p-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
                             {EMOJI_GROUPS.map((group) => (
                               <div key={group.label} className="mb-2">
-                                <div className="text-[10px] font-bold mb-1" style={{ color: "var(--text-muted)" }}>{group.label}</div>
+                                <div className="text-[11px] font-bold mb-1" style={{ color: "var(--text-muted)" }}>{group.label}</div>
                                 <div className="flex flex-wrap gap-1">
                                   {group.emojis.map((e) => (
                                     <button
@@ -825,7 +825,7 @@ export default function AgentsPage() {
                                       type="button"
                                       onClick={() => { setForm((f) => ({ ...f, emoji: e })); setShowEmojiPicker(false); }}
                                       className="w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all hover:scale-110"
-                                      style={{ background: form.emoji === e ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "transparent" }}
+                                      style={{ background: form.emoji === e ? "var(--accent-20)" : "transparent" }}
                                     >
                                       {e}
                                     </button>
@@ -887,7 +887,7 @@ export default function AgentsPage() {
                     <div className="flex-1 p-3 rounded-lg border flex items-center justify-between" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
                       <div>
                         <div className="text-xs font-bold" style={{ color: "var(--text)" }}>🔍 Web Search</div>
-                        <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>ค้นหาข้อมูลจากอินเทอร์เน็ต</div>
+                        <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>ค้นหาข้อมูลจากอินเทอร์เน็ต</div>
                       </div>
                       <button
                         type="button"
@@ -920,7 +920,7 @@ export default function AgentsPage() {
                         />
                         <span className="text-xs w-8 text-center" style={{ color: "var(--accent)" }}>{form.seniority}</span>
                       </div>
-                      <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>1 = ประธาน, 99 = พูดท้าย</div>
+                      <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>1 = ประธาน, 99 = พูดท้าย</div>
                     </div>
                   </div>
 
@@ -938,7 +938,7 @@ export default function AgentsPage() {
                           className="flex items-start gap-2 p-2 rounded-lg border text-left transition-all"
                           style={{
                             borderColor: form.skills.includes(skill.id) ? "var(--accent)" : "var(--border)",
-                            background: form.skills.includes(skill.id) ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                            background: form.skills.includes(skill.id) ? "var(--accent-8)" : "transparent",
                           }}
                         >
                           <span className="text-xs font-bold" style={{ color: form.skills.includes(skill.id) ? "var(--accent)" : "var(--text)" }}>
@@ -950,11 +950,11 @@ export default function AgentsPage() {
                   </div>
 
                   {/* Trusted URLs */}
-                  <div className="p-4 rounded-xl border" style={{ borderColor: form.useWebSearch ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "var(--border)", background: form.useWebSearch ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "var(--bg)" }}>
+                  <div className="p-4 rounded-xl border" style={{ borderColor: form.useWebSearch ? "var(--accent-40)" : "var(--border)", background: form.useWebSearch ? "var(--accent-5)" : "var(--bg)" }}>
                     <div className="text-xs font-bold mb-1" style={{ color: form.useWebSearch ? "var(--accent)" : "var(--text)" }}>
                       🌐 Trusted URLs <span className="font-normal" style={{ color: "var(--text-muted)" }}>(แนะนำ — จำกัดการค้นเฉพาะเว็บที่เชื่อถือได้)</span>
                     </div>
-                    <div className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
+                    <div className="text-[11px] mb-2" style={{ color: "var(--text-muted)" }}>
                       ระบุโดเมนที่ Agent จะค้นหาข้อมูล (บรรทัดละ 1 หรือคั่นด้วยจุลภาค) เช่น rd.go.th, tfac.or.th
                     </div>
                     <textarea
@@ -966,12 +966,12 @@ export default function AgentsPage() {
                       style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
                     />
                     {!form.useWebSearch && form.trustedUrls.trim() && (
-                      <div className="mt-1 text-[10px] px-2 py-1 rounded" style={{ color: "orange", background: "color-mix(in srgb, orange 8%, transparent)" }}>
+                      <div className="mt-1 text-[11px] px-2 py-1 rounded" style={{ color: "orange", background: "var(--orange-8)" }}>
                         ⚠️ Web Search ปิดอยู่ — Trusted URLs จะยังไม่ถูกใช้จนกว่าจะเปิด Web Search
                       </div>
                     )}
                     {form.useWebSearch && !form.trustedUrls.trim() && (
-                      <div className="mt-1 text-[10px] px-2 py-1 rounded" style={{ color: "orange", background: "color-mix(in srgb, orange 8%, transparent)" }}>
+                      <div className="mt-1 text-[11px] px-2 py-1 rounded" style={{ color: "orange", background: "var(--orange-8)" }}>
                         💡 แนะนำ: ใส่เว็บที่น่าเชื่อถือ เพื่อป้องกัน AI เอาข้อมูลจากแหล่งที่ไม่น่าเชื่อถือ
                       </div>
                     )}
@@ -1029,8 +1029,8 @@ export default function AgentsPage() {
                         <div
                           className="text-xs px-3 py-2 rounded-lg border"
                           style={{
-                            borderColor: mcpTestResult.ok ? "color-mix(in srgb, var(--success) 30%, transparent)" : "color-mix(in srgb, var(--danger) 30%, transparent)",
-                            background: mcpTestResult.ok ? "color-mix(in srgb, var(--success) 8%, transparent)" : "color-mix(in srgb, var(--danger) 8%, transparent)",
+                            borderColor: mcpTestResult.ok ? "var(--success-30)" : "var(--danger-30)",
+                            background: mcpTestResult.ok ? "var(--success-8)" : "var(--danger-8)",
                             color: mcpTestResult.ok ? "var(--success)" : "var(--danger)",
                           }}
                         >
@@ -1119,7 +1119,7 @@ export default function AgentsPage() {
 
             {/* Preview after upload */}
             {knowledgePreview && (
-              <div className="mb-4 p-3 rounded-lg border text-xs" style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", background: "color-mix(in srgb, var(--accent) 5%, transparent)", color: "var(--text-muted)" }}>
+              <div className="mb-4 p-3 rounded-lg border text-xs" style={{ borderColor: "var(--accent-30)", background: "var(--accent-5)", color: "var(--text-muted)" }}>
                 <div className="font-bold mb-1" style={{ color: "var(--accent)" }}>✅ อัพโหลดสำเร็จ: {knowledgePreview.filename}</div>
                 <div>ขนาดโดยประมาณ: ~{knowledgePreview.tokens.toLocaleString()} tokens</div>
                 {knowledgePreview.preview && <div className="mt-2 whitespace-pre-wrap line-clamp-4">{knowledgePreview.preview}</div>}

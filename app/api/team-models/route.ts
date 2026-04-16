@@ -31,17 +31,16 @@ const PROVIDER_MODELS: Record<AgentProvider, { id: string; name: string; context
     { id: "qwen2.5", name: "Qwen 2.5", contextWindow: 128000 },
   ],
   openrouter: [
-    // ── ⭐ แนะนำ (ตามคู่มือเลือก Model) ─────────────────────────
-    { id: "anthropic/claude-4.5-sonnet", name: "⭐ Claude 4.5 Sonnet", contextWindow: 1000000 },
-    { id: "anthropic/claude-4-sonnet", name: "⭐ Claude 4 Sonnet", contextWindow: 200000 },
-    { id: "google/gemini-2.5-pro-preview-06-05", name: "⭐ Gemini 2.5 Pro", contextWindow: 1048576 },
-    { id: "google/gemini-2.5-flash", name: "⭐ Gemini 2.5 Flash", contextWindow: 1048576 },
-    { id: "google/gemini-2.5-flash-lite", name: "⭐ Gemini 2.5 Flash Lite", contextWindow: 1048576 },
-    { id: "openai/gpt-5.4-mini", name: "⭐ GPT-5.4 Mini", contextWindow: 400000 },
+    // ── ⭐ แนะนำ (คุ้มค่า — เรียงจากถูกที่สุด) ────────────────────
+    { id: "google/gemini-2.5-flash", name: "⭐ Gemini 2.5 Flash — คุ้มค่าสุด", contextWindow: 1048576 },
+    { id: "google/gemini-2.5-flash-lite", name: "⭐ Gemini 2.5 Flash Lite — ถูกสุด", contextWindow: 1048576 },
+    { id: "google/gemini-2.5-pro-preview-06-05", name: "⭐ Gemini 2.5 Pro — แม่นยำสูง", contextWindow: 1048576 },
+    { id: "openai/gpt-4.1-nano", name: "⭐ GPT-4.1 Nano — ถูก+เร็ว", contextWindow: 1047576 },
     { id: "openai/gpt-4.1-mini", name: "⭐ GPT-4.1 Mini", contextWindow: 1047576 },
-    { id: "openai/gpt-4.1-nano", name: "⭐ GPT-4.1 Nano", contextWindow: 1047576 },
-    { id: "deepseek/deepseek-v3.2", name: "⭐ DeepSeek V3.2", contextWindow: 163840 },
+    { id: "deepseek/deepseek-v3.2", name: "⭐ DeepSeek V3.2 — ราคาดี", contextWindow: 163840 },
     { id: "mistralai/mistral-small-2603", name: "⭐ Mistral Small 4", contextWindow: 262144 },
+    { id: "openai/gpt-5.4-mini", name: "⭐ GPT-5.4 Mini", contextWindow: 400000 },
+    { id: "anthropic/claude-4-sonnet", name: "⭐ Claude 4 Sonnet — พรีเมียม", contextWindow: 200000 },
     // ── ฟรี ──────────────────────────────────────────────────────
     { id: "google/gemma-3-27b-it:free", name: "🆓 Gemma 3 27B (free)", contextWindow: 131072 },
     { id: "google/gemma-4-31b-it:free", name: "🆓 Gemma 4 31B (free)", contextWindow: 262144 },

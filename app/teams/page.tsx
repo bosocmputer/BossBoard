@@ -122,22 +122,22 @@ export default function TeamsPage() {
   const agentById = (id: string) => agents.find((a) => a.id === id);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
             Teams
           </h1>
-          <p className="mt-1 text-sm opacity-55">จัดกลุ่ม agents เพื่อใช้งานใน Research ร่วมกัน</p>
+          <p className="mt-1 text-xs sm:text-sm opacity-55">จัดกลุ่ม agents เพื่อใช้งานใน Research ร่วมกัน</p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium border transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium border transition-colors w-full sm:w-auto"
           style={{
             borderColor: "var(--accent)",
             color: "var(--accent)",
-            background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+            background: "var(--accent-10)",
           }}
         >
           <span>+</span>
@@ -168,21 +168,21 @@ export default function TeamsPage() {
 
       {/* Team cards */}
       {!loading && teams.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
             <div
               key={team.id}
-              className="flex flex-col gap-3 border p-4 transition-colors"
+              className="flex flex-col gap-2 sm:gap-3 border p-3 sm:p-4 transition-colors"
               style={{ borderColor: "var(--border)", background: "var(--card)" }}
             >
               {/* Card header */}
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-2xl flex-shrink-0">{team.emoji}</span>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="text-xl sm:text-2xl flex-shrink-0">{team.emoji}</span>
                   <div className="min-w-0">
-                    <div className="font-semibold truncate">{team.name}</div>
+                    <div className="font-semibold truncate text-sm sm:text-base">{team.name}</div>
                     {team.description && (
-                      <div className="text-xs opacity-50 truncate">{team.description}</div>
+                      <div className="text-xs opacity-50 line-clamp-2 sm:truncate">{team.description}</div>
                     )}
                   </div>
                 </div>
@@ -232,9 +232,9 @@ export default function TeamsPage() {
                 href={`/research?teamId=${team.id}`}
                 className="mt-auto text-xs text-center py-1.5 border transition-colors"
                 style={{
-                  borderColor: "color-mix(in srgb, var(--accent) 40%, transparent)",
+                  borderColor: "var(--accent-40)",
                   color: "var(--accent)",
-                  background: "color-mix(in srgb, var(--accent) 7%, transparent)",
+                  background: "var(--accent-7)",
                 }}
               >
                 Research กับ Team นี้
@@ -246,9 +246,9 @@ export default function TeamsPage() {
 
       {/* Delete confirm */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
           <div
-            className="w-full max-w-sm border p-6 flex flex-col gap-4"
+            className="w-full max-w-sm border p-5 sm:p-6 flex flex-col gap-4"
             style={{ borderColor: "var(--border)", background: "var(--bg)" }}
           >
             <p className="font-semibold">ยืนยันการลบ Team?</p>
@@ -274,19 +274,19 @@ export default function TeamsPage() {
 
       {/* Create / Edit modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
           <div
-            className="w-full max-w-lg border flex flex-col gap-0 overflow-hidden"
+            className="w-full sm:max-w-lg border flex flex-col gap-0 overflow-hidden max-h-[90vh] sm:max-h-none rounded-t-lg sm:rounded-none"
             style={{ borderColor: "var(--border)", background: "var(--bg)" }}
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
               <span className="font-semibold text-sm">{editTarget ? "แก้ไข Team" : "สร้าง Team ใหม่"}</span>
               <button onClick={closeModal} className="opacity-50 hover:opacity-100 text-lg leading-none">✕</button>
             </div>
 
             {/* Modal body */}
-            <div className="flex flex-col gap-4 p-5 overflow-y-auto max-h-[70vh]">
+            <div className="flex flex-col gap-4 p-4 sm:p-5 overflow-y-auto max-h-[60vh] sm:max-h-[70vh]">
               {error && (
                 <div className="border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</div>
               )}
@@ -351,7 +351,7 @@ export default function TeamsPage() {
                           onClick={() => toggleAgent(agent.id)}
                           className="flex items-center gap-2 px-2 py-1.5 text-left text-sm transition-colors"
                           style={{
-                            background: selected ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
+                            background: selected ? "var(--accent-15)" : "transparent",
                             color: selected ? "var(--accent)" : "var(--text)",
                           }}
                         >
@@ -368,7 +368,7 @@ export default function TeamsPage() {
             </div>
 
             {/* Modal footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-end gap-2 px-4 sm:px-5 py-3 border-t" style={{ borderColor: "var(--border)" }}>
               <button
                 onClick={closeModal}
                 disabled={saving}
@@ -384,7 +384,7 @@ export default function TeamsPage() {
                 style={{
                   borderColor: "var(--accent)",
                   color: "var(--accent)",
-                  background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                  background: "var(--accent-12)",
                 }}
               >
                 {saving ? "กำลังบันทึก…" : editTarget ? "บันทึก" : "สร้าง Team"}

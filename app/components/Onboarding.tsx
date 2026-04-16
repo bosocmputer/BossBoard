@@ -115,7 +115,7 @@ export function OnboardingOverlay({
 
         {/* Content */}
         <div className="px-6 py-6 text-center">
-          <div className="w-12 h-12 rounded-lg mx-auto mb-4 flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}>
+          <div className="w-12 h-12 rounded-lg mx-auto mb-4 flex items-center justify-center" style={{ background: "var(--accent-10)" }}>
             <current.icon size={24} style={{ color: "var(--accent)" }} />
           </div>
           <h2 className="text-lg font-bold mb-2" style={{ color: "var(--text)" }}>
