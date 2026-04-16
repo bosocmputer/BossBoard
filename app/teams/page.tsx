@@ -122,32 +122,28 @@ export default function TeamsPage() {
   const agentById = (id: string) => agents.find((a) => a.id === id);
 
   return (
-    <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6">
+    <div className="min-h-screen p-4 sm:p-6" style={{ background: "var(--bg)" }}>
+      <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+      <div className="flex items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text)" }}>
             Teams
           </h1>
-          <p className="mt-1 text-xs sm:text-sm opacity-55">จัดกลุ่ม agents เพื่อใช้งานใน Research ร่วมกัน</p>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>จัดกลุ่ม agents เพื่อใช้งานใน Research ร่วมกัน</p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium border transition-colors w-full sm:w-auto"
-          style={{
-            borderColor: "var(--accent)",
-            color: "var(--accent)",
-            background: "var(--accent-10)",
-          }}
+          className="px-4 py-2 rounded-lg text-sm font-bold transition-all flex-shrink-0"
+          style={{ background: "var(--accent)", color: "#000" }}
         >
-          <span>+</span>
-          <span>สร้าง Team ใหม่</span>
+          + สร้าง Team
         </button>
       </div>
 
       {/* Error banner */}
       {error && !showModal && (
-        <div className="border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+        <div className="border border-red-500/40 bg-red-500/10 rounded-lg px-4 py-2 text-sm text-red-400 mb-4">
           {error}
           <button className="ml-3 opacity-60 hover:opacity-100" onClick={() => setError("")}>✕</button>
         </div>
@@ -155,120 +151,91 @@ export default function TeamsPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-12 text-sm opacity-40">กำลังโหลด…</div>
+        <div className="text-center py-20" style={{ color: "var(--text-muted)" }}>Loading...</div>
       )}
 
       {/* Empty state */}
       {!loading && teams.length === 0 && (
-        <div className="flex flex-col items-center gap-3 py-16 opacity-40">
-          <UsersRound size={36} style={{ color: "var(--text-muted)" }} />
-          <p className="text-sm">ยังไม่มี Team — กดปุ่ม &ldquo;สร้าง Team ใหม่&rdquo; เพื่อเริ่มต้น</p>
+        <div className="border rounded-xl p-12 text-center" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+          <UsersRound size={36} className="mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
+          <p>ยังไม่มี Team — กด &ldquo;สร้าง Team&rdquo; เพื่อเริ่มต้น</p>
         </div>
       )}
 
       {/* Team cards */}
       {!loading && teams.length > 0 && (
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-3">
           {teams.map((team) => (
             <div
               key={team.id}
-              className="flex flex-col gap-2 sm:gap-3 border p-3 sm:p-4 transition-colors"
-              style={{ borderColor: "var(--border)", background: "var(--card)" }}
+              className="border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-3 sm:gap-4 transition-all"
+              style={{ borderColor: "var(--border)", background: "var(--surface)" }}
             >
-              {/* Card header */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="text-xl sm:text-2xl flex-shrink-0">{team.emoji}</span>
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate text-sm sm:text-base">{team.name}</div>
-                    {team.description && (
-                      <div className="text-xs opacity-50 line-clamp-2 sm:truncate">{team.description}</div>
-                    )}
+              {/* Emoji */}
+              <div className="text-3xl">{team.emoji}</div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold" style={{ color: "var(--text)" }}>{team.name}</span>
+                  <span className="px-2 py-0.5 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                    {team.agentIds.length} agents
+                  </span>
+                </div>
+                {team.description && (
+                  <div className="text-xs mt-1 line-clamp-2" style={{ color: "var(--text-muted)" }}>
+                    {team.description}
                   </div>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => openEdit(team)}
-                    className="px-2 py-1 text-xs border opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ borderColor: "var(--border)" }}
-                  >
-                    แก้ไข
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(team.id)}
-                    className="px-2 py-1 text-xs border border-red-500/40 text-red-400 opacity-60 hover:opacity-100 transition-opacity"
-                  >
-                    ลบ
-                  </button>
-                </div>
-              </div>
-
-              {/* Agent pills */}
-              <div className="flex flex-wrap gap-1 min-h-[24px]">
-                {team.agentIds.length === 0 && (
-                  <span className="text-xs opacity-30">ยังไม่มี agent</span>
                 )}
-                {team.agentIds.map((aid) => {
-                  const a = agentById(aid);
-                  return a ? (
-                    <span
-                      key={aid}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs border"
-                      style={{ borderColor: "var(--border)", background: "var(--bg)" }}
-                    >
-                      <span>{a.emoji}</span>
-                      <span>{a.name}</span>
-                    </span>
-                  ) : (
-                    <span key={aid} className="inline-flex items-center px-2 py-0.5 text-xs opacity-30 border" style={{ borderColor: "var(--border)" }}>
-                      {aid.slice(0, 8)}…
-                    </span>
-                  );
-                })}
+
+                {/* Agent pills */}
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {team.agentIds.length === 0 && (
+                    <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>ยังไม่มี agent</span>
+                  )}
+                  {team.agentIds.map((aid) => {
+                    const a = agentById(aid);
+                    return a ? (
+                      <span
+                        key={aid}
+                        className="text-[11px] px-1.5 py-0.5 rounded border inline-flex items-center gap-1"
+                        style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                      >
+                        <span>{a.emoji}</span>
+                        <span>{a.name}</span>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
               </div>
 
-              {/* Link to research */}
-              <Link
-                href={`/research?teamId=${team.id}`}
-                className="mt-auto text-xs text-center py-1.5 border transition-colors"
-                style={{
-                  borderColor: "var(--accent-40)",
-                  color: "var(--accent)",
-                  background: "var(--accent-7)",
-                }}
-              >
-                Research กับ Team นี้
-              </Link>
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-shrink-0 flex-wrap w-full sm:w-auto">
+                <Link
+                  href={`/research?teamId=${team.id}`}
+                  className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
+                  style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                >
+                  Research
+                </Link>
+                <button
+                  onClick={() => openEdit(team)}
+                  className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
+                  style={{ borderColor: "var(--border)", color: "var(--text)" }}
+                >
+                  แก้ไข
+                </button>
+                {deleteConfirm === team.id ? (
+                  <>
+                    <button onClick={() => handleDelete(team.id)} className="px-3 py-2 sm:py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">ยืนยัน</button>
+                    <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 sm:py-1 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>ยกเลิก</button>
+                  </>
+                ) : (
+                  <button onClick={() => setDeleteConfirm(team.id)} className="px-3 py-2 sm:py-1 rounded text-xs border border-red-500/30 text-red-400">ลบ</button>
+                )}
+              </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Delete confirm */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
-          <div
-            className="w-full max-w-sm border p-5 sm:p-6 flex flex-col gap-4"
-            style={{ borderColor: "var(--border)", background: "var(--bg)" }}
-          >
-            <p className="font-semibold">ยืนยันการลบ Team?</p>
-            <p className="text-sm opacity-60">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-sm border"
-                style={{ borderColor: "var(--border)" }}
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="px-4 py-2 text-sm border border-red-500/60 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-              >
-                ลบ
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -276,17 +243,17 @@ export default function TeamsPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
           <div
-            className="w-full sm:max-w-lg border flex flex-col gap-0 overflow-hidden max-h-[90vh] sm:max-h-none rounded-t-lg sm:rounded-none"
-            style={{ borderColor: "var(--border)", background: "var(--bg)" }}
+            className="w-full sm:max-w-lg border rounded-t-xl sm:rounded-xl flex flex-col gap-0 overflow-hidden max-h-[85vh]"
+            style={{ borderColor: "var(--border)", background: "var(--surface)" }}
           >
             {/* Modal header */}
             <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-              <span className="font-semibold text-sm">{editTarget ? "แก้ไข Team" : "สร้าง Team ใหม่"}</span>
+              <span className="font-bold text-sm" style={{ color: "var(--text)" }}>{editTarget ? "แก้ไข Team" : "สร้าง Team ใหม่"}</span>
               <button onClick={closeModal} className="opacity-50 hover:opacity-100 text-lg leading-none">✕</button>
             </div>
 
             {/* Modal body */}
-            <div className="flex flex-col gap-4 p-4 sm:p-5 overflow-y-auto max-h-[60vh] sm:max-h-[70vh]">
+            <div className="flex flex-col gap-4 p-4 sm:p-5 overflow-y-auto">
               {error && (
                 <div className="border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</div>
               )}
@@ -294,26 +261,26 @@ export default function TeamsPage() {
               {/* Emoji + Name row */}
               <div className="flex gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs opacity-50">Emoji</label>
+                  <label className="text-xs" style={{ color: "var(--text-muted)" }}>Emoji</label>
                   <input
                     type="text"
                     value={form.emoji}
                     onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
                     title="Team emoji"
                     placeholder="👥"
-                    className="w-14 border px-2 py-1.5 text-center text-lg bg-transparent focus:outline-none focus:border-[var(--accent)]"
+                    className="w-14 border rounded-lg px-2 py-2 text-center text-lg bg-transparent focus:outline-none focus:border-[var(--accent)]"
                     style={{ borderColor: "var(--border)" }}
                     maxLength={4}
                   />
                 </div>
                 <div className="flex flex-col gap-1 flex-1">
-                  <label className="text-xs opacity-50">ชื่อ Team *</label>
+                  <label className="text-xs" style={{ color: "var(--text-muted)" }}>ชื่อ Team *</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="เช่น Research A-Team"
-                    className="border px-3 py-1.5 bg-transparent focus:outline-none focus:border-[var(--accent)] text-sm"
+                    className="border rounded-lg px-3 py-2 bg-transparent focus:outline-none focus:border-[var(--accent)] text-sm"
                     style={{ borderColor: "var(--border)" }}
                   />
                 </div>
@@ -321,27 +288,27 @@ export default function TeamsPage() {
 
               {/* Description */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs opacity-50">คำอธิบาย (ไม่บังคับ)</label>
+                <label className="text-xs" style={{ color: "var(--text-muted)" }}>คำอธิบาย (ไม่บังคับ)</label>
                 <input
                   type="text"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="อธิบายวัตถุประสงค์ของ team นี้…"
-                  className="border px-3 py-1.5 bg-transparent focus:outline-none focus:border-[var(--accent)] text-sm"
+                  className="border rounded-lg px-3 py-2 bg-transparent focus:outline-none focus:border-[var(--accent)] text-sm"
                   style={{ borderColor: "var(--border)" }}
                 />
               </div>
 
               {/* Agent selection */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs opacity-50">เลือก Agents ({form.agentIds.length} เลือก)</label>
+                <label className="text-xs" style={{ color: "var(--text-muted)" }}>เลือก Agents ({form.agentIds.length} เลือก)</label>
                 {agents.length === 0 ? (
                   <p className="text-xs opacity-40 py-2">ไม่มี active agent — ไปที่{" "}
                     <Link href="/agents" className="underline" style={{ color: "var(--accent)" }}>Agents</Link>{" "}
                     เพื่อเพิ่ม agent ก่อน
                   </p>
                 ) : (
-                  <div className="flex flex-col gap-1 max-h-48 overflow-y-auto border p-2" style={{ borderColor: "var(--border)" }}>
+                  <div className="flex flex-col gap-1 max-h-48 overflow-y-auto border rounded-lg p-2" style={{ borderColor: "var(--border)" }}>
                     {agents.map((agent) => {
                       const selected = form.agentIds.includes(agent.id);
                       return (
@@ -349,16 +316,16 @@ export default function TeamsPage() {
                           key={agent.id}
                           type="button"
                           onClick={() => toggleAgent(agent.id)}
-                          className="flex items-center gap-2 px-2 py-1.5 text-left text-sm transition-colors"
+                          className="flex items-center gap-2 px-2 py-2 text-left text-sm transition-colors rounded-lg"
                           style={{
                             background: selected ? "var(--accent-15)" : "transparent",
                             color: selected ? "var(--accent)" : "var(--text)",
                           }}
                         >
-                          <span className="w-4 text-center">{selected ? "✓" : ""}</span>
-                          <span>{agent.emoji}</span>
-                          <span className="font-medium">{agent.name}</span>
-                          <span className="text-xs opacity-50 ml-auto">{agent.role}</span>
+                          <span className="w-4 text-center flex-shrink-0">{selected ? "✓" : ""}</span>
+                          <span className="flex-shrink-0">{agent.emoji}</span>
+                          <span className="font-medium truncate">{agent.name}</span>
+                          <span className="text-xs ml-auto flex-shrink-0 hidden sm:inline" style={{ color: "var(--text-muted)" }}>{agent.role}</span>
                         </button>
                       );
                     })}
@@ -372,20 +339,16 @@ export default function TeamsPage() {
               <button
                 onClick={closeModal}
                 disabled={saving}
-                className="px-4 py-2 text-sm border disabled:opacity-40"
-                style={{ borderColor: "var(--border)" }}
+                className="px-4 py-2 text-sm rounded-lg border disabled:opacity-40"
+                style={{ borderColor: "var(--border)", color: "var(--text)" }}
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm border disabled:opacity-40 transition-colors"
-                style={{
-                  borderColor: "var(--accent)",
-                  color: "var(--accent)",
-                  background: "var(--accent-12)",
-                }}
+                className="px-4 py-2 text-sm rounded-lg font-bold disabled:opacity-40 transition-all"
+                style={{ background: "var(--accent)", color: "#000" }}
               >
                 {saving ? "กำลังบันทึก…" : editTarget ? "บันทึก" : "สร้าง Team"}
               </button>
@@ -393,6 +356,7 @@ export default function TeamsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
