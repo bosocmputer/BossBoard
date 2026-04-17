@@ -564,18 +564,16 @@ export default function AgentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                  {!agent.isSystem && (
-                    <button
-                      onClick={() => openKnowledge(agent)}
-                      className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
-                      style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                      title="ฐานความรู้"
-                    >
-                      📚 {agent.knowledge && agent.knowledge.length > 0
-                        ? `${agent.knowledge.length} ไฟล์ · ${(agent.knowledge.reduce((s, f) => s + (f.tokens || 0), 0) / 1000).toFixed(1)}k tok`
-                        : "Knowledge"}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => openKnowledge(agent)}
+                    className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
+                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                    title="ฐานความรู้"
+                  >
+                    📚 {agent.knowledge && agent.knowledge.length > 0
+                      ? `${agent.knowledge.length} ไฟล์ · ${(agent.knowledge.reduce((s, f) => s + (f.tokens || 0), 0) / 1000).toFixed(1)}k tok`
+                      : "Knowledge"}
+                  </button>
                   <button
                     onClick={() => handleToggle(agent)}
                     className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
