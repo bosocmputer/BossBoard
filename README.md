@@ -81,9 +81,24 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 | กรมสรรพากร (RD) | 🏛️ | ผู้เชี่ยวชาญภาษีอากร | ภาษีเงินได้, VAT, ภาษีหัก ณ ที่จ่าย |
 
 - **Edit Restriction** — กดแก้ไข System Agent จะแสดงเฉพาะแท็บ **"Model"** และ **"API Key"** เท่านั้น (ไม่มีแท็บตำแหน่ง/ข้อมูล/ขั้นสูง)
+- **Knowledge Upload** — system agents สามารถอัพโหลดไฟล์ความรู้เพิ่มเติมผ่านปุ่ม 📚 Knowledge ได้เหมือน agent ปกติ
 - **Knowledge Sync จาก GitHub** — ฐานความรู้เก็บที่ repo ภายนอก [`system-knowledge-ledgio-ai`](https://github.com/bosocmputer/system-knowledge-ledgio-ai) แล้ว sync ผ่าน GitHub Raw URL
 - **ปุ่ม "🔄 อัพเดทข้อมูล"** — กดเพื่อ sync ความรู้ล่าสุดจาก GitHub → เขียนไฟล์ลง `~/.bossboard/system-knowledge/`
 - **API:** `POST /api/team-agents/sync-knowledge` — ดึง `manifest.json` จาก GitHub แล้ว download ไฟล์ความรู้ทั้งหมด
+
+### 💬 Chat Page (`/chat/[agentId]`)
+
+หน้าแชท 1:1 กับ agent แต่ละตัว — ถามตอบโดยตรงแบบ real-time (ใช้ QA mode ไม่มีพิธีการประชุม)
+
+- **Direct QA** — ส่งคำถามไปยัง agent เดียว ได้คำตอบทันที ผ่าน SSE streaming (mode: "qa")
+- **Markdown Rendering** — คำตอบ render เป็น Markdown สมบูรณ์ (หัวข้อ, ตาราง, bullet, code block, blockquote)
+- **File Attachment** — แนบไฟล์ (PDF/Excel/Word/CSV/JSON/TXT) ให้ agent วิเคราะห์ประกอบ
+- **Chat History** — บันทึกประวัติสนทนาลง localStorage (เก็บ 50 ข้อความล่าสุดต่อ agent)
+- **Conversation Context** — ส่ง 10 ข้อความล่าสุดเป็น context ให้ agent เข้าใจบริบทก่อนหน้า
+- **Web Sources** — แสดงแหล่งข้อมูลจากอินเทอร์เน็ตที่ agent ค้นหา พร้อมลิงก์
+- **Follow-up Suggestions** — AI แนะนำคำถามต่อเนื่อง
+- **Enter ส่ง / Shift+Enter ขึ้นบรรทัด** — UX มาตรฐานสำหรับ chat
+- **System Agent Chat** — เข้าถึงผ่าน sidebar: `/chat/system-dbd` (DBD) และ `/chat/system-rd` (RD)
 
 ### 🏛️ Meeting Room (`/research`)
 
@@ -186,7 +201,12 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 - **Icons:** Lucide React
 - **Desktop:** Collapsible sidebar (224px ↔ 64px)
 - **Mobile:** Header + slide-out drawer
-- **8 Items:** Dashboard, Research (ห้องประชุม), Agents (จัดการ AI), Teams (ทีม), Tokens (สถิติ), Settings (ตั้งค่า), Guide (คู่มือ), Benefits (แพ็คเกจ)
+- **Navigation Groups:**
+  - **ห้องประชุม:** Research (ห้องประชุม AI)
+  - **หน่วยงานราชการ:** Chat DBD (กรมพัฒนาธุรกิจการค้า), Chat RD (กรมสรรพากร)
+  - **จัดการ:** Agents (ทีมที่ปรึกษา), Teams (ทีม), Tokens (สถิติการใช้งาน)
+  - **ตั้งค่า:** Settings (ตั้งค่า), Guide (วิธีใช้งาน)
+  - **อื่นๆ:** Benefits (แพ็คเกจ), Dashboard (หน้าหลัก)
 
 ---
 
