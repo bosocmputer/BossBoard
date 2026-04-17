@@ -13,6 +13,13 @@
 - **Sync API** — `POST /api/team-agents/sync-knowledge` สำหรับ trigger sync ผ่าน API
 - **ปุ่ม "🔄 อัพเดทข้อมูล"** — บนหน้า Agents กดเพื่อ sync ความรู้ล่าสุดจาก GitHub ได้ทันที
 
+### Chat Page (Individual Agent Chat)
+- **Knowledge Upload สำหรับ System Agents** — เปิดให้ system agents (DBD/RD) ใช้ปุ่ม 📚 Knowledge อัพโหลดไฟล์ความรู้ได้
+- **Fix: ReactMarkdown ว่างเปล่า** — แก้ `<ReactMarkdown />` self-closing tag → `<ReactMarkdown>{content}</ReactMarkdown>` ทำให้ข้อความตอบกลับแสดงในกล่องแชทได้
+- **Fix: crypto.randomUUID บน HTTP** — เพิ่ม `genId()` fallback สำหรับ browser ที่ไม่มี secure context (HTTPS) ทำให้หน้า chat ไม่ crash
+- **Enter ส่งข้อความ** — เปลี่ยนจาก Cmd+Enter เป็น Enter ส่ง (Shift+Enter ขึ้นบรรทัดใหม่) ตาม UX มาตรฐานของ chat
+- **Fix: Layout height** — แก้ความสูง chat container จาก `h-full` เป็น `calc(100dvh - 3.5rem)` ป้องกันเนื้อหาถูกซ่อน
+
 ## 2026-04-14 — v1.8: Parallel Phase 1 & UX Enhancement
 
 ### Performance
