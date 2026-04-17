@@ -366,9 +366,9 @@ export default function AgentsPage() {
         fetchAgents(); // refresh agent list to update knowledge badge
       } else {
         const err = await res.json();
-        alert(err.error || "Upload failed");
+        showToast("error", err.error || "อัพโหลดไม่สำเร็จ");
       }
-    } catch { alert("Upload failed"); }
+    } catch { showToast("error", "อัพโหลดไม่สำเร็จ"); }
     setKnowledgeUploading(false);
     e.target.value = "";
   };
