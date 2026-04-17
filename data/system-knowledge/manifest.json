@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2025-01-01T00:00:00Z",
+  "agents": {
+    "system-dbd": {
+      "files": [
+        "dbd/business-registration.txt",
+        "dbd/company-types.txt"
+      ]
+    },
+    "system-rd": {
+      "files": [
+        "rd/tax-overview.txt",
+        "rd/vat-guide.txt"
+      ]
+    }
+  }
+}

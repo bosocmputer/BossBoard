@@ -46,6 +46,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     const ok = await deleteAgent(id);
+    if (ok === "system") return NextResponse.json({ error: "ไม่สามารถลบ Agent ระบบได้" }, { status: 403 });
     if (!ok) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch {

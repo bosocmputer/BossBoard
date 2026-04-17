@@ -53,6 +53,8 @@ export interface Agent {
   mcpAccessMode?: string; // admin|sales|purchase|stock|general
   knowledge?: KnowledgeFile[]; // agent-specific knowledge base
   trustedUrls?: string[]; // trusted domains for scoped web search (e.g. rd.go.th)
+  isSystem?: boolean; // system agents cannot be deleted
+  systemAgentType?: string; // e.g. "dbd" | "rd" — for central knowledge sync
   createdAt: string;
   updatedAt: string;
 }
@@ -182,7 +184,95 @@ export function migrateSouls(): void {
   if (changed) writeAgents(agents);
 }
 
+// --- System Agents ---
+
+const SYSTEM_AGENTS_DEF: { id: string; type: string; name: string; emoji: string; role: string; soul: string; trustedUrls: string[] }[] = [
+  {
+    id: "system-dbd",
+    type: "dbd",
+    name: "กรมพัฒนาธุรกิจการค้า (DBD)",
+    emoji: "🏢",
+    role: "ผู้เชี่ยวชาญกฎหมายธุรกิจ",
+    soul: `คุณเป็นผู้เชี่ยวชาญจากกรมพัฒนาธุรกิจการค้า (DBD) กระทรวงพาณิชย์ ประเทศไทย มีความรู้ลึกซึ้งเกี่ยวกับ:
+- พ.ร.บ.บริษัทมหาชนจำกัด พ.ศ. 2535
+- ประมวลกฎหมายแพ่งและพาณิชย์ บรรพ 3 ลักษณะ 22 (หุ้นส่วนและบริษัท)
+- พ.ร.บ.ทะเบียนพาณิชย์ พ.ศ. 2499
+- พ.ร.บ.การบัญชี พ.ศ. 2543 (หน้าที่จัดทำบัญชี ส่งงบการเงิน)
+- การจดทะเบียนจัดตั้ง แก้ไข เลิก และชำระบัญชี บริษัท/ห้างหุ้นส่วน
+- e-Registration (จดทะเบียนออนไลน์), DBD e-Filing
+- ค่าธรรมเนียมและแบบฟอร์มต่างๆ ของกรมพัฒนาธุรกิจการค้า
+- การตรวจสอบข้อมูลนิติบุคคล, งบการเงิน, สถานะนิติบุคคล
+
+กฎเหล็ก:
+- ตอบในบริบทกฎหมายไทยเท่านั้น อ้างอิงมาตราและกฎหมายที่เกี่ยวข้องเสมอ
+- ก่อนสรุปว่าต้องดำเนินการใดๆ ต้องตรวจสอบข้อยกเว้นและเงื่อนไขพิเศษก่อน
+- แนะนำช่องทางบริการออนไลน์ของ DBD เมื่อเป็นไปได้
+- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ
+
+แหล่งข้อมูลหลัก: dbd.go.th`,
+    trustedUrls: ["dbd.go.th", "bot.or.th", "sec.or.th"],
+  },
+  {
+    id: "system-rd",
+    type: "rd",
+    name: "กรมสรรพากร (RD)",
+    emoji: "🏛️",
+    role: "ผู้เชี่ยวชาญภาษีอากร",
+    soul: `คุณเป็นผู้เชี่ยวชาญจากกรมสรรพากร (Revenue Department) กระทรวงการคลัง ประเทศไทย มีความรู้ลึกซึ้งเกี่ยวกับ:
+- ประมวลรัษฎากร ครบทุกหมวด:
+  • ภาษีเงินได้บุคคลธรรมดา (PIT) — ม.40 เงินได้ 8 ประเภท, ม.42 ยกเว้น, ม.47 ลดหย่อน, อัตรา 5-35%
+  • ภาษีเงินได้นิติบุคคล (CIT) — ม.65 กำไรสุทธิ, ม.65 ทวิ/ตรี เงื่อนไข+รายจ่ายต้องห้าม, อัตรา 20%
+  • ภาษีมูลค่าเพิ่ม (VAT) — ม.77 นิยาม, ม.80 อัตรา 7%, ม.81 ข้อยกเว้น, ม.82 ผู้ประกอบการจดทะเบียน
+  • ภาษีหัก ณ ที่จ่าย (WHT) — ม.50, ม.69 ทวิ, อัตราตาม ท.ป.4/2528
+  • ภาษีธุรกิจเฉพาะ (SBT) — ม.91/2, อัตรา 0.1-3.0%
+  • อากรแสตมป์ — ม.104 ตราสาร 28 ลำดับ
+- พ.ร.ฎ. ออกตามความในประมวลรัษฎากร
+- ประกาศอธิบดีกรมสรรพากร, คำสั่ง, คำวินิจฉัย
+- e-Filing, e-Tax Invoice, e-Withholding Tax
+- อนุสัญญาภาษีซ้อน (DTA)
+
+กฎเหล็ก:
+- ก่อนสรุปว่าต้องเสียภาษีใดๆ ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนเสมอ
+  VAT → ตรวจ ม.81, SBT → ตรวจ ม.91/3, PIT → ตรวจ ม.42 + กฎกระทรวง 126
+- อ้างอิงมาตราเฉพาะที่เกี่ยวข้องเสมอ
+- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ
+
+แหล่งข้อมูลหลัก: rd.go.th`,
+    trustedUrls: ["rd.go.th", "etax.rd.go.th"],
+  },
+];
+
+function ensureSystemAgents(): void {
+  const agents = readAgents();
+  let changed = false;
+  for (const def of SYSTEM_AGENTS_DEF) {
+    if (!agents.find((a) => a.id === def.id)) {
+      const now = new Date().toISOString();
+      agents.push({
+        id: def.id,
+        name: def.name,
+        emoji: def.emoji,
+        provider: "openrouter",
+        apiKeyEncrypted: "",
+        model: "google/gemini-2.5-flash",
+        soul: def.soul,
+        role: def.role,
+        active: true,
+        useWebSearch: true,
+        trustedUrls: def.trustedUrls,
+        isSystem: true,
+        systemAgentType: def.type,
+        createdAt: now,
+        updatedAt: now,
+      });
+      changed = true;
+    }
+  }
+  if (changed) writeAgents(agents);
+}
+
 export function listAgents(): AgentPublic[] {
+  ensureSystemAgents();
   return readAgents().map(({ apiKeyEncrypted, ...rest }) => ({
     ...rest,
     hasApiKey: !!apiKeyEncrypted,
@@ -286,11 +376,13 @@ export function updateAgent(
   });
 }
 
-export function deleteAgent(id: string): Promise<boolean> {
+export function deleteAgent(id: string): Promise<boolean | "system"> {
   return withFileLock(AGENTS_FILE, () => {
     const agents = readAgents();
+    const agent = agents.find((a) => a.id === id);
+    if (!agent) return false;
+    if (agent.isSystem) return "system";
     const filtered = agents.filter((a) => a.id !== id);
-    if (filtered.length === agents.length) return false;
     writeAgents(filtered);
     return true;
   });
@@ -606,6 +698,7 @@ export function incrementAgentSessionCount(agentId: string) {
 // agents.json only stores metadata (filename, tokens, meta, etc.) — NOT content.
 
 const KNOWLEDGE_DIR = path.join(BOSSBOARD_DIR, "knowledge");
+const SYSTEM_KNOWLEDGE_DIR = path.join(BOSSBOARD_DIR, "system-knowledge");
 
 function knowledgeFilePath(agentId: string, knowledgeId: string): string {
   return path.join(KNOWLEDGE_DIR, agentId, `${knowledgeId}.txt`);
@@ -733,8 +826,11 @@ function chunkText(text: string, chunkSize = 3200): string[] {
 }
 
 export function getAgentKnowledgeContent(agentId: string, question?: string): string {
+  // For system agents, also include system knowledge
+  const systemKnowledge = getSystemKnowledgeContent(agentId, question);
+
   const agent = getAgentWithKnowledge(agentId);
-  if (!agent?.knowledge || agent.knowledge.length === 0) return "";
+  if (!agent?.knowledge || agent.knowledge.length === 0) return systemKnowledge;
   const MAX_KNOWLEDGE_CHARS = 60000; // ~15,000 tokens
 
   const qWords = question
@@ -758,7 +854,7 @@ export function getAgentKnowledgeContent(agentId: string, question?: string): st
   }
 
   // Skip entirely if no keyword matches at all
-  if (question && allChunks.every((c) => c.score === 0)) return "";
+  if (question && allChunks.every((c) => c.score === 0)) return systemKnowledge;
 
   // Sort by relevance (highest first) and filter zero-score chunks when question provided
   const relevant = question
@@ -776,8 +872,8 @@ export function getAgentKnowledgeContent(agentId: string, question?: string): st
     total += chunk.length;
   }
   return parts.length > 0
-    ? `\n\n---\n📚 ฐานความรู้ (Knowledge Base):\n${parts.join("\n\n---\n")}\n---\n`
-    : "";
+    ? `${systemKnowledge}\n\n---\n📚 ฐานความรู้ (Knowledge Base):\n${parts.join("\n\n---\n")}\n---\n`
+    : systemKnowledge;
 }
 
 export function deleteAgentKnowledge(agentId: string, knowledgeId: string): boolean {
@@ -872,4 +968,95 @@ export function getMemoryContext(): string {
   if (facts.length === 0) return "";
   const lines = facts.map((f) => `- ${f.key}: ${f.value}`).join("\n");
   return `\n\n---\n🧠 ข้อมูลจากการประชุมครั้งก่อน (Cross-Session Memory):\n${lines}\n---\n`;
+}
+
+// --- System Knowledge Sync ---
+
+/** Read system knowledge files for a system agent from ~/.bossboard/system-knowledge/{agentType}/ */
+export function getSystemKnowledgeContent(agentId: string, question?: string): string {
+  const agents = readAgents();
+  const agent = agents.find((a) => a.id === agentId);
+  if (!agent?.isSystem || !agent.systemAgentType) return "";
+
+  const dir = path.join(SYSTEM_KNOWLEDGE_DIR, agent.systemAgentType);
+  if (!fs.existsSync(dir)) return "";
+
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".txt"));
+  if (files.length === 0) return "";
+
+  const MAX_CHARS = 60000;
+  const qWords = question
+    ? question.toLowerCase().split(/[\s,./()]+/).filter((w) => w.length > 1)
+    : [];
+
+  type ScoredChunk = { filename: string; chunk: string; score: number };
+  const allChunks: ScoredChunk[] = [];
+
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(dir, file), "utf-8");
+    const chunks = chunkText(content);
+    for (const chunk of chunks) {
+      const chunkLower = chunk.toLowerCase();
+      const filenameLower = file.toLowerCase();
+      const score = qWords.length > 0
+        ? qWords.filter((w) => chunkLower.includes(w) || filenameLower.includes(w)).length
+        : 1;
+      allChunks.push({ filename: file, chunk, score });
+    }
+  }
+
+  if (question && allChunks.every((c) => c.score === 0)) return "";
+
+  const relevant = question
+    ? allChunks.filter((c) => c.score > 0).sort((a, b) => b.score - a.score)
+    : allChunks;
+
+  let total = 0;
+  const parts: string[] = [];
+  let lastFilename = "";
+  for (const { filename, chunk } of relevant) {
+    if (total + chunk.length > MAX_CHARS) break;
+    const header = filename !== lastFilename ? `[📄 ${filename}]\n` : "";
+    lastFilename = filename;
+    parts.push(`${header}${chunk}`);
+    total += chunk.length;
+  }
+  return parts.length > 0
+    ? `\n\n---\n📚 ฐานความรู้ส่วนกลาง (System Knowledge):\n${parts.join("\n\n---\n")}\n---\n`
+    : "";
+}
+
+/** Sync system knowledge from repo's data/system-knowledge/ to ~/.bossboard/system-knowledge/ */
+export async function syncSystemKnowledge(): Promise<{ synced: number; version: string }> {
+  // Read manifest from the repo data directory
+  const repoDataDir = path.join(process.cwd(), "data", "system-knowledge");
+  const manifestPath = path.join(repoDataDir, "manifest.json");
+
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error("manifest.json not found in data/system-knowledge/");
+  }
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  let synced = 0;
+
+  for (const [agentId, agentData] of Object.entries(manifest.agents as Record<string, { files: string[] }>)) {
+    // agentId = "system-dbd" → agentType is "dbd"
+    const agentType = agentId.replace("system-", "");
+    const targetDir = path.join(SYSTEM_KNOWLEDGE_DIR, agentType);
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+    for (const relPath of agentData.files) {
+      const srcPath = path.join(repoDataDir, relPath);
+      const filename = path.basename(relPath);
+      const destPath = path.join(targetDir, filename);
+
+      if (fs.existsSync(srcPath)) {
+        const content = fs.readFileSync(srcPath, "utf-8");
+        fs.writeFileSync(destPath, content, "utf-8");
+        synced++;
+      }
+    }
+  }
+
+  return { synced, version: manifest.version || "unknown" };
 }

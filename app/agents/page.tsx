@@ -31,6 +31,8 @@ interface Agent {
   mcpAccessMode?: string;
   trustedUrls?: string[];
   knowledge?: { id: string; filename: string; tokens?: number }[];
+  isSystem?: boolean;
+  systemAgentType?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -417,6 +419,25 @@ export default function AgentsPage() {
     }
   };
 
+  const [syncLoading, setSyncLoading] = useState(false);
+
+  const handleSyncKnowledge = async () => {
+    setSyncLoading(true);
+    try {
+      const res = await fetch("/api/team-agents/sync-knowledge", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        showToast("success", data.message);
+      } else {
+        showToast("error", `ซิงค์ไม่สำเร็จ: ${data.error}`);
+      }
+    } catch {
+      showToast("error", "ซิงค์ไม่สำเร็จ");
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const categoriesWithTemplates = Object.entries(TEMPLATE_CATEGORIES).map(([key, cat]) => ({
     key,
     ...cat,
@@ -436,13 +457,24 @@ export default function AgentsPage() {
               สร้างและจัดการ AI agents สำหรับทีม
             </p>
           </div>
-          <button
-            onClick={openCreate}
-            className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-            style={{ background: "var(--accent)", color: "#000" }}
-          >
-            + New Agent
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSyncKnowledge}
+              disabled={syncLoading}
+              className="px-3 py-2 rounded-lg text-xs border transition-all disabled:opacity-50"
+              style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+              title="อัพเดทข้อมูล Agent ระบบ"
+            >
+              {syncLoading ? "⏳ กำลังซิงค์..." : "🔄 อัพเดทข้อมูล"}
+            </button>
+            <button
+              onClick={openCreate}
+              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+              style={{ background: "var(--accent)", color: "#000" }}
+            >
+              + New Agent
+            </button>
+          </div>
         </div>
 
         {/* Agent List */}
@@ -464,6 +496,9 @@ export default function AgentsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold" style={{ color: "var(--text)" }}>{agent.name}</span>
+                    {agent.isSystem && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium" style={{ background: "var(--accent)", color: "#000" }}>ระบบ</span>
+                    )}
                     <span className="px-2 py-0.5 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                       {agent.role}
                     </span>
@@ -512,16 +547,18 @@ export default function AgentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                  <button
-                    onClick={() => openKnowledge(agent)}
-                    className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
-                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                    title="ฐานความรู้"
-                  >
-                    📚 {agent.knowledge && agent.knowledge.length > 0
-                      ? `${agent.knowledge.length} ไฟล์ · ${(agent.knowledge.reduce((s, f) => s + (f.tokens || 0), 0) / 1000).toFixed(1)}k tok`
-                      : "Knowledge"}
-                  </button>
+                  {!agent.isSystem && (
+                    <button
+                      onClick={() => openKnowledge(agent)}
+                      className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
+                      style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                      title="ฐานความรู้"
+                    >
+                      📚 {agent.knowledge && agent.knowledge.length > 0
+                        ? `${agent.knowledge.length} ไฟล์ · ${(agent.knowledge.reduce((s, f) => s + (f.tokens || 0), 0) / 1000).toFixed(1)}k tok`
+                        : "Knowledge"}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleToggle(agent)}
                     className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
@@ -536,13 +573,15 @@ export default function AgentsPage() {
                   >
                     Edit
                   </button>
-                  {deleteConfirm === agent.id ? (
-                    <>
-                      <button onClick={() => handleDelete(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">Confirm</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 sm:py-1 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>Cancel</button>
-                    </>
-                  ) : (
-                    <button onClick={() => setDeleteConfirm(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs border border-red-500/30 text-red-400">Delete</button>
+                  {!agent.isSystem && (
+                    deleteConfirm === agent.id ? (
+                      <>
+                        <button onClick={() => handleDelete(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">Confirm</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 sm:py-1 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>Cancel</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setDeleteConfirm(agent.id)} className="px-3 py-2 sm:py-1 rounded text-xs border border-red-500/30 text-red-400">Delete</button>
+                    )
                   )}
                 </div>
               </div>

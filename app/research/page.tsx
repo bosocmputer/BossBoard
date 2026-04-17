@@ -25,6 +25,7 @@ interface Agent {
   hasApiKey: boolean;
   useWebSearch?: boolean;
   seniority?: number;
+  isSystem?: boolean;
 }
 
 interface ResearchMessage {
@@ -456,7 +457,7 @@ export default function ResearchPage() {
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
     const data = await res.json();
-    const activeAgents = (data.agents ?? []).filter((a: Agent) => a.active);
+    const activeAgents = (data.agents ?? []).filter((a: Agent) => a.active && !a.isSystem);
     setAgents(activeAgents);
   }, []);
 
