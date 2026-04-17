@@ -8,6 +8,14 @@ import {
   KnowledgeFile,
 } from "@/lib/agents-store";
 
+// Polyfill DOMMatrix for pdf-parse (pdfjs-dist) running on server
+if (typeof globalThis.DOMMatrix === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).DOMMatrix = class DOMMatrix {
+    constructor() { return Object.create(DOMMatrix.prototype); }
+  };
+}
+
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 type ParseResult = { text: string; meta: string };
