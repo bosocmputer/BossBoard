@@ -654,6 +654,7 @@ export async function POST(req: NextRequest) {
   const clientSignal = abortController.signal;
 
   const encoder = new TextEncoder();
+  let keepaliveInterval: ReturnType<typeof setInterval> | null = null;
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: string, data: unknown) => {
@@ -667,12 +668,12 @@ export async function POST(req: NextRequest) {
       };
 
       // Keepalive — send SSE comment every 15s to prevent proxy/tunnel timeouts (e.g. Cloudflare)
-      const keepaliveInterval = setInterval(() => {
-        if (clientSignal.aborted) { clearInterval(keepaliveInterval); return; }
+      keepaliveInterval = setInterval(() => {
+        if (clientSignal.aborted) { if (keepaliveInterval) clearInterval(keepaliveInterval); return; }
         try {
           controller.enqueue(encoder.encode(": keepalive\n\n"));
         } catch {
-          clearInterval(keepaliveInterval);
+          if (keepaliveInterval) clearInterval(keepaliveInterval);
         }
       }, 15_000);
 
