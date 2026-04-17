@@ -6,6 +6,7 @@ import {
   deleteAgentKnowledge,
   estimateTokens,
   KnowledgeFile,
+  checkDuplicateKnowledge,
 } from "@/lib/agents-store";
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
@@ -62,9 +63,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: `ไฟล์ใหญ่เกินไป (สูงสุด 10MB)` }, { status: 400 });
     }
 
+    const filename = file.name;
+
+    // Check for duplicate filename
+    const duplicate = checkDuplicateKnowledge(id, filename);
+    if (duplicate) {
+      return NextResponse.json(
+        { error: `ไฟล์ "${filename}" มีอยู่แล้ว — ลบไฟล์เดิมก่อนแล้วอัพโหลดใหม่` },
+        { status: 409 }
+      );
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const filename = file.name;
     const ext = filename.split(".").pop()?.toLowerCase() ?? "";
 
     let result: ParseResult;

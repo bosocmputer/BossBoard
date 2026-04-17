@@ -602,6 +602,65 @@ export function incrementAgentSessionCount(agentId: string) {
 }
 
 // --- Agent Knowledge Base ---
+// Knowledge content is stored in separate files under ~/.bossboard/knowledge/{agentId}/{knowledgeId}.txt
+// agents.json only stores metadata (filename, tokens, meta, etc.) — NOT content.
+
+const KNOWLEDGE_DIR = path.join(BOSSBOARD_DIR, "knowledge");
+
+function knowledgeFilePath(agentId: string, knowledgeId: string): string {
+  return path.join(KNOWLEDGE_DIR, agentId, `${knowledgeId}.txt`);
+}
+
+function writeKnowledgeFile(agentId: string, knowledgeId: string, content: string): void {
+  const fp = knowledgeFilePath(agentId, knowledgeId);
+  ensureDir(fp);
+  fs.writeFileSync(fp, content, "utf-8");
+}
+
+function readKnowledgeFile(agentId: string, knowledgeId: string): string {
+  const fp = knowledgeFilePath(agentId, knowledgeId);
+  try { return fs.readFileSync(fp, "utf-8"); } catch { return ""; }
+}
+
+function deleteKnowledgeFile(agentId: string, knowledgeId: string): void {
+  const fp = knowledgeFilePath(agentId, knowledgeId);
+  try { fs.unlinkSync(fp); } catch { /* ok */ }
+}
+
+/** Migrate inline knowledge content from agents.json to separate files (one-time) */
+let knowledgeMigrated = false;
+function migrateKnowledgeToFiles(): void {
+  if (knowledgeMigrated) return;
+  knowledgeMigrated = true;
+  const agents = readAgents();
+  let changed = false;
+  for (const agent of agents) {
+    if (!agent.knowledge) continue;
+    for (const k of agent.knowledge) {
+      if (k.content && k.content.length > 0) {
+        // Has inline content — migrate to file
+        writeKnowledgeFile(agent.id, k.id, k.content);
+        k.content = ""; // clear inline content
+        changed = true;
+      }
+    }
+  }
+  if (changed) writeAgents(agents);
+}
+
+/** Get agent with knowledge content loaded from files */
+function getAgentWithKnowledge(agentId: string): (Agent & { knowledge: KnowledgeFile[] }) | null {
+  migrateKnowledgeToFiles();
+  const agents = readAgents();
+  const agent = agents.find((a) => a.id === agentId);
+  if (!agent?.knowledge || agent.knowledge.length === 0) return null;
+  // Load content from files
+  const knowledge = agent.knowledge.map((k) => ({
+    ...k,
+    content: k.content || readKnowledgeFile(agentId, k.id),
+  }));
+  return { ...agent, knowledge };
+}
 
 export function estimateTokens(text: string): number {
   // Rough estimate: ~4 chars per token for mixed Thai/English
@@ -609,53 +668,112 @@ export function estimateTokens(text: string): number {
 }
 
 export function addAgentKnowledge(agentId: string, file: KnowledgeFile): KnowledgeFile | null {
+  migrateKnowledgeToFiles();
   const agents = readAgents();
   const idx = agents.findIndex((a) => a.id === agentId);
   if (idx === -1) return null;
+  // Write content to separate file
+  writeKnowledgeFile(agentId, file.id, file.content);
+  // Store only metadata in agents.json
+  const meta: KnowledgeFile = { ...file, content: "" };
   if (!agents[idx].knowledge) agents[idx].knowledge = [];
-  agents[idx].knowledge!.push(file);
+  agents[idx].knowledge!.push(meta);
   agents[idx].updatedAt = new Date().toISOString();
   writeAgents(agents);
   return file;
 }
 
 export function listAgentKnowledge(agentId: string): KnowledgePublic[] {
+  migrateKnowledgeToFiles();
   const agents = readAgents();
   const agent = agents.find((a) => a.id === agentId);
   if (!agent?.knowledge) return [];
-  return agent.knowledge.map((k) => ({
-    id: k.id,
-    filename: k.filename,
-    meta: k.meta,
-    tokens: k.tokens,
-    uploadedAt: k.uploadedAt,
-    preview: k.content.slice(0, 200),
-  }));
+  return agent.knowledge.map((k) => {
+    const content = k.content || readKnowledgeFile(agentId, k.id);
+    return {
+      id: k.id,
+      filename: k.filename,
+      meta: k.meta,
+      tokens: k.tokens,
+      uploadedAt: k.uploadedAt,
+      preview: content.slice(0, 200),
+    };
+  });
+}
+
+export function checkDuplicateKnowledge(agentId: string, filename: string): boolean {
+  const agents = readAgents();
+  const agent = agents.find((a) => a.id === agentId);
+  if (!agent?.knowledge) return false;
+  return agent.knowledge.some((k) => k.filename.toLowerCase() === filename.toLowerCase());
+}
+
+/** Split text into chunks of ~CHUNK_SIZE chars at paragraph/sentence boundaries */
+function chunkText(text: string, chunkSize = 3200): string[] {
+  // ~800 tokens per chunk (3200 chars / 4 chars per token)
+  if (text.length <= chunkSize) return [text];
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(start + chunkSize, text.length);
+    if (end < text.length) {
+      // Try to break at paragraph, then sentence, then word
+      const slice = text.slice(start, end);
+      const paraBreak = slice.lastIndexOf("\n\n");
+      const sentBreak = Math.max(slice.lastIndexOf("。"), slice.lastIndexOf(". "), slice.lastIndexOf("\n"));
+      const wordBreak = slice.lastIndexOf(" ");
+      if (paraBreak > chunkSize * 0.5) end = start + paraBreak + 2;
+      else if (sentBreak > chunkSize * 0.5) end = start + sentBreak + 1;
+      else if (wordBreak > chunkSize * 0.5) end = start + wordBreak + 1;
+    }
+    chunks.push(text.slice(start, end).trim());
+    start = end;
+  }
+  return chunks.filter((c) => c.length > 0);
 }
 
 export function getAgentKnowledgeContent(agentId: string, question?: string): string {
-  const agents = readAgents();
-  const agent = agents.find((a) => a.id === agentId);
+  const agent = getAgentWithKnowledge(agentId);
   if (!agent?.knowledge || agent.knowledge.length === 0) return "";
-  const MAX_KNOWLEDGE_CHARS = 100000; // ~25,000 tokens — increased capacity
+  const MAX_KNOWLEDGE_CHARS = 60000; // ~15,000 tokens
 
-  // Score knowledge files by relevance if question is provided
-  let ranked = agent.knowledge;
-  if (question) {
-    const qWords = question.toLowerCase().split(/[\s,./()]+/).filter((w) => w.length > 1);
-    ranked = [...agent.knowledge].sort((a, b) => {
-      const scoreA = qWords.filter((w) => a.content.toLowerCase().includes(w) || a.filename.toLowerCase().includes(w)).length;
-      const scoreB = qWords.filter((w) => b.content.toLowerCase().includes(w) || b.filename.toLowerCase().includes(w)).length;
-      return scoreB - scoreA; // most relevant first
-    });
+  const qWords = question
+    ? question.toLowerCase().split(/[\s,./()]+/).filter((w) => w.length > 1)
+    : [];
+
+  // Build scored chunks across all knowledge files
+  type ScoredChunk = { filename: string; chunk: string; score: number };
+  const allChunks: ScoredChunk[] = [];
+
+  for (const k of agent.knowledge) {
+    const chunks = chunkText(k.content);
+    for (const chunk of chunks) {
+      const chunkLower = chunk.toLowerCase();
+      const filenameLower = k.filename.toLowerCase();
+      const score = qWords.length > 0
+        ? qWords.filter((w) => chunkLower.includes(w) || filenameLower.includes(w)).length
+        : 1; // no question → include all
+      allChunks.push({ filename: k.filename, chunk, score });
+    }
   }
+
+  // Skip entirely if no keyword matches at all
+  if (question && allChunks.every((c) => c.score === 0)) return "";
+
+  // Sort by relevance (highest first) and filter zero-score chunks when question provided
+  const relevant = question
+    ? allChunks.filter((c) => c.score > 0).sort((a, b) => b.score - a.score)
+    : allChunks;
 
   let total = 0;
   const parts: string[] = [];
-  for (const k of ranked) {
-    if (total + k.content.length > MAX_KNOWLEDGE_CHARS) break;
-    parts.push(`[📄 ${k.filename}]\n${k.content}`);
-    total += k.content.length;
+  let lastFilename = "";
+  for (const { filename, chunk } of relevant) {
+    if (total + chunk.length > MAX_KNOWLEDGE_CHARS) break;
+    const header = filename !== lastFilename ? `[📄 ${filename}]\n` : "";
+    lastFilename = filename;
+    parts.push(`${header}${chunk}`);
+    total += chunk.length;
   }
   return parts.length > 0
     ? `\n\n---\n📚 ฐานความรู้ (Knowledge Base):\n${parts.join("\n\n---\n")}\n---\n`
@@ -669,6 +787,8 @@ export function deleteAgentKnowledge(agentId: string, knowledgeId: string): bool
   const before = agents[idx].knowledge!.length;
   agents[idx].knowledge = agents[idx].knowledge!.filter((k) => k.id !== knowledgeId);
   if (agents[idx].knowledge!.length === before) return false;
+  // Delete content file
+  deleteKnowledgeFile(agentId, knowledgeId);
   agents[idx].updatedAt = new Date().toISOString();
   writeAgents(agents);
   return true;

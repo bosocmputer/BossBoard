@@ -30,7 +30,7 @@ interface Agent {
   mcpEndpoint?: string;
   mcpAccessMode?: string;
   trustedUrls?: string[];
-  knowledge?: { id: string; filename: string }[];
+  knowledge?: { id: string; filename: string; tokens?: number }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -363,6 +363,7 @@ export default function AgentsPage() {
         const data = await res.json();
         setKnowledgeFiles((prev) => [...prev, data.knowledge]);
         setKnowledgePreview({ filename: data.knowledge.filename, tokens: data.knowledge.tokens, preview: data.knowledge.preview });
+        fetchAgents(); // refresh agent list to update knowledge badge
       } else {
         const err = await res.json();
         alert(err.error || "Upload failed");
@@ -382,6 +383,7 @@ export default function AgentsPage() {
     if (res.ok) {
       setKnowledgeFiles((prev) => prev.filter((k) => k.id !== knowledgeId));
       setKnowledgePreview(null);
+      fetchAgents(); // refresh agent list to update knowledge badge
     }
   };
 
@@ -516,7 +518,9 @@ export default function AgentsPage() {
                     style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                     title="ฐานความรู้"
                   >
-                    Knowledge
+                    📚 {agent.knowledge && agent.knowledge.length > 0
+                      ? `${agent.knowledge.length} ไฟล์ · ${(agent.knowledge.reduce((s, f) => s + (f.tokens || 0), 0) / 1000).toFixed(1)}k tok`
+                      : "Knowledge"}
                   </button>
                   <button
                     onClick={() => handleToggle(agent)}
