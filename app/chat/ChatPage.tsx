@@ -10,6 +10,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+/** crypto.randomUUID() requires secure context (HTTPS). Fallback for HTTP. */
+function genId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 // ---- Types ----
 
 interface AgentInfo {
@@ -172,7 +183,7 @@ export default function ChatPage({ agentId }: { agentId: string }) {
 
     // Add user message
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: genId(),
       role: "user",
       content: q,
       timestamp: new Date().toISOString(),
@@ -275,7 +286,7 @@ export default function ChatPage({ agentId }: { agentId: string }) {
       const finalContent = streamRef.current;
       if (finalContent) {
         const assistantMsg: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: genId(),
           role: "assistant",
           content: finalContent,
           timestamp: new Date().toISOString(),
