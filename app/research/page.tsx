@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { showToast } from "../components/Toast";
+import Badge from "../components/Badge";
+import Card from "../components/Card";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -1323,52 +1325,56 @@ export default function ResearchPage() {
               {/* Sticky status bar — progress stepper + who's speaking */}
               {running && status && (
                 <div className="sticky top-0 z-10 mx-1">
-                  <div className="px-3 py-2 rounded-lg border" style={{ borderColor: "var(--accent-30)", background: "var(--surface)" }}>
+                  <Card padding="sm" className="!rounded-lg border-[var(--accent-30)]">
                     {/* Phase stepper */}
                     {effectiveMode !== "qa" && currentPhase > 0 && (
-                      <div className="flex items-center gap-1 mb-1.5">
+                      <div className="flex items-center gap-0 mb-2">
                         {[
-                          { phase: 1, label: "นำเสนอ", icon: "1" },
-                          { phase: 2, label: "อภิปราย", icon: "2" },
-                          { phase: 3, label: "สรุปมติ", icon: "3" },
-                        ].map((step, i) => (
-                          <div key={step.phase} className="flex items-center gap-1 flex-1">
-                            <div className="flex items-center gap-1 flex-1">
-                              <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold transition-all ${currentPhase > step.phase ? "bg-green-500 text-white" : currentPhase === step.phase ? "animate-pulse text-[10px]" : ""}`}
-                                style={currentPhase === step.phase ? { background: "var(--accent)", color: "#000" } : currentPhase < step.phase ? { background: "var(--border)", color: "var(--text-muted)" } : {}}>
-                                {currentPhase > step.phase ? "✓" : step.icon}
-                              </span>
-                              <span className="text-[11px] hidden sm:inline" style={{ color: currentPhase >= step.phase ? "var(--text)" : "var(--text-muted)", fontWeight: currentPhase === step.phase ? 700 : 400 }}>
-                                {step.label}{step.phase === 1 && currentPhase === 1 && selectedIds.size > 1 ? ` (${phase1DoneCount}/${selectedIds.size})` : ""}
-                              </span>
+                          { phase: 1 as const, label: "นำเสนอ", icon: "📋" },
+                          { phase: 2 as const, label: "อภิปราย", icon: "💬" },
+                          { phase: 3 as const, label: "สรุปมติ", icon: "🏛️" },
+                        ].map((step, i) => {
+                          const isDone = currentPhase > step.phase;
+                          const isActive = currentPhase === step.phase;
+                          const variant = isDone ? "success" : isActive ? "accent" : "default";
+                          const progressText = step.phase === 1 && isActive && selectedIds.size > 1
+                            ? ` (${phase1DoneCount}/${selectedIds.size})`
+                            : "";
+                          return (
+                            <div key={step.phase} className="flex items-center flex-1 min-w-0">
+                              <Badge variant={variant} className={`whitespace-nowrap ${isActive ? "ring-1 ring-[var(--accent)]/40" : ""}`}>
+                                <span>{isDone ? "✓" : step.icon}</span>
+                                <span className="hidden sm:inline">{step.label}{progressText}</span>
+                                <span className="sm:hidden">{step.phase}{progressText}</span>
+                              </Badge>
+                              {i < 2 && (
+                                <div className={`flex-1 h-0.5 mx-1 rounded-full transition-colors ${isDone ? "bg-[var(--green)]/50" : "bg-[var(--border)]"}`} />
+                              )}
                             </div>
-                            {i < 2 && (
-                              <div className="w-4 sm:w-8 h-px flex-shrink-0" style={{ background: currentPhase > step.phase ? "var(--green)" : "var(--border)" }} />
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     {/* Progress bar — Phase 1 */}
                     {currentPhase === 1 && selectedIds.size > 1 && (
-                      <div className="mb-1.5">
-                        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+                      <div className="mb-2">
+                        <div className="w-full h-1.5 rounded-full overflow-hidden bg-[var(--border)]">
                           <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.round((phase1DoneCount / selectedIds.size) * 100)}%`, background: "var(--accent)" }}
+                            className="h-full rounded-full transition-all duration-500 bg-[var(--accent)]"
+                            style={{ width: `${Math.round((phase1DoneCount / selectedIds.size) * 100)}%` }}
                           />
                         </div>
-                        <div className="text-[11px] mt-0.5 text-right" style={{ color: "var(--text-muted)" }}>
-                          {phase1DoneCount}/{selectedIds.size} agents เสร็จ ({Math.round((phase1DoneCount / selectedIds.size) * 100)}%)
+                        <div className="text-[11px] mt-0.5 text-right text-[var(--text-muted)]">
+                          {phase1DoneCount}/{selectedIds.size} agents ({Math.round((phase1DoneCount / selectedIds.size) * 100)}%)
                         </div>
                       </div>
                     )}
                     {/* Status text */}
-                    <div className="text-xs flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                    <div className="text-xs flex items-center gap-2 text-[var(--text-muted)]">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse flex-shrink-0" />
                       <span className="truncate">{status}</span>
                     </div>
-                  </div>
+                  </Card>
                 </div>
               )}
 
