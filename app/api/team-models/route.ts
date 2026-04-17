@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AgentProvider } from "@/lib/agents-store";
 
-const PROVIDER_MODELS: Record<AgentProvider, { id: string; name: string; contextWindow: number }[]> = {
+const PROVIDER_MODELS: Record<AgentProvider, { id: string; name: string; contextWindow: number; desc?: string }[]> = {
   anthropic: [
     { id: "claude-4.6-opus", name: "Claude 4.6 Opus", contextWindow: 1000000 },
     { id: "claude-4.5-sonnet", name: "Claude 4.5 Sonnet", contextWindow: 1000000 },
@@ -31,16 +31,18 @@ const PROVIDER_MODELS: Record<AgentProvider, { id: string; name: string; context
     { id: "qwen2.5", name: "Qwen 2.5", contextWindow: 128000 },
   ],
   openrouter: [
-    // ── ⭐ แนะนำ (คุ้มค่า — เรียงจากถูกที่สุด) ────────────────────
-    { id: "google/gemini-2.5-flash", name: "⭐ Gemini 2.5 Flash — คุ้มค่าสุด", contextWindow: 1048576 },
-    { id: "google/gemini-2.5-flash-lite", name: "⭐ Gemini 2.5 Flash Lite — ถูกสุด", contextWindow: 1048576 },
-    { id: "google/gemini-2.5-pro-preview-06-05", name: "⭐ Gemini 2.5 Pro — แม่นยำสูง", contextWindow: 1048576 },
-    { id: "openai/gpt-4.1-nano", name: "⭐ GPT-4.1 Nano — ถูก+เร็ว", contextWindow: 1047576 },
-    { id: "openai/gpt-4.1-mini", name: "⭐ GPT-4.1 Mini", contextWindow: 1047576 },
-    { id: "deepseek/deepseek-v3.2", name: "⭐ DeepSeek V3.2 — ราคาดี", contextWindow: 163840 },
-    { id: "mistralai/mistral-small-2603", name: "⭐ Mistral Small 4", contextWindow: 262144 },
-    { id: "openai/gpt-5.4-mini", name: "⭐ GPT-5.4 Mini", contextWindow: 400000 },
-    { id: "anthropic/claude-4-sonnet", name: "⭐ Claude 4 Sonnet — พรีเมียม", contextWindow: 200000 },
+    // ── ⭐ แนะนำ (เรียงจากเร็วที่สุด) ──────────────────────────────
+    { id: "google/gemini-2.5-flash-lite", name: "⭐ Gemini 2.5 Flash Lite — เร็วสุด+ถูกสุด", contextWindow: 1048576, desc: "⚡ TTFT 0.46s · 135 tok/s · $0.10/$0.40 ต่อ 1M tokens" },
+    { id: "google/gemini-2.5-flash", name: "⭐ Gemini 2.5 Flash — เร็ว+คุณภาพสูง", contextWindow: 1048576, desc: "⚡ TTFT 0.63s · 72 tok/s · $0.30/$2.50 · มี thinking mode" },
+    { id: "google/gemini-3-flash-preview", name: "⭐ Gemini 3 Flash — ฉลาดสุด", contextWindow: 1048576, desc: "⚡ TTFT 1.0s · 77 tok/s · $0.50/$3.00 · reasoning top 93%" },
+    { id: "google/gemini-3.1-flash-lite-preview", name: "⭐ Gemini 3.1 Flash Lite — ใหม่+ประหยัด", contextWindow: 1048576, desc: "⚡ TTFT 0.74s · 78 tok/s · $0.25/$1.50 · ใกล้เคียง 2.5 Flash" },
+    { id: "google/gemini-2.5-pro-preview-06-05", name: "⭐ Gemini 2.5 Pro — แม่นยำสูง", contextWindow: 1048576, desc: "TTFT 1.5s · $1.25/$10.00 · reasoning+coding top tier" },
+    { id: "openai/gpt-4.1-nano", name: "⭐ GPT-4.1 Nano — ถูก+เร็ว", contextWindow: 1047576, desc: "$0.10/$0.40 · เหมาะงานง่ายๆ" },
+    { id: "openai/gpt-4.1-mini", name: "⭐ GPT-4.1 Mini", contextWindow: 1047576, desc: "$0.40/$1.60 · สมดุลราคา-คุณภาพ" },
+    { id: "deepseek/deepseek-v3.2", name: "DeepSeek V3.2 — ช้า", contextWindow: 163840, desc: "⚠️ ช้า ~60-90s · 15-20 tok/s · $0.30/$1.25 · คุณภาพดีแต่ช้า" },
+    { id: "mistralai/mistral-small-2603", name: "⭐ Mistral Small 4", contextWindow: 262144, desc: "เร็ว ราคาถูก" },
+    { id: "openai/gpt-5.4-mini", name: "⭐ GPT-5.4 Mini", contextWindow: 400000, desc: "รุ่นใหม่ คุณภาพสูง" },
+    { id: "anthropic/claude-4-sonnet", name: "⭐ Claude 4 Sonnet — พรีเมียม", contextWindow: 200000, desc: "$3/$15 · คุณภาพสูงมาก แต่แพง" },
     // ── ฟรี ──────────────────────────────────────────────────────
     { id: "google/gemma-3-27b-it:free", name: "🆓 Gemma 3 27B (free)", contextWindow: 131072 },
     { id: "google/gemma-4-31b-it:free", name: "🆓 Gemma 4 31B (free)", contextWindow: 262144 },
@@ -62,9 +64,8 @@ const PROVIDER_MODELS: Record<AgentProvider, { id: string; name: string; context
     { id: "openai/o3", name: "o3", contextWindow: 200000 },
     { id: "openai/gpt-4o", name: "GPT-4o", contextWindow: 128000 },
     // ── Google ───────────────────────────────────────────────────
-    { id: "google/gemini-3.1-pro-preview", name: "Gemini 3.1 Pro Preview", contextWindow: 1048576 },
-    { id: "google/gemini-3.1-flash-lite-preview", name: "Gemini 3.1 Flash Lite", contextWindow: 1048576 },
-    { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", contextWindow: 1048576 },
+    { id: "google/gemini-3.1-pro-preview", name: "Gemini 3.1 Pro Preview", contextWindow: 1048576, desc: "$2/$12 · frontier reasoning" },
+    { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", contextWindow: 1048576, desc: "⚠️ หมดอายุ 1 มิ.ย. 2026" },
     // ── DeepSeek ─────────────────────────────────────────────────
     { id: "deepseek/deepseek-r1-0528", name: "DeepSeek R1 0528", contextWindow: 163840 },
     { id: "deepseek/deepseek-chat", name: "DeepSeek V3", contextWindow: 163840 },

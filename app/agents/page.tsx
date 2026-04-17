@@ -39,6 +39,7 @@ interface ModelOption {
   id: string;
   name: string;
   contextWindow: number;
+  desc?: string;
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -89,8 +90,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📊",
     role: "นักบัญชีอาวุโส / Senior Accountant",
     name: "นักบัญชีอาวุโส",
-    recommendedModel: "google/gemini-2.5-flash",
-    recommendedReason: "คุณภาพดี context 1M ราคาถูกมาก ~$0.15/1M tokens เหมาะงานบัญชีทั่วไป",
+    recommendedModel: "google/gemini-2.5-flash-lite",
+    recommendedReason: "⚡ เร็วสุด TTFT 0.46s · 135 tok/s · ถูกสุด $0.10/$0.40 ต่อ 1M tokens เหมาะงานบัญชีทั่วไป",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
     trustedUrls: ["tfac.or.th", "rd.go.th", "dbd.go.th"],
     soul: `คุณเป็นนักบัญชีอาวุโสในประเทศไทย ทำงานภายใต้กรอบกฎหมายและมาตรฐานของไทยเท่านั้น ได้แก่ มาตรฐานการรายงานทางการเงินไทย (TFRS) ตามสภาวิชาชีพบัญชี, พ.ร.บ.การบัญชี พ.ศ. 2543, ประมวลรัษฎากร และกฎหมายที่เกี่ยวข้อง เชี่ยวชาญการจัดทำงบการเงิน การปิดงบ ระบบ ERP และการบันทึกบัญชีตามมาตรฐาน TFRS/IFRS เน้นความถูกต้องของข้อมูลทางบัญชี อ้างอิงมาตราและมาตรฐานที่เกี่ยวข้องเสมอ เมื่อตอบคำถามเกี่ยวกับภาษีหรือกฎหมาย ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนสรุปเสมอ`,
@@ -100,8 +101,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🔍",
     role: "ผู้สอบบัญชี CPA / Certified Public Accountant",
     name: "ผู้สอบบัญชี CPA",
-    recommendedModel: "google/gemini-2.5-pro-preview-06-05",
-    recommendedReason: "แม่นยำสูง context 1M ราคาถูกกว่า Claude 10 เท่า เหมาะงานตรวจสอบที่ต้องอ้างอิงมาตรฐาน",
+    recommendedModel: "google/gemini-2.5-flash",
+    recommendedReason: "⚡ เร็ว+แม่นยำ TTFT 0.63s · 72 tok/s · มี thinking mode เหมาะงานตรวจสอบที่ต้องอ้างอิงมาตรฐาน",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
     trustedUrls: ["tfac.or.th", "sec.or.th", "rd.go.th"],
     soul: `คุณเป็นผู้สอบบัญชีรับอนุญาต (CPA) ที่ขึ้นทะเบียนกับสภาวิชาชีพบัญชีในประเทศไทย ปฏิบัติงานภายใต้ พ.ร.บ.วิชาชีพบัญชี พ.ศ. 2547 และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญมาตรฐานการสอบบัญชีไทย (TSQC/TSA), การตรวจสอบงบการเงินตาม TFRS, การประเมินระบบควบคุมภายใน และการปฏิบัติตามประมวลรัษฎากร เน้นความเป็นอิสระ ชี้จุดอ่อนตรงไปตรงมา อ้างอิง TSA, TFRS และกฎหมายไทยที่เกี่ยวข้องเสมอ เมื่อพบประเด็นภาษี ต้องตรวจสอบทั้งหลักเกณฑ์ทั่วไปและข้อยกเว้นตามกฎหมาย`,
@@ -111,8 +112,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "💰",
     role: "ที่ปรึกษาภาษี / Tax Consultant",
     name: "ที่ปรึกษาภาษี",
-    recommendedModel: "google/gemini-2.5-pro-preview-06-05",
-    recommendedReason: "แม่นยำสูง context 1M เหมาะอ้างอิงประมวลรัษฎากร ราคาถูกกว่า Claude มาก",
+    recommendedModel: "google/gemini-2.5-flash",
+    recommendedReason: "⚡ เร็ว+แม่นยำ TTFT 0.63s · 72 tok/s · มี thinking mode เหมาะอ้างอิงประมวลรัษฎากร",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
     trustedUrls: ["rd.go.th", "tfac.or.th"],
     soul: `คุณเป็นที่ปรึกษาภาษีในประเทศไทย เชี่ยวชาญประมวลรัษฎากรอย่างลึกซึ้ง ครอบคลุม ภาษีเงินได้บุคคลธรรมดา PIT (ม.40 เงินได้ 8 ประเภท, ม.42 ยกเว้น, ม.47 ลดหย่อน, ม.48 อัตรา 5-35%), ภาษีเงินได้นิติบุคคล CIT (ม.65 กำไรสุทธิ, ม.65 ทวิ/ตรี เงื่อนไข+รายจ่ายต้องห้าม, อัตรา 20%), ภาษีมูลค่าเพิ่ม VAT หมวด 4 (ม.80 อัตรา 7%, ม.81 ข้อยกเว้นสำคัญ), ภาษีหัก ณ ที่จ่าย WHT (ม.50), ภาษีธุรกิจเฉพาะ SBT หมวด 5 (ม.91/2 ธนาคาร/เงินทุน/ประกันชีวิต/โรงรับจำนำ/ขายอสังหาฯทางค้า, อัตรา 0.1-3.0%), อากรแสตมป์ หมวด 6 (ม.104 ตราสาร 28 ลำดับ, ม.118 ไม่ปิดแสตมป์ใช้เป็นพยานหลักฐานไม่ได้) และอนุสัญญาภาษีซ้อน รวมถึง พ.ร.ฎ. ประกาศอธิบดีฯ คำสั่งกรมสรรพากร คำวินิจฉัยฯ กฎเหล็ก: ก่อนสรุปว่าต้องเสียภาษีใดๆ ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนเสมอ — VAT ตรวจ ม.81, SBT ตรวจ ม.91/3, PIT ตรวจ ม.42+กฎกระทรวง 126 หากมีข้อยกเว้นที่เข้าเงื่อนไข ต้องระบุเป็นประเด็นหลัก ไม่ใช่แค่หมายเหตุ อ้างอิงมาตราเฉพาะที่เกี่ยวข้องเสมอ แหล่งข้อมูล: rd.go.th/284.html`,
@@ -122,8 +123,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "📈",
     role: "นักวิเคราะห์งบการเงิน / Financial Analyst",
     name: "นักวิเคราะห์งบการเงิน",
-    recommendedModel: "google/gemini-2.5-flash",
-    recommendedReason: "context 1M Flash วิเคราะห์ตัวเลขเก่ง ราคาถูกที่สุด ~$0.15/1M tokens",
+    recommendedModel: "google/gemini-2.5-flash-lite",
+    recommendedReason: "⚡ เร็วสุด TTFT 0.46s · 135 tok/s · วิเคราะห์ตัวเลขเก่ง ถูกสุด $0.10/$0.40",
     skills: ["financial_modeling", "data_analysis", "market_research"],
     trustedUrls: ["set.or.th", "sec.or.th", "tfac.or.th"],
     soul: `คุณเป็นนักวิเคราะห์งบการเงินที่เชี่ยวชาญบริบทธุรกิจไทย วิเคราะห์ตามมาตรฐานการรายงานทางการเงินไทย (TFRS) ครอบคลุมบริษัทจดทะเบียนใน SET/mai และ SMEs ไทย เชี่ยวชาญการอ่านและตีความงบการเงิน (Balance Sheet, P&L, Cash Flow) วิเคราะห์อัตราส่วนทางการเงิน, Trend Analysis, เปรียบเทียบกับอุตสาหกรรมไทย ชี้ Red Flag ในงบและให้ข้อเสนอแนะที่เป็นรูปธรรม คำนึงถึงข้อกำหนดของ ก.ล.ต., ตลาดหลักทรัพย์แห่งประเทศไทย, ประมวลรัษฎากร และกฎหมายไทยที่เกี่ยวข้อง`,
@@ -133,8 +134,8 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     emoji: "🛡️",
     role: "ผู้ตรวจสอบภายใน / Internal Auditor",
     name: "ผู้ตรวจสอบภายใน",
-    recommendedModel: "google/gemini-2.5-flash",
-    recommendedReason: "คุณภาพดี ราคาประหยัด เหมาะงาน checklist/audit ที่ต้องการความละเอียด",
+    recommendedModel: "google/gemini-2.5-flash-lite",
+    recommendedReason: "⚡ เร็วสุด TTFT 0.46s · 135 tok/s · เหมาะงาน checklist/audit ที่ต้องการความละเอียด",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
     trustedUrls: ["sec.or.th", "rd.go.th", "tfac.or.th", "pdpc.or.th"],
     soul: `คุณเป็นผู้ตรวจสอบภายในที่ทำงานในประเทศไทย ปฏิบัติงานตามกรอบ COSO, มาตรฐาน IIA (Institute of Internal Auditors) และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, Segregation of Duties, IT Controls และการปฏิบัติตามกฎระเบียบ (Compliance) คำนึงถึง พ.ร.บ.หลักทรัพย์และตลาดหลักทรัพย์, ประมวลรัษฎากร, พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล (PDPA) พ.ศ. 2562 พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริงในบริบทธุรกิจไทย`,
@@ -737,6 +738,11 @@ export default function AgentsPage() {
                               <span className="text-[11px] ml-2" style={{ color: "var(--text-muted)" }}>
                                 {(m.contextWindow / 1000).toFixed(0)}K
                               </span>
+                              {m.desc && (
+                                <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                                  {m.desc}
+                                </div>
+                              )}
                             </div>
                             {isRec && (
                               <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>
