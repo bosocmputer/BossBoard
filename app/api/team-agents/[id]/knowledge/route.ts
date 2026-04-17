@@ -8,6 +8,14 @@ import {
   KnowledgeFile,
 } from "@/lib/agents-store";
 
+// pdfjs-dist requires browser globals on server — polyfill before any pdf-parse import
+if (typeof globalThis.DOMMatrix === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const g = globalThis as any;
+  g.DOMMatrix = class DOMMatrix { m: number[]; constructor() { this.m = [1,0,0,1,0,0]; } };
+  if (typeof globalThis.Path2D === "undefined") g.Path2D = class Path2D {};
+}
+
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 type ParseResult = { text: string; meta: string };
