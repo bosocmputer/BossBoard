@@ -178,6 +178,7 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingIsSystem, setEditingIsSystem] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -236,6 +237,7 @@ export default function AgentsPage() {
   const openCreate = () => {
     setForm({ ...EMPTY_FORM });
     setEditingId(null);
+    setEditingIsSystem(false);
     setError("");
     setShowAdvanced(false);
     setFormStep(0);
@@ -262,44 +264,59 @@ export default function AgentsPage() {
     });
     setMcpTestResult(null);
     setEditingId(agent.id);
+    setEditingIsSystem(!!agent.isSystem);
     setError("");
-    setFormStep(0);
+    setFormStep(agent.isSystem ? 1 : 0);
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.provider || !form.model || !form.soul.trim() || !form.role.trim()) {
-      setError("กรุณากรอกข้อมูลให้ครบ: ชื่อ, Provider, Model, Role, Soul");
-      return;
-    }
-    if (!editingId && !form.apiKey.trim()) {
-      setError("⚠️ กรุณาใส่ API Key — สมัครฟรีที่ openrouter.ai/keys");
-      setFormStep(2);
-      return;
+    // System agents: only validate model + optional API key
+    if (editingIsSystem) {
+      if (!form.model) {
+        setError("กรุณาเลือก Model");
+        return;
+      }
+    } else {
+      if (!form.name.trim() || !form.provider || !form.model || !form.soul.trim() || !form.role.trim()) {
+        setError("กรุณากรอกข้อมูลให้ครบ: ชื่อ, Provider, Model, Role, Soul");
+        return;
+      }
+      if (!editingId && !form.apiKey.trim()) {
+        setError("⚠️ กรุณาใส่ API Key — สมัครฟรีที่ openrouter.ai/keys");
+        setFormStep(2);
+        return;
+      }
     }
     setSaving(true);
     setError("");
     try {
-      const parsedUrls = form.trustedUrls
-        .split(/[\n,]+/)
-        .map((u: string) => u.trim())
-        .filter((u: string) => u.length > 0);
-      const payload = {
-        name: form.name,
-        emoji: form.emoji,
-        provider: form.provider,
-        apiKey: form.apiKey,
-        baseUrl: form.baseUrl,
+      // System agents: only send model + apiKey
+      const payload = editingIsSystem ? {
         model: form.model,
-        soul: form.soul,
-        role: form.role,
-        skills: form.skills,
-        useWebSearch: form.useWebSearch,
-        seniority: form.seniority,
-        mcpEndpoint: form.mcpEndpoint.trim() || undefined,
-        mcpAccessMode: form.mcpEndpoint.trim() ? form.mcpAccessMode : undefined,
-        trustedUrls: parsedUrls.length > 0 ? parsedUrls : undefined,
-      };
+        apiKey: form.apiKey || undefined,
+      } : (() => {
+        const parsedUrls = form.trustedUrls
+          .split(/[\n,]+/)
+          .map((u: string) => u.trim())
+          .filter((u: string) => u.length > 0);
+        return {
+          name: form.name,
+          emoji: form.emoji,
+          provider: form.provider,
+          apiKey: form.apiKey,
+          baseUrl: form.baseUrl,
+          model: form.model,
+          soul: form.soul,
+          role: form.role,
+          skills: form.skills,
+          useWebSearch: form.useWebSearch,
+          seniority: form.seniority,
+          mcpEndpoint: form.mcpEndpoint.trim() || undefined,
+          mcpAccessMode: form.mcpEndpoint.trim() ? form.mcpAccessMode : undefined,
+          trustedUrls: parsedUrls.length > 0 ? parsedUrls : undefined,
+        };
+      })();
       if (editingId) {
         const res = await fetch(`/api/team-agents/${editingId}`, {
           method: "PATCH",
@@ -598,29 +615,32 @@ export default function AgentsPage() {
             <div className="flex-shrink-0 p-4 sm:p-6 pb-0">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg" style={{ color: "var(--text)" }}>
-                  {editingId ? "Edit Agent" : "New Agent"}
+                  {editingIsSystem ? `⚙️ ตั้งค่า ${form.name}` : editingId ? "Edit Agent" : "New Agent"}
                 </h2>
                 <button onClick={() => setShowForm(false)} className="text-xl w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: "var(--text-muted)" }}>✕</button>
               </div>
 
               {/* Step Tabs — clean, simple */}
               <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-                {["ตำแหน่ง", "Model", "ข้อมูล", "ขั้นสูง"].map((label, i) => (
+                {(editingIsSystem ? ["Model", "API Key"] : ["ตำแหน่ง", "Model", "ข้อมูล", "ขั้นสูง"]).map((label, i) => {
+                  const stepIndex = editingIsSystem ? i + 1 : i; // system: tab 0→step1, tab 1→step2
+                  return (
                   <button
                     key={i}
-                    onClick={() => setFormStep(i)}
+                    onClick={() => setFormStep(stepIndex)}
                     className="flex-1 py-2.5 text-xs font-medium transition-all relative"
-                    style={{ color: formStep === i ? "var(--accent)" : "var(--text-muted)" }}
+                    style={{ color: formStep === stepIndex ? "var(--accent)" : "var(--text-muted)" }}
                   >
                     {label}
-                    {formStep === i && (
+                    {formStep === stepIndex && (
                       <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full" style={{ background: "var(--accent)" }} />
                     )}
-                    {formStep > i && (
+                    {formStep > stepIndex && (
                       <span className="absolute top-1 right-1 text-[8px]" style={{ color: "var(--success, #22c55e)" }}>✓</span>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -1096,14 +1116,36 @@ export default function AgentsPage() {
             {/* Footer: Navigation Buttons */}
             <div className="flex-shrink-0 p-4 sm:p-6 pt-3 border-t flex items-center justify-between gap-3" style={{ borderColor: "var(--border)" }}>
               <button
-                onClick={() => formStep === 0 ? setShowForm(false) : setFormStep(formStep - 1)}
+                onClick={() => {
+                  const minStep = editingIsSystem ? 1 : 0;
+                  formStep <= minStep ? setShowForm(false) : setFormStep(formStep - 1);
+                }}
                 className="px-4 py-2 rounded-lg text-sm border transition-all"
                 style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
               >
-                {formStep === 0 ? "ยกเลิก" : "← ย้อนกลับ"}
+                {formStep <= (editingIsSystem ? 1 : 0) ? "ยกเลิก" : "← ย้อนกลับ"}
               </button>
               <div className="flex gap-2">
-                {formStep < 3 ? (
+                {editingIsSystem ? (
+                  formStep === 1 ? (
+                    <button
+                      onClick={() => setFormStep(2)}
+                      className="px-6 py-2 rounded-lg text-sm font-bold transition-all"
+                      style={{ background: "var(--accent)", color: "#000" }}
+                    >
+                      ถัดไป →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
+                      style={{ background: "var(--accent)", color: "#000" }}
+                    >
+                      {saving ? "Saving..." : "บันทึก"}
+                    </button>
+                  )
+                ) : formStep < 3 ? (
                   <>
                     {formStep === 2 && (
                       <button

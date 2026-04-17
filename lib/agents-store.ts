@@ -1026,35 +1026,29 @@ export function getSystemKnowledgeContent(agentId: string, question?: string): s
     : "";
 }
 
-/** Sync system knowledge from repo's data/system-knowledge/ to ~/.bossboard/system-knowledge/ */
+const KNOWLEDGE_REPO_RAW = "https://raw.githubusercontent.com/bosocmputer/system-knowledge-ledgio-ai/main";
+
+/** Sync system knowledge from GitHub repo to ~/.bossboard/system-knowledge/ */
 export async function syncSystemKnowledge(): Promise<{ synced: number; version: string }> {
-  // Read manifest from the repo data directory
-  const repoDataDir = path.join(process.cwd(), "data", "system-knowledge");
-  const manifestPath = path.join(repoDataDir, "manifest.json");
-
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error("manifest.json not found in data/system-knowledge/");
-  }
-
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  // Fetch manifest from GitHub
+  const manifestRes = await fetch(`${KNOWLEDGE_REPO_RAW}/manifest.json`);
+  if (!manifestRes.ok) throw new Error("ไม่สามารถดึง manifest.json จาก GitHub ได้");
+  const manifest = await manifestRes.json();
   let synced = 0;
 
   for (const [agentId, agentData] of Object.entries(manifest.agents as Record<string, { files: string[] }>)) {
-    // agentId = "system-dbd" → agentType is "dbd"
     const agentType = agentId.replace("system-", "");
     const targetDir = path.join(SYSTEM_KNOWLEDGE_DIR, agentType);
     if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
     for (const relPath of agentData.files) {
-      const srcPath = path.join(repoDataDir, relPath);
+      const fileRes = await fetch(`${KNOWLEDGE_REPO_RAW}/${relPath}`);
+      if (!fileRes.ok) continue;
+      const content = await fileRes.text();
       const filename = path.basename(relPath);
       const destPath = path.join(targetDir, filename);
-
-      if (fs.existsSync(srcPath)) {
-        const content = fs.readFileSync(srcPath, "utf-8");
-        fs.writeFileSync(destPath, content, "utf-8");
-        synced++;
-      }
+      fs.writeFileSync(destPath, content, "utf-8");
+      synced++;
     }
   }
 
