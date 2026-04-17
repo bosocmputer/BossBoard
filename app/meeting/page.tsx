@@ -1901,8 +1901,8 @@ export default function MeetingPage() {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col"
-      style={{ background: "var(--bg)", zIndex: 30 }}
+      className="flex flex-col h-[calc(100dvh-3.5rem)] md:h-screen"
+      style={{ background: "var(--bg)" }}
     >
       {/* ── Header ── */}
       <div className="flex-shrink-0">
