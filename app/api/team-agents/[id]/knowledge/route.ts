@@ -8,14 +8,6 @@ import {
   KnowledgeFile,
 } from "@/lib/agents-store";
 
-// Polyfill DOMMatrix for pdf-parse (pdfjs-dist) running on server
-if (typeof globalThis.DOMMatrix === "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (globalThis as any).DOMMatrix = class DOMMatrix {
-    constructor() { return Object.create(DOMMatrix.prototype); }
-  };
-}
-
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 type ParseResult = { text: string; meta: string };
@@ -34,11 +26,13 @@ async function parseExcel(buffer: Buffer, filename: string): Promise<ParseResult
 }
 
 async function parsePDF(buffer: Buffer, filename: string): Promise<ParseResult> {
-  const mod = await import("pdf-parse");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pdfParse: (buf: Buffer) => Promise<{ text: string; numpages: number }> = (mod as any).default ?? mod;
-  const result = await pdfParse(buffer);
-  return { text: result.text, meta: `PDF: ${filename} | ${result.numpages} pages` };
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
+  await parser.load();
+  const info = await parser.getInfo();
+  const result = await parser.getText();
+  parser.destroy();
+  return { text: result.text, meta: `PDF: ${filename} | ${info.total} pages` };
 }
 
 async function parseWord(buffer: Buffer, filename: string): Promise<ParseResult> {
