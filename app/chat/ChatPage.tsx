@@ -89,7 +89,9 @@ function MessageContent({ content }: { content: string }) {
             return <code className="text-xs px-1 py-0.5 rounded" style={{ background: "var(--accent-12)", color: "var(--accent)" }}>{children}</code>;
           },
         }}
-      />
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
