@@ -28,7 +28,6 @@ async function parseExcel(buffer: Buffer, filename: string): Promise<ParseResult
 async function parsePDF(buffer: Buffer, filename: string): Promise<ParseResult> {
   const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
-  await parser.load();
   const info = await parser.getInfo();
   const result = await parser.getText();
   parser.destroy();
