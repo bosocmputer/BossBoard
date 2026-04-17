@@ -60,6 +60,7 @@ interface ConversationRound {
   chartData?: ChartData;
   chairmanId?: string;
   isSynthesis?: boolean;
+  isQA?: boolean;
   webSources?: WebSource[];
   clarificationAnswers?: { question: string; answer: string }[];
 }
@@ -272,8 +273,9 @@ function MessageContent({ content }: { content: string }) {
 // Meeting Minutes export
 function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): string {
   const agentMap = Object.fromEntries(agents.map((a) => [a.id, a]));
+  const isAllQA = rounds.every((r) => r.isQA);
   const lines: string[] = [
-    "# รายงานการประชุม",
+    isAllQA ? "# สรุปการถามตอบ" : "# รายงานการประชุม",
     `> วันที่: ${new Date().toLocaleString("th-TH")}`,
     "",
   ];
@@ -282,7 +284,7 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
   const attendeeIds = new Set<string>();
   rounds.forEach((r) => r.messages.forEach((m) => attendeeIds.add(m.agentId)));
   if (attendeeIds.size > 0) {
-    lines.push("## ผู้เข้าร่วมประชุม", "");
+    lines.push(isAllQA ? "## ผู้ตอบ" : "## ผู้เข้าร่วมประชุม", "");
     attendeeIds.forEach((id) => {
       const a = agentMap[id];
       if (a) lines.push(`- ${a.emoji} **${a.name}** (${a.role})`);
@@ -291,9 +293,9 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
   }
 
   rounds.forEach((round, i) => {
-    lines.push(`---`, `## วาระที่ ${i + 1}: ${round.question}`, "");
+    lines.push(`---`, round.isQA ? `## คำถามที่ ${i + 1}: ${round.question}` : `## วาระที่ ${i + 1}: ${round.question}`, "");
 
-    if (round.chairmanId) {
+    if (!round.isQA && round.chairmanId) {
       const ch = agentMap[round.chairmanId];
       if (ch) lines.push(`**ประธานที่ประชุม:** ${ch.emoji} ${ch.name}`, "");
     }
@@ -326,7 +328,7 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
 
     // Phase 3 — synthesis/resolution
     if (round.finalAnswer) {
-      lines.push("### มติที่ประชุม", round.finalAnswer.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(), "");
+      lines.push(round.isQA ? "### คำตอบ" : "### มติที่ประชุม", round.finalAnswer.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(), "");
     }
 
     // Web Sources
@@ -387,6 +389,7 @@ export default function ResearchPage() {
   const [currentFinalAnswer, setCurrentFinalAnswer] = useState("");
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [currentChartData, setCurrentChartData] = useState<ChartData | null>(null);
+  const [isCurrentQA, setIsCurrentQA] = useState(false);
 
   // File attachments
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -652,6 +655,7 @@ export default function ResearchPage() {
     setRunning(true);
     setCurrentMessages([]);
     setCurrentFinalAnswer("");
+    setIsCurrentQA(isQA);
     if (!meetingStartTime && !isQA) setMeetingStartTime(Date.now());
     setCurrentSuggestions([]);
     setCurrentChartData(null);
@@ -853,6 +857,7 @@ export default function ResearchPage() {
             chartData: currentChartDataRef.current ?? undefined,
             chairmanId: chairmanIdRef.current ?? undefined,
             isSynthesis: closeMode,
+            isQA,
             webSources: currentWebSourcesRef.current.length > 0 ? currentWebSourcesRef.current : undefined,
             clarificationAnswers: lastClarificationAnswersRef.current?.length ? lastClarificationAnswersRef.current : undefined,
           },
@@ -1592,7 +1597,7 @@ export default function ResearchPage() {
                   ))}
                   {viewingSession.finalAnswer && (
                     <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
-                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}><Building2 size={16} /> มติที่ประชุม</div>
+                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}>{(viewingSession.agentIds?.length ?? 0) <= 1 ? <MessageSquare size={16} /> : <Building2 size={16} />} {(viewingSession.agentIds?.length ?? 0) <= 1 ? "คำตอบ" : "มติที่ประชุม"}</div>
                       <MessageContent content={viewingSession.finalAnswer} />
                       <button
                         onClick={() => {
@@ -1648,7 +1653,7 @@ export default function ResearchPage() {
                       background: round.isSynthesis ? "var(--accent)" : "var(--accent-8)",
                       fontWeight: round.isSynthesis ? 700 : 400,
                     }}>
-                      {round.isSynthesis ? "สรุปมติที่ประชุม" : `วาระที่ ${roundIndex + 1}`}
+                      {round.isSynthesis ? "สรุปมติที่ประชุม" : round.isQA ? `คำถามที่ ${roundIndex + 1}` : `วาระที่ ${roundIndex + 1}`}
                     </div>
                     <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
                   </div>
@@ -1715,7 +1720,7 @@ export default function ResearchPage() {
 
                   {round.finalAnswer && (
                     <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
-                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}><Building2 size={16} /> มติที่ประชุม</div>
+                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}>{round.isQA ? <MessageSquare size={16} /> : <Building2 size={16} />} {round.isQA ? "คำตอบ" : "มติที่ประชุม"}</div>
                       <MessageContent content={round.finalAnswer} />
                       {round.chartData && <SimpleBarChart data={round.chartData} />}
 
@@ -1848,7 +1853,7 @@ export default function ResearchPage() {
                   })()}
                   {currentFinalAnswer && (
                     <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
-                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}><Building2 size={16} /> มติที่ประชุม</div>
+                      <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}>{isCurrentQA ? <MessageSquare size={16} /> : <Building2 size={16} />} {isCurrentQA ? "คำตอบ" : "มติที่ประชุม"}</div>
                       <MessageContent content={currentFinalAnswer} />
                       {currentChartData && <SimpleBarChart data={currentChartData} />}
 

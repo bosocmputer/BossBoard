@@ -1338,16 +1338,20 @@ export async function POST(req: NextRequest) {
           // Generate follow-up suggestions
           try {
             const historyForFollowup = conversationHistory && conversationHistory.length > 0
-              ? `ประวัติวาระก่อนหน้า:\n${conversationHistory.map((t, i) => `วาระที่ ${i + 1}: ${t.question}`).join("\n")}\n\n`
+              ? `ประวัติก่อนหน้า:\n${conversationHistory.map((t, i) => `${mode === "qa" ? "คำถาม" : "วาระ"}ที่ ${i + 1}: ${t.question}`).join("\n")}\n\n`
               : "";
             const followupResult = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
               {
                 role: "system",
-                content: "คุณช่วยแนะนำวาระการประชุมต่อเนื่องที่น่าสนใจ ตอบในรูปแบบ JSON array เท่านั้น เช่น [\"วาระ 1\", \"วาระ 2\", \"วาระ 3\"]",
+                content: mode === "qa"
+                  ? "คุณช่วยแนะนำคำถามต่อเนื่องที่น่าสนใจ ตอบในรูปแบบ JSON array เท่านั้น เช่น [\"คำถาม 1\", \"คำถาม 2\", \"คำถาม 3\"]"
+                  : "คุณช่วยแนะนำวาระการประชุมต่อเนื่องที่น่าสนใจ ตอบในรูปแบบ JSON array เท่านั้น เช่น [\"วาระ 1\", \"วาระ 2\", \"วาระ 3\"]",
               },
               {
                 role: "user",
-                content: `${historyForFollowup}วาระล่าสุด: ${question}\n\nมติที่ประชุม: ${result.content.slice(0, 500)}\n\nแนะนำ 3 วาระต่อเนื่องที่ควรพิจารณาต่อ ตอบเป็น JSON array เท่านั้น ไม่ต้องมีข้อความอื่น`,
+                content: mode === "qa"
+                  ? `${historyForFollowup}คำถามล่าสุด: ${question}\n\nคำตอบ: ${result.content.slice(0, 500)}\n\nแนะนำ 3 คำถามต่อเนื่องที่น่าสนใจ ตอบเป็น JSON array เท่านั้น ไม่ต้องมีข้อความอื่น`
+                  : `${historyForFollowup}วาระล่าสุด: ${question}\n\nมติที่ประชุม: ${result.content.slice(0, 500)}\n\nแนะนำ 3 วาระต่อเนื่องที่ควรพิจารณาต่อ ตอบเป็น JSON array เท่านั้น ไม่ต้องมีข้อความอื่น`,
               },
             ], clientSignal);
             try {
@@ -1366,7 +1370,7 @@ export async function POST(req: NextRequest) {
                 role: "system",
                 content: 'จากการประชุม ให้ดึงข้อเท็จจริงสำคัญเกี่ยวกับผู้ถาม/บริษัทที่ควรจำไว้ ตอบเป็น JSON array เท่านั้น: [{"key":"ชื่อภาษาอังกฤษสั้นๆ","value":"ค่า"}]\n\nตัวอย่าง key: vat_registered, company_type, business_sector, employee_count, accounting_standard, fiscal_year\nถ้าไม่มีข้อมูลใหม่ที่ควรจำ ตอบ []',
               },
-              { role: "user", content: `วาระ: ${question}\n\nข้อมูลจากผู้ถาม: ${clarificationContext || "ไม่มี"}\n\nมติ: ${result.content.slice(0, 500)}` },
+              { role: "user", content: `${mode === "qa" ? "คำถาม" : "วาระ"}: ${question}\n\nข้อมูลจากผู้ถาม: ${clarificationContext || "ไม่มี"}\n\n${mode === "qa" ? "คำตอบ" : "มติ"}: ${result.content.slice(0, 500)}` },
             ], clientSignal);
             try {
               const jsonMatch = memResult.content.match(/\[[\s\S]*\]/);
