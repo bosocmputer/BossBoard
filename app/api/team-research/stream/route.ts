@@ -429,13 +429,21 @@ async function rewriteSearchQuery(
   signal?: AbortSignal,
 ): Promise<string> {
   try {
-    const result = await callLLM(provider, model, apiKey, baseUrl, [
+    // Use a fast lightweight model for query rewriting instead of the main (slow) model
+    const fastModel = provider === "openrouter" ? "openai/gpt-4o-mini" : model;
+    const timeoutController = new AbortController();
+    const timeout = setTimeout(() => timeoutController.abort(), 15_000);
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, timeoutController.signal])
+      : timeoutController.signal;
+    const result = await callLLM(provider, fastModel, apiKey, baseUrl, [
       {
         role: "system",
         content: "แปลงคำถามภาษาไทยเป็น search query สำหรับ Google ที่จะได้ผลลัพธ์ดีที่สุด ตอบเฉพาะ query เท่านั้น ไม่ต้องมีคำอธิบาย ใช้ keywords ภาษาไทยผสมอังกฤษ ถ้าเป็นเรื่องกฎหมาย/ภาษี ให้ใส่ keyword เช่น กรมสรรพากร พ.ร.บ. ประมวลรัษฎากร ตามความเหมาะสม",
       },
       { role: "user", content: question },
-    ], signal);
+    ], combinedSignal);
+    clearTimeout(timeout);
     const rewritten = result.content.trim().replace(/^["']|["']$/g, "");
     return rewritten.length > 5 ? rewritten : question;
   } catch {
@@ -713,10 +721,12 @@ export async function POST(req: NextRequest) {
 
         let mcpContext = "";
         if (!disableMcp && agent.mcpEndpoint) {
+          send("status", { message: `💬 ${agent.emoji} กำลังเชื่อมต่อระบบ...` });
           mcpContext = await fetchMcpContext(agent.mcpEndpoint, agent.mcpAccessMode ?? "general", question);
         }
         let searchContext = "";
         if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
+          send("status", { message: `💬 ${agent.emoji} กำลังค้นหาข้อมูล...` });
           const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl, clientSignal);
           send("agent_searching", { agentId: agent.id, query: searchQuery });
           const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
@@ -726,12 +736,20 @@ export async function POST(req: NextRequest) {
 
         const knowledgeContext = getAgentKnowledgeContent(agent.id, question);
         try {
+          send("status", { message: `💬 ${agent.emoji} กำลังวิเคราะห์และเรียบเรียงคำตอบ...` });
+          // 90s timeout for main LLM call
+          const llmTimeout = new AbortController();
+          const llmTimer = setTimeout(() => llmTimeout.abort(), 90_000);
+          const llmSignal = clientSignal
+            ? AbortSignal.any([clientSignal, llmTimeout.signal])
+            : llmTimeout.signal;
           const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
             { role: "system",
               content: `${companyContext}${memoryContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${antiHallucinationRules}\n\nรูปแบบการตอบ:\n1. **ตอบคำตอบหลักให้ชัดเจนก่อนเลยในย่อหน้าแรก** (ใช่/ไม่ใช่/มี/ไม่มี + สรุปสั้น 1-2 ประโยค)\n2. จากนั้นค่อยอธิบายเหตุผล หลักกฎหมาย หรือรายละเอียดสนับสนุน\n3. ถ้ามีเงื่อนไขพิเศษหรือข้อยกเว้น ให้ระบุชัดเจนว่ากรณีของผู้ถามเข้าเงื่อนไขไหน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ที่เกี่ยวข้องก่อนเสมอ\n- คำตอบต้องสอดคล้องกันตลอด — ห้ามเปิดด้วยข้อมูลที่ขัดกับข้อสรุป\n- อ้างอิงมาตรากฎหมาย มาตรฐานบัญชี หรือแนวปฏิบัติที่เกี่ยวข้อง\n- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ`,
             },
             { role: "user", content: question },
-          ], clientSignal);
+          ], llmSignal);
+          clearTimeout(llmTimer);
 
           const answerMsg: ResearchMessage = {
             id: crypto.randomUUID(),
