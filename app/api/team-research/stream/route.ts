@@ -669,11 +669,11 @@ export async function POST(req: NextRequest) {
 
       // Keepalive — send SSE comment every 15s to prevent proxy/tunnel timeouts (e.g. Cloudflare)
       keepaliveInterval = setInterval(() => {
-        if (clientSignal.aborted) { if (keepaliveInterval) if (keepaliveInterval) clearInterval(keepaliveInterval); return; }
+        if (clientSignal.aborted) { if (keepaliveInterval) clearInterval(keepaliveInterval); return; }
         try {
           controller.enqueue(encoder.encode(": keepalive\n\n"));
         } catch {
-          if (keepaliveInterval) if (keepaliveInterval) clearInterval(keepaliveInterval);
+          if (keepaliveInterval) clearInterval(keepaliveInterval);
         }
       }, 15_000);
 
