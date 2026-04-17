@@ -8,14 +8,6 @@ import {
   KnowledgeFile,
 } from "@/lib/agents-store";
 
-// pdfjs-dist requires browser globals on server — polyfill before any pdf-parse import
-if (typeof globalThis.DOMMatrix === "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const g = globalThis as any;
-  g.DOMMatrix = class DOMMatrix { m: number[]; constructor() { this.m = [1,0,0,1,0,0]; } };
-  if (typeof globalThis.Path2D === "undefined") g.Path2D = class Path2D {};
-}
-
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 type ParseResult = { text: string; meta: string };
@@ -34,12 +26,9 @@ async function parseExcel(buffer: Buffer, filename: string): Promise<ParseResult
 }
 
 async function parsePDF(buffer: Buffer, filename: string): Promise<ParseResult> {
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
-  const info = await parser.getInfo();
-  const result = await parser.getText();
-  parser.destroy();
-  return { text: result.text, meta: `PDF: ${filename} | ${info.total} pages` };
+  const pdfParse = (await import("pdf-parse")).default;
+  const result = await pdfParse(buffer);
+  return { text: result.text, meta: `PDF: ${filename} | ${result.numpages} pages` };
 }
 
 async function parseWord(buffer: Buffer, filename: string): Promise<ParseResult> {
