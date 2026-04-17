@@ -346,45 +346,47 @@ function PhaseStepper({ currentPhase, phase1DoneCount, totalAgents }: {
   if (currentPhase === 0) return null;
 
   const steps = [
-    { phase: 1, label: "Presentation" },
-    { phase: 2, label: "Discussion" },
-    { phase: 3, label: "Resolution" },
+    { phase: 1, label: "นำเสนอ", emoji: "📋" },
+    { phase: 2, label: "อภิปราย", emoji: "💬" },
+    { phase: 3, label: "มติ", emoji: "🏛️" },
   ];
 
+  const progress = currentPhase === 1
+    ? (phase1DoneCount / Math.max(totalAgents, 1)) * 33
+    : currentPhase === 2
+    ? 66
+    : 90;
+
   return (
-    <div className="hidden sm:flex items-center gap-2">
-      {steps.map((step, i) => {
-        const done = currentPhase > step.phase;
-        const active = currentPhase === step.phase;
-        return (
-          <div key={step.phase} className="flex items-center gap-2">
-            <div
-              className="flex items-center gap-1.5 text-xs"
-              style={{ color: done || active ? "var(--text)" : "var(--text-muted)" }}
-            >
+    <div className="w-full">
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+        <div
+          className="h-full rounded-full transition-all duration-1000 ease-out"
+          style={{ width: `${progress}%`, background: "linear-gradient(90deg, var(--accent), var(--accent))" }}
+        />
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        {steps.map((step) => {
+          const done = currentPhase > step.phase;
+          const active = currentPhase === step.phase;
+          return (
+            <div key={step.phase} className="flex items-center gap-1.5">
+              <span className="text-sm">{step.emoji}</span>
               <span
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono"
-                style={{
-                  background: done ? "var(--accent)" : active ? "var(--surface)" : "transparent",
-                  border: `1px solid ${done ? "var(--accent)" : active ? "var(--border)" : "var(--border)"}`,
-                  color: done ? "#000" : "inherit",
-                }}
+                className="text-[11px] font-semibold"
+                style={{ color: done ? "var(--accent)" : active ? "var(--text)" : "var(--text-muted)" }}
               >
-                {done ? <Check size={8} /> : step.phase}
+                {step.label}
               </span>
-              <span className="hidden md:inline">{step.label}</span>
               {step.phase === 1 && active && totalAgents > 1 && (
-                <span className="font-mono text-[10px]" style={{ color: "var(--text-muted)" }}>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md" style={{ background: "var(--surface)", color: "var(--text-muted)" }}>
                   {phase1DoneCount}/{totalAgents}
                 </span>
               )}
             </div>
-            {i < 2 && (
-              <div className="w-6 h-px" style={{ background: done ? "var(--accent)" : "var(--border)" }} />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -409,90 +411,100 @@ function AgentPanel({
   const hasActivity = isActive || isSearching;
 
   const statusText = isSearching
-    ? "Searching..."
+    ? "ค้นหาข้อมูล..."
     : isActive
-    ? "Responding..."
+    ? "กำลังตอบ..."
     : latestMsg
-    ? ROLE_LABEL[latestMsg.role] ?? "Done"
+    ? ROLE_LABEL[latestMsg.role] ?? "เสร็จสิ้น"
     : running
-    ? "Waiting..."
+    ? "รอเรียก..."
     : substantiveMessages.length > 0
-    ? "Done"
+    ? "เสร็จสิ้น"
     : "—";
 
   return (
     <div
-      className="flex flex-col rounded-lg border overflow-hidden"
+      className="group relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300"
       style={{
         borderColor: hasActivity ? "var(--accent)" : "var(--border)",
         background: "var(--card)",
-        transition: "border-color 0.2s",
+        boxShadow: hasActivity ? "0 0 24px -4px color-mix(in srgb, var(--accent) 25%, transparent)" : "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
+      {hasActivity && (
+        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "var(--accent)" }} />
+      )}
+
       {/* Header */}
-      <div
-        className="flex items-center gap-2.5 px-3 py-2.5 border-b"
-        style={{ borderColor: "var(--border)", background: "var(--surface)" }}
-      >
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
-                {agent.name}
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition-all duration-300"
+          style={{
+            background: hasActivity ? "var(--accent)" : "var(--surface)",
+            color: hasActivity ? "#000" : "var(--text)",
+          }}
+        >
+          {agent.emoji || agent.name[0]}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold truncate" style={{ color: "var(--text)" }}>
+              {agent.name}
+            </span>
+            {isChairman && (
+              <span
+                className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex-shrink-0"
+                style={{ background: "var(--accent)", color: "#000" }}
+              >
+                ประธาน
               </span>
-              {isChairman && (
-                <span
-                  className="text-[9px] uppercase tracking-wide px-1 py-0.5 rounded font-semibold"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
-                >
-                  Chair
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              {hasActivity && (
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: "var(--accent)", animation: "pulse 1.5s infinite" }}
-                />
-              )}
-              <span className="text-[11px] font-mono" style={{ color: hasActivity ? "var(--accent)" : "var(--text-muted)" }}>
-                {statusText}
-              </span>
-            </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            {hasActivity && (
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ background: "var(--accent)", animation: "pulse 1.5s infinite" }}
+              />
+            )}
+            <span className="text-[11px] font-medium" style={{ color: hasActivity ? "var(--accent)" : "var(--text-muted)" }}>
+              {statusText}
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {tokens && tokens.totalTokens > 0 && (
-            <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg" style={{ color: "var(--text-muted)", background: "var(--surface)" }}>
               {tokens.totalTokens > 999 ? `${(tokens.totalTokens / 1000).toFixed(1)}k` : tokens.totalTokens}
             </span>
           )}
           {agent.useWebSearch && (
-            <Search size={10} style={{ color: "var(--text-muted)" }} />
+            <Search size={12} style={{ color: "var(--text-muted)" }} />
           )}
           {substantiveMessages.length > 1 && (
             <button
               onClick={onToggleExpand}
-              className="w-5 h-5 rounded flex items-center justify-center transition-opacity hover:opacity-70"
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-[var(--surface)]"
               style={{ color: "var(--text-muted)" }}
             >
-              {isExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+              {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             </button>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 min-h-[120px] max-h-[280px]">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-[100px] max-h-[320px]">
         {hasActivity && substantiveMessages.length === 0 && (
-          <div className="flex items-center gap-1.5 py-2">
-            <span className="text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
-              {isSearching ? "Searching web..." : "Thinking..."}
-            </span>
-            <span className="thinking-dots" style={{ color: "var(--text-muted)" }}>
-              <span>.</span><span>.</span><span>.</span>
+          <div className="flex items-center gap-3 py-4">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--accent)", animationDelay: "0ms" }} />
+              <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--accent)", animationDelay: "150ms" }} />
+              <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--accent)", animationDelay: "300ms" }} />
+            </div>
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+              {isSearching ? "กำลังค้นหาข้อมูลจากเว็บ..." : "กำลังประมวลผล..."}
             </span>
           </div>
         )}
@@ -500,7 +512,7 @@ function AgentPanel({
         {!isExpanded && latestMsg && (
           <div>
             <div
-              className="text-[10px] uppercase tracking-wide mb-1.5 font-mono"
+              className="text-[10px] uppercase tracking-widest mb-2 font-bold"
               style={{ color: "var(--text-muted)" }}
             >
               {ROLE_LABEL[latestMsg.role] ?? latestMsg.role}
@@ -512,11 +524,11 @@ function AgentPanel({
         {isExpanded && substantiveMessages.map((msg, i) => (
           <div
             key={msg.id ?? i}
-            className={i > 0 ? "mt-3 pt-3 border-t" : ""}
+            className={i > 0 ? "mt-4 pt-4 border-t" : ""}
             style={{ borderColor: "var(--border)" }}
           >
             <div
-              className="text-[10px] uppercase tracking-wide mb-1.5 font-mono"
+              className="text-[10px] uppercase tracking-widest mb-2 font-bold"
               style={{ color: "var(--text-muted)" }}
             >
               {ROLE_LABEL[msg.role] ?? msg.role}
@@ -526,8 +538,10 @@ function AgentPanel({
         ))}
 
         {!hasActivity && substantiveMessages.length === 0 && (
-          <div className="py-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
-            {running ? "Waiting to be called..." : "No response yet"}
+          <div className="flex items-center justify-center h-full py-8">
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {running ? "รอเรียกตามลำดับ..." : "ยังไม่มีการตอบ"}
+            </span>
           </div>
         )}
       </div>
@@ -544,39 +558,48 @@ function SynthesisPanel({ finalAnswer, chartData, webSources }: {
 }) {
   return (
     <div
-      className="rounded-lg border overflow-hidden flex-shrink-0"
-      style={{ borderColor: "var(--border)", background: "var(--card)" }}
+      className="rounded-2xl overflow-hidden flex-shrink-0"
+      style={{
+        border: "1.5px solid var(--accent)",
+        background: "linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, var(--accent) 4%, var(--card)) 100%)",
+      }}
     >
       <div
-        className="px-3 py-2 border-b flex items-center gap-2"
-        style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+        className="px-5 py-3.5 flex items-center gap-3"
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
-        <Building2 size={12} style={{ color: "var(--text-muted)" }} />
-        <span className="text-xs font-mono uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-          Resolution
-        </span>
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-base"
+          style={{ background: "var(--accent)", color: "#000" }}
+        >
+          🏛️
+        </div>
+        <div>
+          <div className="text-sm font-bold" style={{ color: "var(--text)" }}>มติที่ประชุม</div>
+          <div className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>Resolution</div>
+        </div>
       </div>
-      <div className="p-4 max-h-56 overflow-y-auto">
+      <div className="p-5 max-h-72 overflow-y-auto">
         <MessageContent content={finalAnswer} />
         {chartData && <SimpleBarChart data={chartData} />}
         {webSources && webSources.length > 0 && (
-          <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-            <div className="text-[10px] uppercase tracking-wide mb-2 font-mono" style={{ color: "var(--text-muted)" }}>
-              Sources
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="text-[10px] uppercase tracking-widest mb-3 font-bold" style={{ color: "var(--text-muted)" }}>
+              แหล่งอ้างอิง
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {webSources.map((src, i) => (
                 <a
                   key={i}
                   href={src.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[11px] px-2 py-0.5 rounded border inline-flex items-center gap-1 transition-opacity hover:opacity-70"
-                  style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}
+                  className="text-[11px] px-2.5 py-1.5 rounded-xl border inline-flex items-center gap-1.5 transition-all hover:border-[var(--accent)] hover:shadow-sm"
+                  style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--bg)" }}
                   title={src.snippet}
                 >
                   <span className="truncate max-w-[140px]">{src.title}</span>
-                  <span className="font-mono text-[9px]" style={{ color: "var(--text-muted)" }}>{src.domain}</span>
+                  <span className="font-mono text-[9px] opacity-60">{src.domain}</span>
                 </a>
               ))}
             </div>
@@ -998,86 +1021,107 @@ function SetupModal({
   const canStart = canProceed1 && canProceed2;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg)" }}>
-      <div
-        className="w-full max-w-md rounded-lg border overflow-hidden"
-        style={{ borderColor: "var(--border)", background: "var(--card)" }}
-      >
-        {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 size={16} style={{ color: "var(--text-muted)" }} />
-            <h1 className="text-sm font-semibold tracking-wide" style={{ color: "var(--text)" }}>
-              New Meeting
-            </h1>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--accent)" }}>
+            <Building2 size={18} color="#000" />
           </div>
-          {/* Step tabs */}
-          <div className="flex gap-1">
-            {([1, 2, 3] as const).map((s) => {
-              const labels = ["Topic", "Team", "Options"];
-              const done = setupStep > s;
-              const active = setupStep === s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => onSetupStepChange(s)}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs transition-colors"
-                  style={{
-                    background: active ? "var(--surface)" : "transparent",
-                    color: active ? "var(--text)" : done ? "var(--text-muted)" : "var(--text-muted)",
-                    border: `1px solid ${active ? "var(--border)" : "transparent"}`,
-                  }}
-                >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-mono flex-shrink-0"
-                    style={{
-                      background: done ? "var(--accent)" : active ? "var(--surface)" : "transparent",
-                      border: `1px solid ${done ? "var(--accent)" : "var(--border)"}`,
-                      color: done ? "#000" : "inherit",
-                    }}
-                  >
-                    {done ? <Check size={7} /> : s}
-                  </span>
-                  {labels[s - 1]}
-                </button>
-              );
-            })}
+          <div>
+            <div className="text-sm font-bold" style={{ color: "var(--text)" }}>LEDGIO AI</div>
+            <div className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>Meeting Room</div>
           </div>
         </div>
+      </div>
 
-        {/* Step content */}
-        <div className="p-5 min-h-[260px]">
+      {/* Step indicator */}
+      <div className="px-6 py-5 max-w-2xl mx-auto w-full">
+        <div className="flex items-center">
+          {([1, 2, 3] as const).map((s, i) => {
+            const labels = ["หัวข้อประชุม", "เลือกทีม", "ตั้งค่า"];
+            const emojis = ["📋", "👥", "⚙️"];
+            const done = setupStep > s;
+            const active = setupStep === s;
+            return (
+              <div key={s} className="flex items-center" style={{ flex: i < 2 ? 1 : "none" }}>
+                <button
+                  onClick={() => onSetupStepChange(s)}
+                  className="flex items-center gap-2.5 flex-shrink-0 transition-opacity hover:opacity-80"
+                >
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
+                    style={{
+                      background: done ? "var(--accent)" : active ? "var(--surface)" : "transparent",
+                      border: `2px solid ${done ? "var(--accent)" : active ? "var(--accent)" : "var(--border)"}`,
+                      color: done ? "#000" : active ? "var(--accent)" : "var(--text-muted)",
+                    }}
+                  >
+                    {done ? <Check size={16} /> : emojis[s - 1]}
+                  </div>
+                  <span
+                    className="text-sm font-semibold hidden sm:block"
+                    style={{ color: active ? "var(--text)" : done ? "var(--accent)" : "var(--text-muted)" }}
+                  >
+                    {labels[s - 1]}
+                  </span>
+                </button>
+                {i < 2 && (
+                  <div
+                    className="flex-1 h-0.5 mx-4 rounded-full transition-colors duration-500"
+                    style={{ background: done ? "var(--accent)" : "var(--border)" }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex items-start justify-center px-6 pb-8">
+        <div className="w-full max-w-2xl">
+
           {/* Step 1: Topic */}
           {setupStep === 1 && (
-            <div>
-              <label className="text-xs uppercase tracking-wide font-mono mb-2 block" style={{ color: "var(--text-muted)" }}>
-                Meeting agenda
-              </label>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-1" style={{ color: "var(--text)" }}>
+                  วาระการประชุม
+                </h2>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  ระบุหัวข้อหรือคำถามที่ต้องการให้ทีม AI วิเคราะห์ร่วมกัน
+                </p>
+              </div>
               <textarea
                 autoFocus
                 value={question}
                 onChange={(e) => onQuestionChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canProceed1) {
-                    onSetupStepChange(2);
-                  }
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canProceed1) onSetupStepChange(2);
                 }}
-                placeholder="Describe the topic or question you want to discuss..."
+                placeholder="เช่น วิเคราะห์งบการเงินไตรมาส 3 เทียบกับปีก่อน พร้อมข้อเสนอแนะ..."
                 rows={4}
-                className="w-full px-3 py-2.5 rounded border text-sm resize-none outline-none"
-                style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                className="w-full px-4 py-3.5 rounded-2xl border text-sm resize-none outline-none transition-colors focus:border-[var(--accent)]"
+                style={{ background: "var(--card)", borderColor: "var(--border)", color: "var(--text)" }}
               />
-              <div className="mt-3">
-                <div className="text-[11px] mb-1.5" style={{ color: "var(--text-muted)" }}>Quick start</div>
-                <div className="flex flex-wrap gap-1.5">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+                  ⚡ เริ่มต้นเร็ว
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {QUICK_TOPICS.map((t) => (
                     <button
                       key={t}
                       onClick={() => onQuestionChange(t)}
-                      className="text-xs px-2 py-1 rounded border transition-colors hover:border-[var(--accent)]"
-                      style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "transparent" }}
+                      className="text-left px-4 py-3.5 rounded-2xl border text-sm transition-all duration-200 hover:border-[var(--accent)] hover:shadow-sm"
+                      style={{
+                        borderColor: question === t ? "var(--accent)" : "var(--border)",
+                        background: question === t ? "var(--surface)" : "var(--card)",
+                        color: "var(--text)",
+                      }}
                     >
-                      {t}
+                      <span className="font-medium">{t}</span>
                     </button>
                   ))}
                 </div>
@@ -1087,50 +1131,56 @@ function SetupModal({
 
           {/* Step 2: Team */}
           {setupStep === 2 && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs uppercase tracking-wide font-mono" style={{ color: "var(--text-muted)" }}>
-                  Select members ({selectedIds.size})
-                </label>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1" style={{ color: "var(--text)" }}>
+                    เลือกทีมที่ปรึกษา
+                  </h2>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                    เลือก AI ที่จะเข้าร่วมประชุม ({selectedIds.size} คน)
+                  </p>
+                </div>
                 {agents.length > 0 && (
                   <button
                     onClick={onSelectAll}
-                    className="text-xs transition-opacity hover:opacity-70"
+                    className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:bg-[var(--surface)]"
                     style={{ color: "var(--accent)" }}
                   >
-                    {selectedIds.size === agents.length ? "Deselect all" : "Select all"}
+                    {selectedIds.size === agents.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
                   </button>
                 )}
               </div>
               {agents.length === 0 ? (
-                <div className="py-8 text-center">
-                  <div className="text-sm mb-1" style={{ color: "var(--text-muted)" }}>No agents configured</div>
-                  <a href="/agents" className="text-xs underline" style={{ color: "var(--accent)" }}>
-                    Set up agents →
-                  </a>
+                <div className="py-20 text-center rounded-2xl border-2 border-dashed" style={{ borderColor: "var(--border)" }}>
+                  <div className="text-5xl mb-4">🤖</div>
+                  <div className="text-sm font-medium mb-2" style={{ color: "var(--text-muted)" }}>ยังไม่มี Agent ที่ใช้งาน</div>
+                  <a href="/agents" className="text-xs font-bold underline underline-offset-2" style={{ color: "var(--accent)" }}>ไปตั้งค่า Agent →</a>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {agents.map((agent) => {
                     const selected = selectedIds.has(agent.id);
                     return (
                       <button
                         key={agent.id}
                         onClick={() => onToggleAgent(agent.id)}
-                        className="p-3 rounded border text-left transition-colors"
+                        className="relative p-4 rounded-2xl border-2 text-left transition-all duration-200 hover:shadow-md group"
                         style={{
                           borderColor: selected ? "var(--accent)" : "var(--border)",
-                          background: selected ? "var(--surface)" : "transparent",
+                          background: selected ? "color-mix(in srgb, var(--accent) 6%, var(--card))" : "var(--card)",
                         }}
                       >
-                        <div className="text-xs font-medium mb-0.5" style={{ color: "var(--text)" }}>
-                          {agent.name}
-                        </div>
-                        <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                          {agent.role}
-                        </div>
+                        {selected && (
+                          <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--accent)" }}>
+                            <Check size={11} color="#000" />
+                          </div>
+                        )}
+                        <div className="text-3xl mb-2.5">{agent.emoji || "🤖"}</div>
+                        <div className="text-sm font-bold mb-0.5" style={{ color: "var(--text)" }}>{agent.name}</div>
+                        <div className="text-[11px] line-clamp-2" style={{ color: "var(--text-muted)" }}>{agent.role}</div>
                         {!agent.hasApiKey && (
-                          <div className="text-[10px] mt-1" style={{ color: "var(--danger, #ef4444)" }}>No API key</div>
+                          <div className="text-[10px] mt-2 font-bold" style={{ color: "var(--danger, #ef4444)" }}>⚠ ไม่มี API Key</div>
                         )}
                       </button>
                     );
@@ -1142,48 +1192,63 @@ function SetupModal({
 
           {/* Step 3: Options */}
           {setupStep === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-1" style={{ color: "var(--text)" }}>ตั้งค่าการประชุม</h2>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>กำหนดตัวเลือกเพิ่มเติมก่อนเริ่มประชุม</p>
+              </div>
+
+              {/* Summary card */}
+              <div className="p-4 rounded-2xl border" style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 4%, var(--card))" }}>
+                <div className="text-[10px] uppercase tracking-widest font-bold mb-2" style={{ color: "var(--text-muted)" }}>สรุปการตั้งค่า</div>
+                <div className="text-sm font-medium mb-1" style={{ color: "var(--text)" }}>📋 {question || "—"}</div>
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  👥 {selectedIds.size} สมาชิก
+                  {attachedFiles.length > 0 ? ` · 📎 ${attachedFiles.length} ไฟล์` : ""}
+                </div>
+              </div>
+
               {/* Memory */}
               <div>
-                <div className="text-xs uppercase tracking-wide font-mono mb-2" style={{ color: "var(--text-muted)" }}>Memory</div>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>💾 ความจำบทสนทนา</div>
+                <div className="grid grid-cols-2 gap-2">
                   {HISTORY_MODES.map((m) => (
                     <button
                       key={m.id}
                       onClick={() => onHistoryModeChange(m.id)}
-                      className="px-2.5 py-2 rounded border text-xs text-left flex items-center justify-between transition-colors"
+                      className="px-3.5 py-3 rounded-xl border text-sm text-left flex items-center justify-between transition-all"
                       style={{
                         borderColor: historyMode === m.id ? "var(--accent)" : "var(--border)",
-                        background: historyMode === m.id ? "var(--surface)" : "transparent",
+                        background: historyMode === m.id ? "var(--surface)" : "var(--card)",
                         color: historyMode === m.id ? "var(--text)" : "var(--text-muted)",
                       }}
                     >
-                      {m.label}
-                      {historyMode === m.id && <Check size={10} style={{ color: "var(--accent)" }} />}
+                      <span className="font-medium">{m.label}</span>
+                      {historyMode === m.id && <Check size={14} style={{ color: "var(--accent)" }} />}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* MCP */}
+              {/* Data Sources */}
               <div>
-                <div className="text-xs uppercase tracking-wide font-mono mb-2" style={{ color: "var(--text-muted)" }}>Data Sources</div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>🔌 แหล่งข้อมูล</div>
                 <button
                   onClick={onToggleMcp}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded border text-sm transition-colors"
-                  style={{ borderColor: "var(--border)", color: "var(--text)" }}
+                  className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border text-sm transition-all"
+                  style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--card)" }}
                 >
-                  <div className="flex items-center gap-2">
-                    <PlugZap size={13} style={{ color: "var(--text-muted)" }} />
-                    <span>MCP / ERP Connection</span>
+                  <div className="flex items-center gap-2.5">
+                    <PlugZap size={16} style={{ color: "var(--text-muted)" }} />
+                    <span className="font-medium">MCP / ERP Connection</span>
                   </div>
                   <div
-                    className="w-8 h-4 rounded-full relative"
+                    className="w-11 h-6 rounded-full relative transition-colors duration-300"
                     style={{ background: useMcpContext ? "var(--accent)" : "var(--border)" }}
                   >
                     <div
-                      className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all"
-                      style={{ left: useMcpContext ? "18px" : "2px" }}
+                      className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-sm"
+                      style={{ left: useMcpContext ? "24px" : "4px" }}
                     />
                   </div>
                 </button>
@@ -1191,35 +1256,37 @@ function SetupModal({
 
               {/* Files */}
               <div>
-                <div className="text-xs uppercase tracking-wide font-mono mb-2" style={{ color: "var(--text-muted)" }}>Files</div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>📁 แนบไฟล์</div>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDrop={onDrop}
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
-                  className="border border-dashed rounded px-3 py-4 cursor-pointer text-center transition-colors"
+                  className="border-2 border-dashed rounded-2xl px-4 py-8 cursor-pointer text-center transition-all hover:border-[var(--accent)]"
                   style={{
                     borderColor: isDragOver ? "var(--accent)" : "var(--border)",
-                    background: isDragOver ? "var(--surface)" : "transparent",
+                    background: isDragOver ? "var(--surface)" : "var(--card)",
                   }}
                 >
-                  <Paperclip size={13} className="mx-auto mb-1" style={{ color: "var(--text-muted)" }} />
-                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    {uploadingFile ? "Uploading..." : "Drop files or click to browse"}
+                  <Paperclip size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
+                  <div className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+                    {uploadingFile ? "กำลังอัปโหลด..." : "ลากไฟล์มาวาง หรือคลิกเพื่อเลือก"}
                   </div>
+                  <div className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>xlsx, pdf, docx, csv, txt...</div>
                 </div>
                 <input ref={fileInputRef} type="file" className="hidden" onChange={onFileInput} multiple />
                 {uploadError && (
-                  <div className="mt-1 text-xs" style={{ color: "var(--danger, #ef4444)" }}>{uploadError}</div>
+                  <div className="mt-2 text-xs font-medium" style={{ color: "var(--danger, #ef4444)" }}>{uploadError}</div>
                 )}
                 {attachedFiles.length > 0 && (
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-3 space-y-2">
                     {attachedFiles.map((f, i) => (
-                      <div key={i} className="flex items-center gap-2 py-1">
-                        <FileText size={11} style={{ color: "var(--text-muted)" }} />
-                        <span className="flex-1 text-xs truncate" style={{ color: "var(--text)" }}>{f.filename}</span>
-                        <button onClick={() => onRemoveFile(i)} style={{ color: "var(--text-muted)" }}>
-                          <X size={11} />
+                      <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: "var(--surface)" }}>
+                        <FileText size={15} style={{ color: "var(--text-muted)" }} />
+                        <span className="flex-1 text-sm truncate font-medium" style={{ color: "var(--text)" }}>{f.filename}</span>
+                        <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{formatBytes(f.size)}</span>
+                        <button onClick={() => onRemoveFile(i)} className="p-1 rounded-lg hover:bg-[var(--bg)] transition-colors" style={{ color: "var(--text-muted)" }}>
+                          <X size={14} />
                         </button>
                       </div>
                     ))}
@@ -1229,35 +1296,37 @@ function SetupModal({
             </div>
           )}
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="px-5 pb-5 flex items-center justify-between gap-3 border-t pt-4" style={{ borderColor: "var(--border)" }}>
+      {/* Footer */}
+      <div className="sticky bottom-0 px-6 py-4 border-t" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button
             disabled={setupStep === 1}
             onClick={() => onSetupStepChange((setupStep - 1) as 1 | 2 | 3)}
-            className="flex items-center gap-1 text-xs transition-opacity hover:opacity-70 disabled:opacity-30"
+            className="flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-70 disabled:opacity-30"
             style={{ color: "var(--text-muted)" }}
           >
-            <ArrowLeft size={12} /> Back
+            <ArrowLeft size={16} /> ย้อนกลับ
           </button>
           {setupStep < 3 ? (
             <button
               onClick={() => onSetupStepChange((setupStep + 1) as 2 | 3)}
               disabled={setupStep === 1 ? !canProceed1 : !canProceed2}
-              className="px-4 py-2 rounded text-sm font-medium disabled:opacity-30 transition-opacity hover:opacity-80"
+              className="px-8 py-3 rounded-xl text-sm font-bold disabled:opacity-30 transition-all hover:opacity-90 hover:shadow-lg"
               style={{ background: "var(--accent)", color: "#000" }}
             >
-              Continue
+              ถัดไป →
             </button>
           ) : (
             <button
               onClick={onStart}
               disabled={!canStart}
-              className="px-5 py-2 rounded text-sm font-medium disabled:opacity-30 transition-opacity hover:opacity-80 flex items-center gap-2"
+              className="px-8 py-3 rounded-xl text-sm font-bold disabled:opacity-30 transition-all hover:opacity-90 hover:shadow-lg flex items-center gap-2"
               style={{ background: "var(--accent)", color: "#000" }}
             >
-              <Building2 size={13} />
-              Start Meeting
+              <Building2 size={16} />
+              เริ่มประชุม
             </button>
           )}
         </div>
@@ -1835,173 +1904,178 @@ export default function MeetingPage() {
       className="fixed inset-0 flex flex-col"
       style={{ background: "var(--bg)", zIndex: 30 }}
     >
-      {/* Top Bar */}
-      <div
-        className="h-12 flex items-center gap-3 px-4 border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", background: "var(--card)" }}
-      >
-        {/* Left: Brand + Topic */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+      {/* ── Header ── */}
+      <div className="flex-shrink-0">
+        <div
+          className="h-14 flex items-center gap-4 px-5 border-b"
+          style={{ borderColor: "var(--border)", background: "var(--card)" }}
+        >
+          {/* Left: Back + Topic */}
           <button
             onClick={handleNewMeeting}
-            className="flex items-center gap-1.5 text-xs transition-opacity hover:opacity-70 flex-shrink-0"
+            className="flex items-center gap-1.5 transition-opacity hover:opacity-70 flex-shrink-0"
             style={{ color: "var(--text-muted)" }}
-            title="New meeting"
+            title="ประชุมใหม่"
           >
-            <ArrowLeft size={13} />
-            <span className="hidden sm:inline font-mono uppercase tracking-wide text-[10px]">Meeting</span>
+            <ArrowLeft size={18} />
           </button>
-          <div className="w-px h-4 flex-shrink-0" style={{ background: "var(--border)" }} />
+          <div className="w-px h-6 flex-shrink-0" style={{ background: "var(--border)" }} />
           <div className="min-w-0 flex-1">
-            <div className="text-xs truncate font-medium" style={{ color: "var(--text)" }}>
-              {question || viewingSession?.question || "Untitled meeting"}
+            <div className="text-sm font-bold truncate" style={{ color: "var(--text)" }}>
+              {question || viewingSession?.question || "ยังไม่มีหัวข้อ"}
             </div>
             {companyName && (
-              <div className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{companyName}</div>
+              <div className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>{companyName}</div>
             )}
+          </div>
+
+          {/* Right: Controls */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Timer */}
+            {meetingSessionId && elapsedTime > 0 && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs"
+                style={{ background: "var(--surface)", color: "var(--text-muted)" }}
+              >
+                {running && (
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: "var(--accent)", animation: "pulse 1.5s infinite" }}
+                  />
+                )}
+                <Clock size={12} />
+                {formatTime(elapsedTime)}
+              </div>
+            )}
+
+            {/* Mode badge */}
+            <button
+              onClick={() => setForceMode((prev) => prev === "auto" ? (effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
+              disabled={running}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-xl transition-opacity hover:opacity-70 hidden sm:flex items-center gap-1"
+              style={{ background: "var(--surface)", color: "var(--text-muted)" }}
+              title={effectiveMode === "qa" ? "โหมดถาม-ตอบ" : "โหมดประชุม"}
+            >
+              {effectiveMode === "qa" ? <MessageSquare size={12} /> : <Building2 size={12} />}
+              {effectiveMode === "qa" ? "QA" : "ประชุม"}
+            </button>
+
+            {/* Skip to summary */}
+            {running && effectiveMode !== "qa" && (
+              <button
+                onClick={handleSkipToSummary}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold border transition-all hover:bg-[var(--surface)]"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                title="ข้ามไปสรุป"
+              >
+                <SkipForward size={12} />
+                <span className="hidden md:inline">ข้าม</span>
+              </button>
+            )}
+
+            {/* Stop */}
+            {running && (
+              <button
+                onClick={handleStop}
+                className="w-8 h-8 rounded-xl border flex items-center justify-center transition-all hover:bg-[var(--surface)]"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                title="หยุด"
+              >
+                <Square size={13} />
+              </button>
+            )}
+
+            {/* Close meeting */}
+            {!running && rounds.length > 0 && meetingSessionId && effectiveMode !== "qa" && (
+              <button
+                onClick={handleCloseMeeting}
+                className="h-8 px-4 rounded-xl text-xs font-bold transition-all hover:opacity-90 hover:shadow-md"
+                style={{ background: "var(--accent)", color: "#000" }}
+              >
+                ปิดประชุม
+              </button>
+            )}
+
+            <div className="w-px h-5" style={{ background: "var(--border)" }} />
+
+            {/* Toolbar buttons */}
+            <button
+              onClick={() => { setShowHistory((v) => !v); setShowSettings(false); }}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-[var(--surface)]"
+              style={{ color: showHistory ? "var(--accent)" : "var(--text-muted)" }}
+              title="ประวัติ"
+            >
+              <History size={15} />
+            </button>
+
+            <button
+              onClick={exportMinutes}
+              disabled={rounds.length === 0 && !viewingSession}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-[var(--surface)] disabled:opacity-30"
+              style={{ color: "var(--text-muted)" }}
+              title="ส่งออก"
+            >
+              <Download size={15} />
+            </button>
+
+            <button
+              onClick={() => { setShowSettings((v) => !v); setShowHistory(false); }}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-[var(--surface)]"
+              style={{ color: showSettings ? "var(--accent)" : "var(--text-muted)" }}
+              title="ตั้งค่า"
+            >
+              <Settings size={15} />
+            </button>
+
+            <button
+              onClick={fetchAgents}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-[var(--surface)]"
+              style={{ color: "var(--text-muted)" }}
+              title="รีเฟรช"
+            >
+              <RefreshCw size={15} />
+            </button>
           </div>
         </div>
 
-        {/* Center: Phase stepper */}
-        <PhaseStepper
-          currentPhase={currentPhase}
-          phase1DoneCount={phase1DoneCount}
-          totalAgents={selectedIds.size}
-        />
-
-        {/* Right: Status + Timer + Controls */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {status && running && (
-            <span className="text-[11px] font-mono hidden lg:block" style={{ color: "var(--text-muted)" }}>
-              {status}
-            </span>
-          )}
-          {meetingSessionId && elapsedTime > 0 && (
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11px] flex-shrink-0"
-              style={{ background: "var(--surface)", color: "var(--text-muted)" }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: running ? "var(--accent)" : "var(--text-muted)", animation: running ? "pulse 1.5s infinite" : "none" }}
-              />
-              <Clock size={10} />
-              {formatTime(elapsedTime)}
-            </div>
-          )}
-
-          {/* Mode badge */}
-          <button
-            onClick={() => setForceMode((prev) => prev === "auto" ? (effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
-            disabled={running}
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded transition-opacity hover:opacity-70 hidden sm:flex items-center gap-1"
-            style={{ background: "var(--surface)", color: "var(--text-muted)" }}
-            title={effectiveMode === "qa" ? "QA mode" : "Meeting mode"}
-          >
-            {effectiveMode === "qa" ? <MessageSquare size={10} /> : <Building2 size={10} />}
-            {effectiveMode === "qa" ? "QA" : "MTG"}
-          </button>
-
-          {/* Skip to summary */}
-          {running && effectiveMode !== "qa" && (
-            <button
-              onClick={handleSkipToSummary}
-              className="flex items-center gap-1 h-7 px-2 rounded text-xs border transition-opacity hover:opacity-70"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-              title="Skip to resolution"
-            >
-              <SkipForward size={11} />
-              <span className="hidden md:inline">Skip</span>
-            </button>
-          )}
-
-          {/* Stop */}
-          {running && (
-            <button
-              onClick={handleStop}
-              className="w-7 h-7 rounded border flex items-center justify-center transition-opacity hover:opacity-70"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-              title="Stop"
-            >
-              <Square size={11} />
-            </button>
-          )}
-
-          {/* Close meeting */}
-          {!running && rounds.length > 0 && meetingSessionId && effectiveMode !== "qa" && (
-            <button
-              onClick={handleCloseMeeting}
-              className="h-7 px-3 rounded text-xs font-medium transition-opacity hover:opacity-80"
-              style={{ background: "var(--accent)", color: "#000" }}
-            >
-              Conclude
-            </button>
-          )}
-
-          <div className="w-px h-4" style={{ background: "var(--border)" }} />
-
-          {/* History */}
-          <button
-            onClick={() => { setShowHistory((v) => !v); setShowSettings(false); }}
-            className="w-7 h-7 rounded border flex items-center justify-center transition-opacity hover:opacity-70"
-            style={{ borderColor: "var(--border)", color: showHistory ? "var(--accent)" : "var(--text-muted)" }}
-            title="History"
-          >
-            <History size={11} />
-          </button>
-
-          {/* Export */}
-          <button
-            onClick={exportMinutes}
-            disabled={rounds.length === 0 && !viewingSession}
-            className="w-7 h-7 rounded border flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-30"
-            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-            title="Export minutes"
-          >
-            <Download size={11} />
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={() => { setShowSettings((v) => !v); setShowHistory(false); }}
-            className="w-7 h-7 rounded border flex items-center justify-center transition-opacity hover:opacity-70"
-            style={{ borderColor: "var(--border)", color: showSettings ? "var(--accent)" : "var(--text-muted)" }}
-            title="Settings"
-          >
-            <Settings size={11} />
-          </button>
-
-          {/* Refresh agents */}
-          <button
-            onClick={fetchAgents}
-            className="w-7 h-7 rounded border flex items-center justify-center transition-opacity hover:opacity-70"
-            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-            title="Refresh"
-          >
-            <RefreshCw size={11} />
-          </button>
-        </div>
+        {/* Phase Progress Bar */}
+        {currentPhase > 0 && (
+          <div className="px-5 py-2.5" style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}>
+            <PhaseStepper currentPhase={currentPhase} phase1DoneCount={phase1DoneCount} totalAgents={selectedIds.size} />
+          </div>
+        )}
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 gap-3 relative">
+      {/* ── Main Content ── */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4 gap-4 relative">
+
+        {/* Status indicator */}
+        {status && running && (
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl flex-shrink-0" style={{ background: "var(--surface)" }}>
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ background: "var(--accent)", animation: "pulse 1.5s infinite" }}
+            />
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{status}</span>
+          </div>
+        )}
 
         {/* Viewing session banner */}
         {viewingSession && (
           <div
-            className="flex items-center gap-3 px-3 py-2 rounded border flex-shrink-0"
-            style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl border flex-shrink-0"
+            style={{ borderColor: "var(--accent)", background: "color-mix(in srgb, var(--accent) 4%, var(--card))" }}
           >
-            <History size={12} style={{ color: "var(--text-muted)" }} />
-            <span className="text-xs flex-1 truncate" style={{ color: "var(--text-muted)" }}>
-              Viewing: {viewingSession.question}
+            <History size={14} style={{ color: "var(--accent)" }} />
+            <span className="text-xs flex-1 truncate font-semibold" style={{ color: "var(--text)" }}>
+              ดูประวัติ: {viewingSession.question}
             </span>
             <button
               onClick={() => setViewingSession(null)}
-              className="text-xs transition-opacity hover:opacity-70"
+              className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"
               style={{ color: "var(--text-muted)" }}
             >
-              <X size={12} />
+              <X size={14} />
             </button>
           </div>
         )}
@@ -2009,17 +2083,17 @@ export default function MeetingPage() {
         {/* Session state bar */}
         {rounds.length > 0 && !viewingSession && (
           <div
-            className="flex items-center gap-3 px-3 py-1.5 rounded border flex-shrink-0"
-            style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+            className="flex items-center gap-4 px-4 py-2.5 rounded-xl flex-shrink-0"
+            style={{ background: "var(--surface)" }}
           >
-            <span className="text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
-              {rounds.length} agenda{rounds.length !== 1 ? "s" : ""}
+            <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+              📋 {rounds.length} วาระ
             </span>
             {(() => {
               const totalTk = rounds.reduce((s, r) => s + Object.values(r.agentTokens).reduce((a, t) => a + t.totalTokens, 0), 0);
               if (totalTk > 0) return (
-                <span className="text-[11px] font-mono flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-                  <Coins size={10} /> {totalTk > 1000 ? `${(totalTk / 1000).toFixed(1)}k` : totalTk} tokens
+                <span className="text-xs font-mono flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                  <Coins size={11} /> {totalTk > 1000 ? `${(totalTk / 1000).toFixed(1)}k` : totalTk} tokens
                 </span>
               );
               return null;
@@ -2031,43 +2105,50 @@ export default function MeetingPage() {
         {/* Agent grid */}
         <div className="flex-1 overflow-y-auto">
           {selectedAgents.length === 0 && !viewingSession ? (
-            /* Empty state */
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-xs">
-                <div className="text-sm mb-1" style={{ color: "var(--text-muted)" }}>No agents selected</div>
+                <div className="text-5xl mb-4">🤖</div>
+                <div className="text-sm font-medium mb-2" style={{ color: "var(--text-muted)" }}>ยังไม่ได้เลือกสมาชิก</div>
                 <button
                   onClick={handleNewMeeting}
-                  className="text-xs underline underline-offset-2 transition-opacity hover:opacity-70"
+                  className="text-xs font-bold underline underline-offset-2 transition-opacity hover:opacity-70"
                   style={{ color: "var(--accent)" }}
                 >
-                  Back to setup
+                  กลับไปตั้งค่า
                 </button>
               </div>
             </div>
           ) : viewingSession ? (
-            /* Session viewer */
-            <div className="max-w-2xl mx-auto">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-xs uppercase tracking-wide font-mono mb-2" style={{ color: "var(--text-muted)" }}>Messages</div>
-                  {viewingSession.messages.filter((m) => m.role !== "thinking").map((msg, i) => (
-                    <div key={i} className="mb-4 p-3 rounded border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-medium" style={{ color: "var(--text)" }}>{msg.agentName}</span>
-                        <span className="text-[10px] font-mono uppercase" style={{ color: "var(--text-muted)" }}>{ROLE_LABEL[msg.role] ?? msg.role}</span>
-                      </div>
-                      <MessageContent content={msg.content} />
-                    </div>
-                  ))}
-                </div>
-                {viewingSession.finalAnswer && (
-                  <SynthesisPanel finalAnswer={viewingSession.finalAnswer} />
-                )}
+            <div className="max-w-3xl mx-auto space-y-4">
+              <div className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: "var(--text-muted)" }}>
+                บันทึกการประชุม
               </div>
+              {viewingSession.messages.filter((m) => m.role !== "thinking").map((msg, i) => (
+                <div key={i} className="p-4 rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
+                      style={{ background: "var(--surface)" }}
+                    >
+                      {msg.agentEmoji || "🤖"}
+                    </div>
+                    <span className="text-sm font-bold" style={{ color: "var(--text)" }}>{msg.agentName}</span>
+                    <span
+                      className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-lg"
+                      style={{ color: "var(--text-muted)", background: "var(--surface)" }}
+                    >
+                      {ROLE_LABEL[msg.role] ?? msg.role}
+                    </span>
+                  </div>
+                  <MessageContent content={msg.content} />
+                </div>
+              ))}
+              {viewingSession.finalAnswer && (
+                <SynthesisPanel finalAnswer={viewingSession.finalAnswer} />
+              )}
             </div>
           ) : (
-            /* Agent panels grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-min">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-min">
               {selectedAgents.map((agent) => (
                 <AgentPanel
                   key={agent.id}
@@ -2097,15 +2178,15 @@ export default function MeetingPage() {
 
         {/* Suggestions */}
         {currentSuggestions.length > 0 && !running && (
-          <div className="flex flex-wrap gap-1.5 flex-shrink-0">
+          <div className="flex flex-wrap gap-2 flex-shrink-0">
             {currentSuggestions.slice(0, 3).map((s, i) => (
               <button
                 key={i}
                 onClick={() => { setQuestion(s); setTimeout(() => textareaRef.current?.focus(), 50); }}
-                className="text-xs px-2.5 py-1 rounded border transition-colors hover:border-[var(--accent)]"
-                style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "transparent" }}
+                className="text-xs px-3 py-2 rounded-xl border transition-all hover:border-[var(--accent)] hover:shadow-sm"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--card)" }}
               >
-                {s}
+                💡 {s}
               </button>
             ))}
           </div>
@@ -2123,12 +2204,16 @@ export default function MeetingPage() {
         )}
       </div>
 
-      {/* Input bar */}
+      {/* ── Input Bar ── */}
       {!viewingSession && (
-        <div className="flex-shrink-0 px-3 pb-3" style={{ background: "var(--bg)" }}>
+        <div className="flex-shrink-0 px-4 pb-4" style={{ background: "var(--bg)" }}>
           <div
-            className="border rounded-lg overflow-hidden transition-colors"
-            style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--card)" }}
+            className="max-w-4xl mx-auto border-2 rounded-2xl overflow-hidden transition-all duration-300"
+            style={{
+              borderColor: running ? "var(--accent)" : "var(--border)",
+              background: "var(--card)",
+              boxShadow: "0 -2px 16px rgba(0,0,0,0.04)",
+            }}
           >
             <textarea
               ref={textareaRef}
@@ -2143,22 +2228,22 @@ export default function MeetingPage() {
               rows={1}
               placeholder={
                 effectiveMode === "qa"
-                  ? "Ask a question..."
+                  ? "พิมพ์คำถาม..."
                   : meetingSessionId
-                  ? "Continue with next agenda or conclude..."
+                  ? "เพิ่มวาระถัดไป หรือกดปิดประชุม..."
                   : rounds.length > 0
-                  ? "Add another agenda item..."
-                  : "Start with the first agenda..."
+                  ? "เพิ่มวาระถัดไป..."
+                  : "เริ่มต้นด้วยวาระแรก..."
               }
-              className="w-full bg-transparent text-sm resize-none outline-none px-4 pt-3 pb-1"
-              style={{ color: "var(--text)", minHeight: 36, maxHeight: 140 }}
+              className="w-full bg-transparent text-sm resize-none outline-none px-5 pt-4 pb-1"
+              style={{ color: "var(--text)", minHeight: 40, maxHeight: 140 }}
             />
-            <div className="flex items-center justify-between px-3 pb-2 gap-2">
-              <div className="flex items-center gap-2 text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
-                <span>{selectedIds.size} members</span>
+            <div className="flex items-center justify-between px-4 pb-3 gap-3">
+              <div className="flex items-center gap-3 text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                <span className="flex items-center gap-1">👥 {selectedIds.size}</span>
                 {attachedFiles.length > 0 && (
                   <span className="flex items-center gap-1">
-                    <Paperclip size={10} /> {attachedFiles.length}
+                    <Paperclip size={12} /> {attachedFiles.length}
                   </span>
                 )}
               </div>
@@ -2166,28 +2251,28 @@ export default function MeetingPage() {
                 {rounds.length > 0 && !running && meetingSessionId && effectiveMode !== "qa" && (
                   <button
                     onClick={handleCloseMeeting}
-                    className="h-7 px-3 rounded text-xs font-medium transition-opacity hover:opacity-80"
+                    className="h-9 px-5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
                     style={{ background: "var(--accent)", color: "#000" }}
                   >
-                    Conclude
+                    ปิดประชุม
                   </button>
                 )}
                 {running ? (
                   <button
                     onClick={handleStop}
-                    className="w-7 h-7 rounded border flex items-center justify-center transition-opacity hover:opacity-70"
+                    className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all hover:bg-[var(--surface)]"
                     style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
                   >
-                    <Square size={12} />
+                    <Square size={14} />
                   </button>
                 ) : (
                   <button
                     onClick={() => handleRun()}
                     disabled={!question.trim() || selectedIds.size === 0}
-                    className="h-7 px-3 rounded text-xs font-medium disabled:opacity-30 transition-opacity hover:opacity-80 flex items-center gap-1.5"
+                    className="h-9 px-5 rounded-xl text-xs font-bold disabled:opacity-30 transition-all hover:opacity-90 flex items-center gap-2"
                     style={{ background: "var(--accent)", color: "#000" }}
                   >
-                    <Send size={11} /> Send
+                    <Send size={13} /> ส่ง
                   </button>
                 )}
               </div>
