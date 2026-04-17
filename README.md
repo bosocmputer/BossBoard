@@ -71,6 +71,20 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 - **Knowledge Base** — อัปโหลดไฟล์เอกสารเฉพาะ agent (PDF/Excel/Word) เป็นฐานความรู้เพิ่มเติม
 - API keys encrypted (AES-256-CBC)
 
+### ⚙️ System Agents (DBD / RD)
+
+ระบบจะสร้าง **System Agents** อัตโนมัติ 2 ตัว — ไม่สามารถลบได้ แต่ตั้งค่า Model และ API Key ได้
+
+| Agent | Emoji | Role | ฐานความรู้ |
+|-------|-------|------|------------|
+| กรมพัฒนาธุรกิจการค้า (DBD) | 🏢 | ผู้เชี่ยวชาญกฎหมายธุรกิจ | จดทะเบียนธุรกิจ, ประเภทนิติบุคคล |
+| กรมสรรพากร (RD) | 🏛️ | ผู้เชี่ยวชาญภาษีอากร | ภาษีเงินได้, VAT, ภาษีหัก ณ ที่จ่าย |
+
+- **Edit Restriction** — กดแก้ไข System Agent จะแสดงเฉพาะแท็บ **"Model"** และ **"API Key"** เท่านั้น (ไม่มีแท็บตำแหน่ง/ข้อมูล/ขั้นสูง)
+- **Knowledge Sync จาก GitHub** — ฐานความรู้เก็บที่ repo ภายนอก [`system-knowledge-ledgio-ai`](https://github.com/bosocmputer/system-knowledge-ledgio-ai) แล้ว sync ผ่าน GitHub Raw URL
+- **ปุ่ม "🔄 อัพเดทข้อมูล"** — กดเพื่อ sync ความรู้ล่าสุดจาก GitHub → เขียนไฟล์ลง `~/.bossboard/system-knowledge/`
+- **API:** `POST /api/team-agents/sync-knowledge` — ดึง `manifest.json` จาก GitHub แล้ว download ไฟล์ความรู้ทั้งหมด
+
 ### 🏛️ Meeting Room (`/research`)
 
 ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
@@ -226,6 +240,18 @@ Open [http://localhost:3000](http://localhost:3000)
 | `~/.bossboard/agent-stats.json`      | Per-agent token usage & session stats (last 90 days) |
 | `~/.bossboard/client-memory.json`    | Cross-session memory facts                           |
 | `~/.bossboard/.encryption-key`       | Auto-generated encryption key (if no env var)        |
+| `~/.bossboard/system-knowledge/`     | System agent knowledge files (synced from GitHub)    |
+
+---
+
+## Related Repositories
+
+| Repository | Description |
+|------------|-------------|
+| [BossBoard](https://github.com/bosocmputer/BossBoard) | Main application — LEDGIO AI ห้องประชุม AI |
+| [system-knowledge-ledgio-ai](https://github.com/bosocmputer/system-knowledge-ledgio-ai) | ฐานความรู้กลางสำหรับ System Agents (DBD/RD) — BossBoard ดึงไฟล์จาก repo นี้ผ่าน GitHub Raw URL |
+
+**Flow:** `system-knowledge-ledgio-ai` (GitHub) → `syncSystemKnowledge()` fetch via Raw URL → เขียนลง `~/.bossboard/system-knowledge/` → System Agents ใช้เป็นฐานความรู้ในการประชุม
 
 ---
 
@@ -255,6 +281,7 @@ AGENT_ENCRYPT_KEY=your-32-character-secret-key-here
 | `/api/team-agents`                 | GET, POST         | List / Create agents                 |
 | `/api/team-agents/[id]`            | PATCH, DELETE      | Update / Delete agent                |
 | `/api/team-agents/[id]/knowledge`  | GET, POST, DELETE  | Agent knowledge base files           |
+| `/api/team-agents/sync-knowledge`  | POST              | Sync system knowledge from GitHub    |
 | `/api/team-models?provider=`       | GET               | Available models per provider        |
 | `/api/teams`                       | GET, POST         | List / Create teams                  |
 | `/api/teams/[id]`                  | PATCH, DELETE      | Update / Delete team                 |

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-04-17 — v1.9: System Agents & External Knowledge
+
+### System Agents
+- **System Agents (DBD / RD)** — ระบบสร้าง agents อัตโนมัติ 2 ตัว: กรมพัฒนาธุรกิจการค้า (DBD) และ กรมสรรพากร (RD) พร้อม soul, role, trusted URLs ที่กำหนดมาให้
+- **Edit Restriction** — กดแก้ไข System Agent แสดงเฉพาะแท็บ "Model" + "API Key" เท่านั้น (ไม่สามารถแก้ชื่อ/ตำแหน่ง/บุคลิก/ข้อมูล/ขั้นสูง)
+- **Cannot Delete** — System agents มี `isSystem: true` flag ป้องกันการลบ
+
+### External Knowledge Repository
+- **Knowledge ย้ายไป GitHub** — ไฟล์ความรู้ (DBD: จดทะเบียนธุรกิจ/ประเภทนิติบุคคล, RD: ภาพรวมภาษี/คู่มือ VAT) ย้ายจาก `data/system-knowledge/` ไปเก็บที่ repo [`system-knowledge-ledgio-ai`](https://github.com/bosocmputer/system-knowledge-ledgio-ai)
+- **Sync from GitHub** — `syncSystemKnowledge()` ดึง `manifest.json` + ไฟล์ความรู้ผ่าน GitHub Raw URL แทนอ่านจาก local filesystem
+- **Sync API** — `POST /api/team-agents/sync-knowledge` สำหรับ trigger sync ผ่าน API
+- **ปุ่ม "🔄 อัพเดทข้อมูล"** — บนหน้า Agents กดเพื่อ sync ความรู้ล่าสุดจาก GitHub ได้ทันที
+
 ## 2026-04-14 — v1.8: Parallel Phase 1 & UX Enhancement
 
 ### Performance
