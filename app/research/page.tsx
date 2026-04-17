@@ -468,7 +468,7 @@ export default function ResearchPage() {
     fetch("/api/team-settings").then(r => r.json()).then(d => { if (d.settings?.companyInfo?.name) setCompanyName(d.settings.companyInfo.name); }).catch(() => {});
   }, [fetchAgents, fetchServerHistory]);
 
-  // Handle ?q= and ?teamId= from dashboard/teams page
+  // Handle ?q=, ?teamId=, ?sessionId= from dashboard/teams page
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
@@ -481,6 +481,22 @@ export default function ResearchPage() {
         .then(data => {
           if (data.team?.agentIds?.length) {
             setSelectedIds(new Set(data.team.agentIds));
+          }
+        })
+        .catch(() => {});
+    }
+
+    const sessionId = params.get("sessionId");
+    if (sessionId) {
+      fetch(`/api/team-research/${sessionId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.session) {
+            setViewingSession(data.session);
+            setHistoryTab("history");
+            if (data.session.agentIds?.length) {
+              setSelectedIds(new Set(data.session.agentIds));
+            }
           }
         })
         .catch(() => {});

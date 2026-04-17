@@ -236,7 +236,7 @@ export default function DashboardPage() {
           ) : data && data.recentSessions.length > 0 ? (
             <div className="space-y-2">
               {data.recentSessions.map((s) => (
-                <Link key={s.id} href="/research" className="block">
+                <Link key={s.id} href={`/research?sessionId=${s.id}`} className="block">
                   <div
                     className="px-3 py-2.5 rounded-xl transition-colors hover:bg-[var(--surface)]"
                   >
