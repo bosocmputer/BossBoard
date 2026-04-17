@@ -18,7 +18,6 @@ import {
   Award,
   PieChart,
   BookOpen,
-  Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -44,7 +43,6 @@ const NAV_ITEMS: NavGroup[] = [
     group: "ห้องประชุม",
     items: [
       { href: "/research", icon: MessageSquare, labelKey: "nav.research" },
-      { href: "/meeting", icon: Building2, labelKey: "nav.meetingRoom" },
     ],
   },
   {
