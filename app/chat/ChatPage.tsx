@@ -373,7 +373,7 @@ export default function ChatPage({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full max-h-[100dvh] md:max-h-screen">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] md:h-screen">
       {/* Header */}
       <div className="flex-shrink-0 border-b px-4 py-3 flex items-center justify-between gap-3" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
         <div className="flex items-center gap-3 min-w-0">
@@ -574,14 +574,14 @@ export default function ChatPage({ agentId }: { agentId: string }) {
               e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
               }
             }}
             disabled={running}
             rows={1}
-            placeholder="พิมพ์คำถาม..."
+            placeholder="พิมพ์คำถาม... (Enter ส่ง, Shift+Enter ขึ้นบรรทัดใหม่)"
             className="w-full bg-transparent text-sm resize-none outline-none px-4 pt-3 pb-1"
             style={{ color: "var(--text)", minHeight: 36, maxHeight: 160 }}
           />
@@ -599,7 +599,7 @@ export default function ChatPage({ agentId }: { agentId: string }) {
                 />
               </label>
               <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                ⌘+Enter ส่ง
+                Enter ส่ง · Shift+Enter ขึ้นบรรทัด
               </span>
             </div>
             {running ? (
