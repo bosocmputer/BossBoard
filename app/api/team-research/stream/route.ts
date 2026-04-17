@@ -669,11 +669,11 @@ export async function POST(req: NextRequest) {
 
       // Keepalive — send SSE comment every 15s to prevent proxy/tunnel timeouts (e.g. Cloudflare)
       keepaliveInterval = setInterval(() => {
-        if (clientSignal.aborted) { if (keepaliveInterval) clearInterval(keepaliveInterval); return; }
+        if (clientSignal.aborted) { if (keepaliveInterval) if (keepaliveInterval) clearInterval(keepaliveInterval); return; }
         try {
           controller.enqueue(encoder.encode(": keepalive\n\n"));
         } catch {
-          if (keepaliveInterval) clearInterval(keepaliveInterval);
+          if (keepaliveInterval) if (keepaliveInterval) clearInterval(keepaliveInterval);
         }
       }, 15_000);
 
@@ -704,7 +704,7 @@ export async function POST(req: NextRequest) {
         const apiKey = getAgentApiKey(agent.id);
         if (!apiKey) {
           send("error", { message: "ไม่มี API key สำหรับ agent นี้" });
-          clearInterval(keepaliveInterval);
+          if (keepaliveInterval) clearInterval(keepaliveInterval);
           send("done", { sessionId });
           controller.close();
           return;
@@ -770,7 +770,7 @@ export async function POST(req: NextRequest) {
           send("message", errorMsg);
           completeResearchSession(sessionId, "QA processing error", "error");
         }
-        clearInterval(keepaliveInterval);
+        if (keepaliveInterval) clearInterval(keepaliveInterval);
         send("done", { sessionId });
         controller.close();
         return;
@@ -823,7 +823,7 @@ export async function POST(req: NextRequest) {
                   send("clarification_needed", {
                     questions: parsed.questions.slice(0, 3),
                   });
-                  clearInterval(keepaliveInterval);
+                  if (keepaliveInterval) clearInterval(keepaliveInterval);
                   send("done", { sessionId, clarificationPending: true });
                   controller.close();
                   return;
@@ -1301,13 +1301,13 @@ export async function POST(req: NextRequest) {
 
       } // end if (mode !== "discuss") — Phase 3
 
-      clearInterval(keepaliveInterval);
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
       send("done", { sessionId });
       controller.close();
     },
     cancel() {
       // Client disconnected — abort any in-flight LLM calls
-      clearInterval(keepaliveInterval);
+      if (keepaliveInterval) clearInterval(keepaliveInterval);
       abortController.abort();
     },
   });
