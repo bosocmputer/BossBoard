@@ -407,6 +407,7 @@ export default function ResearchPage() {
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const currentFinalAnswerRef = useRef("");
+  const streamFlushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentMessagesRef = useRef<ResearchMessage[]>([]);
   const currentSuggestionsRef = useRef<string[]>([]);
   const currentChartDataRef = useRef<ChartData | null>(null);
@@ -753,7 +754,19 @@ export default function ResearchPage() {
                 if ((payload as ResearchMessage).role === "finding") setPhase1DoneCount((c) => c + 1);
               }
               setCurrentMessages((prev) => [...prev, payload as ResearchMessage]);
+            } else if (currentEvent === "final_answer_delta") {
+              // Streaming: accumulate in ref, debounce state updates for performance
+              currentFinalAnswerRef.current = (currentFinalAnswerRef.current || "") + payload.content;
+              if (!streamFlushRef.current) {
+                streamFlushRef.current = setTimeout(() => {
+                  setCurrentFinalAnswer(currentFinalAnswerRef.current);
+                  streamFlushRef.current = null;
+                }, 80);
+              }
             } else if (currentEvent === "final_answer" || ("content" in payload && !("agentId" in payload))) {
+              // Final complete answer — flush any pending stream
+              if (streamFlushRef.current) { clearTimeout(streamFlushRef.current); streamFlushRef.current = null; }
+              currentFinalAnswerRef.current = payload.content;
               setCurrentFinalAnswer(payload.content);
             } else if (currentEvent === "agent_tokens" || ("inputTokens" in payload)) {
               const t = { inputTokens: payload.inputTokens, outputTokens: payload.outputTokens, totalTokens: payload.totalTokens };
@@ -859,6 +872,7 @@ export default function ResearchPage() {
       }
       setCurrentMessages([]);
       setCurrentFinalAnswer("");
+      if (streamFlushRef.current) { clearTimeout(streamFlushRef.current); streamFlushRef.current = null; }
       setCurrentSuggestions([]);
       setCurrentChartData(null);
       setCurrentWebSources([]);

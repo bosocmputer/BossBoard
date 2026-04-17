@@ -183,6 +183,87 @@ async function callLLM(
   throw new Error(`Unknown provider: ${provider}`);
 }
 
+// Streaming LLM call — sends tokens to onDelta callback as they arrive
+async function callLLMStream(
+  provider: string, model: string, apiKey: string, baseUrl: string | undefined,
+  messages: LLMMessage[], signal?: AbortSignal,
+  onDelta?: (text: string) => void
+): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
+  // Only OpenAI-compatible APIs support streaming easily
+  if (provider !== "openrouter" && provider !== "openai" && provider !== "custom") {
+    const result = await callLLM(provider, model, apiKey, baseUrl, messages, signal);
+    onDelta?.(result.content);
+    return result;
+  }
+
+  const url = provider === "openrouter"
+    ? "https://openrouter.ai/api/v1/chat/completions"
+    : baseUrl ? `${baseUrl}/chat/completions` : "https://api.openai.com/v1/chat/completions";
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "content-type": "application/json",
+  };
+  if (provider === "openrouter") {
+    headers["HTTP-Referer"] = "https://ledgio.ai";
+    headers["X-Title"] = "LEDGIO AI";
+  }
+
+  let res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ model, messages, max_tokens: 2048, temperature: 0.3, stream: true }),
+    signal,
+  });
+  // Fallback to gpt-4o-mini if model is invalid
+  if (!res.ok && provider === "openrouter" && (res.status === 400 || res.status === 404)) {
+    res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ model: "openai/gpt-4o-mini", messages, max_tokens: 2048, temperature: 0.3, stream: true }),
+      signal,
+    });
+  }
+  if (!res.ok) throw new Error(`LLM stream error: ${res.status} ${await res.text()}`);
+  if (!res.body) throw new Error("No response body for stream");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullContent = "";
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data: ")) continue;
+      const data = trimmed.slice(6);
+      if (data === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(data);
+        const delta = parsed.choices?.[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+          onDelta?.(delta);
+        }
+        if (parsed.usage) {
+          inputTokens = parsed.usage.prompt_tokens ?? inputTokens;
+          outputTokens = parsed.usage.completion_tokens ?? outputTokens;
+        }
+      } catch { /* ignore parse errors */ }
+    }
+  }
+
+  return { content: fullContent, inputTokens, outputTokens };
+}
+
 // Fetch MCP tools and call relevant ones for context
 interface McpTool {
   name: string;
@@ -727,9 +808,9 @@ export async function POST(req: NextRequest) {
         let searchContext = "";
         if ((agent.useWebSearch || doAutoSearch) && (serperKey || serpApiKeyVal)) {
           send("status", { message: `💬 ${agent.emoji} กำลังค้นหาข้อมูล...` });
-          const searchQuery = await rewriteSearchQuery(question, agent.provider, agent.model, apiKey, agent.baseUrl, clientSignal);
-          send("agent_searching", { agentId: agent.id, query: searchQuery });
-          const { text: searchResults, sources } = await webSearch(searchQuery, serperKey, serpApiKeyVal, agent.trustedUrls);
+          // Use original question directly as search query (skip LLM rewrite for speed)
+          send("agent_searching", { agentId: agent.id, query: question });
+          const { text: searchResults, sources } = await webSearch(question, serperKey, serpApiKeyVal, agent.trustedUrls);
           if (searchResults) searchContext = `\n\n🔍 ผลการค้นหา:\n${searchResults}\n`;
           if (sources.length > 0) send("web_sources", { agentId: agent.id, sources });
         }
@@ -737,19 +818,13 @@ export async function POST(req: NextRequest) {
         const knowledgeContext = getAgentKnowledgeContent(agent.id, question);
         try {
           send("status", { message: `💬 ${agent.emoji} กำลังวิเคราะห์และเรียบเรียงคำตอบ...` });
-          // 90s timeout for main LLM call
-          const llmTimeout = new AbortController();
-          const llmTimer = setTimeout(() => llmTimeout.abort(), 90_000);
-          const llmSignal = clientSignal
-            ? AbortSignal.any([clientSignal, llmTimeout.signal])
-            : llmTimeout.signal;
-          const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
+          // Use streaming LLM — user sees tokens appearing in real-time
+          const result = await callLLMStream(agent.provider, agent.model, apiKey, agent.baseUrl, [
             { role: "system",
               content: `${companyContext}${memoryContext}${agent.soul}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${antiHallucinationRules}\n\nรูปแบบการตอบ:\n1. **ตอบคำตอบหลักให้ชัดเจนก่อนเลยในย่อหน้าแรก** (ใช่/ไม่ใช่/มี/ไม่มี + สรุปสั้น 1-2 ประโยค)\n2. จากนั้นค่อยอธิบายเหตุผล หลักกฎหมาย หรือรายละเอียดสนับสนุน\n3. ถ้ามีเงื่อนไขพิเศษหรือข้อยกเว้น ให้ระบุชัดเจนว่ากรณีของผู้ถามเข้าเงื่อนไขไหน\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ที่เกี่ยวข้องก่อนเสมอ\n- คำตอบต้องสอดคล้องกันตลอด — ห้ามเปิดด้วยข้อมูลที่ขัดกับข้อสรุป\n- อ้างอิงมาตรากฎหมาย มาตรฐานบัญชี หรือแนวปฏิบัติที่เกี่ยวข้อง\n- ใช้ภาษาที่เข้าใจง่าย ตอบไม่เกิน 500 คำ`,
             },
             { role: "user", content: question },
-          ], llmSignal);
-          clearTimeout(llmTimer);
+          ], clientSignal, (delta) => send("final_answer_delta", { content: delta }));
 
           const answerMsg: ResearchMessage = {
             id: crypto.randomUUID(),
