@@ -794,6 +794,39 @@ export default function ResearchPage() {
       setActiveAgentIds(new Set());
       setCurrentPhase(0);
       setPhase1DoneCount(0);
+
+      // Fallback recovery: if stream ended with no data but we have a session, check the API
+      if (
+        currentMessagesRef.current.length === 0 &&
+        !currentFinalAnswerRef.current &&
+        meetingSessionIdRef.current
+      ) {
+        try {
+          const fallbackRes = await fetch(`/api/team-research/${meetingSessionIdRef.current}`);
+          if (fallbackRes.ok) {
+            const session = await fallbackRes.json();
+            if (session.status === "completed" && (session.messages?.length > 0 || session.finalAnswer)) {
+              // Recover messages from the API
+              if (session.messages?.length > 0) {
+                currentMessagesRef.current = session.messages.map((m: any) => ({
+                  id: m.id,
+                  agentId: m.agentId,
+                  agentName: m.agentName,
+                  agentEmoji: m.agentEmoji,
+                  role: m.role,
+                  content: m.content,
+                  tokensUsed: m.tokensUsed,
+                  timestamp: m.timestamp || new Date().toISOString(),
+                }));
+              }
+              if (session.finalAnswer) {
+                currentFinalAnswerRef.current = session.finalAnswer;
+              }
+            }
+          }
+        } catch { /* fallback recovery failed, proceed normally */ }
+      }
+
       // Only add a round if there are messages (close mode may have only synthesis)
       if (currentMessagesRef.current.length > 0 || currentFinalAnswerRef.current) {
         setRounds((prev) => [

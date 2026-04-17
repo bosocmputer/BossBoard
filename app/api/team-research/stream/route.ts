@@ -666,6 +666,16 @@ export async function POST(req: NextRequest) {
         }
       };
 
+      // Keepalive — send SSE comment every 15s to prevent proxy/tunnel timeouts (e.g. Cloudflare)
+      const keepaliveInterval = setInterval(() => {
+        if (clientSignal.aborted) { clearInterval(keepaliveInterval); return; }
+        try {
+          controller.enqueue(encoder.encode(": keepalive\n\n"));
+        } catch {
+          clearInterval(keepaliveInterval);
+        }
+      }, 15_000);
+
       send("session", { sessionId });
       send("chairman", { agentId: chairman.id, name: chairman.name, emoji: chairman.emoji, role: chairman.role });
       send("status", { message: mode === "qa" ? `💬 ${chairman.emoji} ${chairman.name} กำลังตอบ...` : `🏛️ ประธาน: ${chairman.emoji} ${chairman.name} (${chairman.role}) — ${mode === "close" ? "สรุปมติที่ประชุม" : "เปิดการประชุม"}` });
@@ -693,6 +703,7 @@ export async function POST(req: NextRequest) {
         const apiKey = getAgentApiKey(agent.id);
         if (!apiKey) {
           send("error", { message: "ไม่มี API key สำหรับ agent นี้" });
+          clearInterval(keepaliveInterval);
           send("done", { sessionId });
           controller.close();
           return;
@@ -758,6 +769,7 @@ export async function POST(req: NextRequest) {
           send("message", errorMsg);
           completeResearchSession(sessionId, "QA processing error", "error");
         }
+        clearInterval(keepaliveInterval);
         send("done", { sessionId });
         controller.close();
         return;
@@ -810,6 +822,7 @@ export async function POST(req: NextRequest) {
                   send("clarification_needed", {
                     questions: parsed.questions.slice(0, 3),
                   });
+                  clearInterval(keepaliveInterval);
                   send("done", { sessionId, clarificationPending: true });
                   controller.close();
                   return;
@@ -1287,11 +1300,13 @@ export async function POST(req: NextRequest) {
 
       } // end if (mode !== "discuss") — Phase 3
 
+      clearInterval(keepaliveInterval);
       send("done", { sessionId });
       controller.close();
     },
     cancel() {
       // Client disconnected — abort any in-flight LLM calls
+      clearInterval(keepaliveInterval);
       abortController.abort();
     },
   });
