@@ -659,6 +659,9 @@ export default function ResearchPage() {
     setStatus(closeMode ? "ประธานกำลังสรุปมติที่ประชุม..." : isQA ? "กำลังตอบ..." : "");
     setChairmanId(null);
     setSearchingAgents(new Set());
+    setPendingClarification(false);
+    setClarificationQuestions([]);
+    setClarificationAnswers({});
     pendingClarificationQuestionRef.current = q;
     setActiveAgentIds(new Set());
     setCurrentPhase(0);
@@ -695,6 +698,10 @@ export default function ResearchPage() {
         signal: abortRef.current.signal,
       });
 
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
       if (!res.body) throw new Error("No response body");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -754,10 +761,14 @@ export default function ResearchPage() {
               setCurrentSuggestions(payload.suggestions);
             } else if (currentEvent === "chart_data") {
               setCurrentChartData(payload);
+            } else if (currentEvent === "error") {
+              setStatus(`⚠️ ${payload.message || "เกิดข้อผิดพลาด"}`);
             } else if (currentEvent === "clarification_needed") {
               setClarificationQuestions(payload.questions ?? []);
               setClarificationAnswers({});
               setPendingClarification(true);
+              // Auto-scroll to show clarification form
+              setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 200);
             } else if (currentEvent === "web_sources") {
               const newSources: WebSource[] = payload.sources ?? [];
               setCurrentWebSources((prev) => {
