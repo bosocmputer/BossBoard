@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { showToast } from "../components/Toast";
+import Modal from "../components/Modal";
 import Badge from "../components/Badge";
 import Card from "../components/Card";
 import ReactMarkdown from "react-markdown";
@@ -979,12 +980,17 @@ export default function ResearchPage() {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
   const confirmClearSession = () => {
     if (rounds.length === 0) { clearSession(); return; }
-    if (confirm(`ล้างข้อมูลการประชุม ${rounds.filter(r => !r.isSynthesis).length} วาระ?\nข้อมูลจะหายไปจากหน้าจอ (ประวัติบน server ยังอยู่)`)) {
-      clearSession();
-      showToast("info", "เริ่มการประชุมใหม่เรียบร้อย");
-    }
+    setShowClearConfirm(true);
+  };
+
+  const handleConfirmClear = () => {
+    setShowClearConfirm(false);
+    clearSession();
+    showToast("info", "เริ่มการประชุมใหม่เรียบร้อย");
   };
 
   const exportMinutes = () => {
@@ -1412,59 +1418,59 @@ export default function ResearchPage() {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 min-h-[200px] sm:min-h-[300px] relative"
             >
-              {/* Sticky status bar — progress stepper + who's speaking */}
+              {/* Sticky status bar — minimal progress indicator */}
               {running && status && (
                 <div className="sticky top-0 z-10 mx-1">
-                  <Card padding="sm" className="!rounded-lg border-[var(--accent-30)]">
-                    {/* Phase stepper */}
-                    {effectiveMode !== "qa" && currentPhase > 0 && (
-                      <div className="flex items-center gap-0 mb-2">
-                        {[
-                          { phase: 1 as const, label: "นำเสนอ", icon: "📋" },
-                          { phase: 2 as const, label: "อภิปราย", icon: "💬" },
-                          { phase: 3 as const, label: "สรุปมติ", icon: "🏛️" },
-                        ].map((step, i) => {
-                          const isDone = currentPhase > step.phase;
-                          const isActive = currentPhase === step.phase;
-                          const variant = isDone ? "success" : isActive ? "accent" : "default";
-                          const progressText = step.phase === 1 && isActive && selectedIds.size > 1
-                            ? ` (${phase1DoneCount}/${selectedIds.size})`
-                            : "";
-                          return (
-                            <div key={step.phase} className="flex items-center flex-1 min-w-0">
-                              <Badge variant={variant} className={`whitespace-nowrap ${isActive ? "ring-1 ring-[var(--accent)]/40" : ""}`}>
-                                <span>{isDone ? "✓" : step.icon}</span>
-                                <span className="hidden sm:inline">{step.label}{progressText}</span>
-                                <span className="sm:hidden">{step.phase}{progressText}</span>
-                              </Badge>
-                              {i < 2 && (
-                                <div className={`flex-1 h-0.5 mx-1 rounded-full transition-colors ${isDone ? "bg-[var(--green)]/50" : "bg-[var(--border)]"}`} />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {/* Progress bar — Phase 1 */}
+                  <div className="rounded-lg px-3 py-2 border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                    <div className="flex items-center gap-3">
+                      {/* Live dot + status */}
+                      <span className="inline-block w-2 h-2 rounded-full bg-[var(--green)] animate-pulse flex-shrink-0" />
+                      <span className="text-xs flex-1 min-w-0 truncate" style={{ color: "var(--text-muted)" }}>{status}</span>
+
+                      {/* Phase pills — meeting mode only */}
+                      {effectiveMode !== "qa" && currentPhase > 0 && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {[
+                            { phase: 1 as const, label: "นำเสนอ", icon: "📋" },
+                            { phase: 2 as const, label: "อภิปราย", icon: "💬" },
+                            { phase: 3 as const, label: "สรุปมติ", icon: "🏛️" },
+                          ].map((step) => {
+                            const isDone = currentPhase > step.phase;
+                            const isActive = currentPhase === step.phase;
+                            return (
+                              <span
+                                key={step.phase}
+                                className="text-[11px] px-2 py-0.5 rounded-full transition-all"
+                                style={{
+                                  background: isDone ? "var(--green)" : isActive ? "var(--accent)" : "var(--bg)",
+                                  color: isDone || isActive ? "#000" : "var(--text-muted)",
+                                  fontWeight: isActive ? 700 : 400,
+                                  opacity: !isDone && !isActive ? 0.5 : 1,
+                                }}
+                              >
+                                {isDone ? "✓" : step.icon} <span className="hidden sm:inline">{step.label}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Progress bar — Phase 1 only */}
                     {currentPhase === 1 && selectedIds.size > 1 && (
-                      <div className="mb-2">
-                        <div className="w-full h-1.5 rounded-full overflow-hidden bg-[var(--border)]">
+                      <div className="mt-2">
+                        <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
                           <div
-                            className="h-full rounded-full transition-all duration-500 bg-[var(--accent)]"
-                            style={{ width: `${Math.round((phase1DoneCount / selectedIds.size) * 100)}%` }}
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.round((phase1DoneCount / selectedIds.size) * 100)}%`, background: "var(--accent)" }}
                           />
                         </div>
-                        <div className="text-[11px] mt-0.5 text-right text-[var(--text-muted)]">
-                          {phase1DoneCount}/{selectedIds.size} agents ({Math.round((phase1DoneCount / selectedIds.size) * 100)}%)
+                        <div className="text-[10px] mt-0.5 text-right" style={{ color: "var(--text-muted)" }}>
+                          {phase1DoneCount}/{selectedIds.size}
                         </div>
                       </div>
                     )}
-                    {/* Status text */}
-                    <div className="text-xs flex items-center gap-2 text-[var(--text-muted)]">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse flex-shrink-0" />
-                      <span className="truncate">{status}</span>
-                    </div>
-                  </Card>
+                  </div>
                 </div>
               )}
 
@@ -2114,6 +2120,34 @@ export default function ResearchPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirm clear session modal */}
+      <Modal open={showClearConfirm} onClose={() => setShowClearConfirm(false)} title="เริ่มการประชุมใหม่?" maxWidth="max-w-sm">
+        <div className="space-y-4">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            ล้างข้อมูลการประชุม {rounds.filter(r => !r.isSynthesis).length} วาระ จากหน้าจอ
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            ประวัติการประชุมบน server ยังคงอยู่ — สามารถดูย้อนหลังได้ในแท็บประวัติ
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setShowClearConfirm(false)}
+              className="px-4 py-2 text-sm rounded-lg border transition-colors hover:bg-[var(--surface)]"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+            >
+              ยกเลิก
+            </button>
+            <button
+              onClick={handleConfirmClear}
+              className="px-4 py-2 text-sm rounded-lg font-medium transition-colors"
+              style={{ background: "var(--accent)", color: "#000" }}
+            >
+              <span className="flex items-center gap-1.5"><Trash2 size={14} /> เริ่มใหม่</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
