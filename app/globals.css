@@ -154,8 +154,8 @@ body {
 }
 
 @keyframes phaseReveal {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: scaleX(0.7); }
+  to { opacity: 1; transform: scaleX(1); }
 }
 
 @keyframes thinkingDots {
@@ -177,7 +177,13 @@ body {
 }
 
 .animate-phase-reveal {
-  animation: phaseReveal 0.3s ease-out;
+  animation: phaseReveal 0.5s ease-out;
+}
+
+/* ── Word break for long content (mobile) ── */
+.break-anywhere {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .thinking-dots span {

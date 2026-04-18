@@ -135,8 +135,8 @@ const ROLE_COLOR: Record<string, string> = {
   thinking: "border-yellow-500/30 bg-yellow-500/5",
   finding: "border-blue-500/30 bg-blue-500/5",
   analysis: "border-green-500/30 bg-green-500/5",
-  synthesis: "border-purple-500/30 bg-purple-500/5",
-  chat: "border-gray-500/30 bg-gray-500/5",
+  synthesis: "border-purple-500/40 bg-purple-500/10 ring-1 ring-purple-500/20",
+  chat: "border-slate-400/40 bg-slate-500/8",
 };
 
 // Data Source = file attachments only (MCP moved to per-agent config)
@@ -216,7 +216,7 @@ function MessageContent({ content }: { content: string }) {
 
   return (
     <div>
-      <div className="prose-container text-sm leading-relaxed relative" style={{ color: "var(--text)" }}>
+      <div className="prose-container text-sm leading-relaxed relative break-anywhere" style={{ color: "var(--text)" }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -979,6 +979,14 @@ export default function ResearchPage() {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const confirmClearSession = () => {
+    if (rounds.length === 0) { clearSession(); return; }
+    if (confirm(`ล้างข้อมูลการประชุม ${rounds.filter(r => !r.isSynthesis).length} วาระ?\nข้อมูลจะหายไปจากหน้าจอ (ประวัติบน server ยังอยู่)`)) {
+      clearSession();
+      showToast("info", "เริ่มการประชุมใหม่เรียบร้อย");
+    }
+  };
+
   const exportMinutes = () => {
     let exportRounds: ConversationRound[];
     if (viewingSession) {
@@ -1006,7 +1014,10 @@ export default function ResearchPage() {
     const md = buildMinutesMarkdown(exportRounds, agents);
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `minutes-${Date.now()}.md`; a.click();
+    const firstQ = exportRounds[0]?.question ?? "";
+    const shortTitle = firstQ.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]+/g, "-").slice(0, 40).replace(/-+$/, "");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const a = document.createElement("a"); a.href = url; a.download = `minutes-${shortTitle || "meeting"}-${dateStr}.md`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1267,7 +1278,7 @@ export default function ResearchPage() {
                     <div className="line-clamp-2" style={{ color: "var(--text-muted)" }}>{r.question}</div>
                   </div>
                 ))}
-                <button onClick={clearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1 flex items-center justify-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                <button onClick={confirmClearSession} className="w-full text-xs px-2 py-1.5 rounded-lg border mt-1 flex items-center justify-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
                   <Trash2 size={12} /> เริ่มการประชุมใหม่
                 </button>
               </div>
@@ -1730,6 +1741,7 @@ export default function ResearchPage() {
               {/* Current session rounds */}
               {!viewingSession && displayRounds.map((round, roundIndex) => (
                 <div key={roundIndex} className="space-y-3">
+                  {(round.isSynthesis || displayRounds.filter(r => !r.isSynthesis).length > 1) && (
                   <div className="flex items-center gap-3">
                     <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
                     <div className="text-xs px-3 py-1 rounded-full border" style={{
@@ -1742,6 +1754,7 @@ export default function ResearchPage() {
                     </div>
                     <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
                   </div>
+                  )}
 
                   {!round.isSynthesis && (
                     <div className="flex justify-end">
@@ -1753,12 +1766,12 @@ export default function ResearchPage() {
 
                   {(() => {
                     let lastPhaseRole = "";
-                    return round.messages.map((msg) => {
+                    return round.messages.filter((msg) => msg.role !== "thinking").map((msg) => {
                       const elements: React.ReactNode[] = [];
-                      if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
+                      if (msg.role !== lastPhaseRole && lastPhaseRole !== "") {
                         const phaseLabels: Record<string, { icon: string; label: string; color: string }> = {
-                          chat: { icon: "▶", label: "Phase 2 — อภิปรายแลกเปลี่ยนความเห็น", color: "var(--orange)" },
-                          synthesis: { icon: "▶", label: "Phase 3 — ประธานสรุปมติ", color: "var(--accent)" },
+                          chat: { icon: "💬", label: "Phase 2 — อภิปรายแลกเปลี่ยนความเห็น", color: "var(--orange)" },
+                          synthesis: { icon: "🏛️", label: "Phase 3 — ประธานสรุปมติ", color: "var(--accent)" },
                         };
                         const separator = phaseLabels[msg.role];
                         if (separator) {
@@ -1773,17 +1786,9 @@ export default function ResearchPage() {
                           );
                         }
                       }
-                      if (msg.role !== "thinking") lastPhaseRole = msg.role;
+                      lastPhaseRole = msg.role;
 
-                      if (msg.role === "thinking") {
-                        elements.push(
-                          <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs opacity-50" style={{ color: "var(--text-muted)" }}>
-                            <span>{msg.agentEmoji}</span>
-                            <span className="italic">{msg.content.slice(0, 100)}</span>
-                          </div>
-                        );
-                      } else {
-                        elements.push(
+                      elements.push(
                           <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className="text-lg">{msg.agentEmoji}</span>
@@ -1798,7 +1803,6 @@ export default function ResearchPage() {
                             <MessageContent content={msg.content} />
                           </div>
                         );
-                      }
                       return elements;
                     });
                   })()}
@@ -1856,11 +1860,11 @@ export default function ResearchPage() {
               {/* Current round in progress */}
               {!viewingSession && (currentMessages.length > 0 || running) && (
                 <div className="space-y-3">
-                  {displayRounds.length > 0 && (
+                  {displayRounds.filter(r => !r.isSynthesis).length > 0 && (
                     <div className="flex items-center gap-3">
                       <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
                       <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}>
-                        วาระที่ {displayRounds.length + 1}
+                        วาระที่ {displayRounds.filter(r => !r.isSynthesis).length + 1}
                       </div>
                       <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
                     </div>
@@ -1872,9 +1876,20 @@ export default function ResearchPage() {
                       const elements: React.ReactNode[] = [];
                       // Phase separator: detect transition between finding→chat→synthesis
                       if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
+                        // Show Phase 1 completion when entering Phase 2
+                        if (msg.role === "chat" && lastPhaseRole === "finding") {
+                          const findingCount = currentMessages.filter(m => m.role === "finding").length;
+                          elements.push(
+                            <div key={`phase1-done-${msg.id}`} className="flex items-center justify-center py-1.5 animate-phase-reveal">
+                              <span className="text-[11px] px-3 py-1 rounded-full font-medium" style={{ color: "var(--accent)", background: "var(--accent-8)" }}>
+                                ✓ Phase 1 เสร็จสิ้น — {findingCount} ความเห็น
+                              </span>
+                            </div>
+                          );
+                        }
                         const phaseLabels: Record<string, { icon: string; label: string; color: string }> = {
-                          chat: { icon: "▶", label: "Phase 2 — อภิปรายแลกเปลี่ยนความเห็น", color: "var(--orange)" },
-                          synthesis: { icon: "▶", label: "Phase 3 — ประธานสรุปมติ", color: "var(--accent)" },
+                          chat: { icon: "💬", label: "Phase 2 — อภิปรายแลกเปลี่ยนความเห็น", color: "var(--orange)" },
+                          synthesis: { icon: "🏛️", label: "Phase 3 — ประธานสรุปมติ", color: "var(--accent)" },
                         };
                         const separator = phaseLabels[msg.role];
                         if (separator) {
@@ -1896,9 +1911,15 @@ export default function ResearchPage() {
                           const allThinking = currentMessages.filter(m => m.role === "thinking");
                           if (allThinking.length > 1) {
                             elements.push(
-                              <div key="thinking-group" className="flex items-center gap-3 px-4 py-2.5 rounded-xl border animate-message-in" style={{ borderColor: "var(--accent-20)", background: "var(--accent-3)" }}>
-                                <div className="flex -space-x-1">{allThinking.map(t => <span key={t.id} className="text-base">{(t as any).agentEmoji}</span>)}</div>
-                                <span className="text-xs flex-1" style={{ color: "var(--text-muted)" }}>{allThinking.length} agents กำลังวิเคราะห์...</span>
+                              <div key="thinking-group" className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl border animate-message-in" style={{ borderColor: "var(--accent-20)", background: "var(--accent-3)" }}>
+                                {allThinking.map((t, i) => (
+                                  <span key={t.id} className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--text)" }}>
+                                    <span>{(t as any).agentEmoji}</span>
+                                    <span className="font-medium">{(t as any).agentName}</span>
+                                    {i < allThinking.length - 1 && <span style={{ color: "var(--text-muted)" }}>,</span>}
+                                  </span>
+                                ))}
+                                <span className="text-xs" style={{ color: "var(--text-muted)" }}>กำลังวิเคราะห์</span>
                                 <span className="thinking-dots text-base font-bold" style={{ color: "var(--accent)" }}><span>.</span><span>.</span><span>.</span></span>
                               </div>
                             );

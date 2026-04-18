@@ -977,7 +977,7 @@ export async function POST(req: NextRequest) {
           tokensUsed: 0,
           timestamp: new Date().toISOString(),
         };
-        await appendResearchMessage(sessionId, thinkingMsg);
+        // Don't persist thinking to DB — only send via SSE for live UI
         send("message", thinkingMsg);
       }
 
