@@ -1,14 +1,36 @@
 # Changelog
 
+## 2026-04-18 — v1.9.4: Infrastructure & Docs
+
+### Bug Fixes
+
+- **Dockerfile HEALTHCHECK** — แก้ `localhost` → `127.0.0.1` แก้ปัญหา Alpine Linux resolve `localhost` เป็น IPv6 `[::1]` ทำให้ container อยู่สถานะ unhealthy ตลอด
+
+### Server (192.168.2.109)
+
+- **Docker build cache cleanup** — `docker builder prune` ล้าง build cache 66 GB ลด disk จาก 85% → 27%
+- **Nginx ติดตั้งแล้ว** — reverse proxy port 80 → 3003, SSE streaming config (`proxy_buffering off`, timeout 600s)
+- **UFW** — เปิด port 80/tcp เพื่อให้ `http://192.168.2.109/` เข้าถึงได้
+
+### Docs
+
+- เพิ่ม `ROADMAP.md` — แผนพัฒนา 5 phases พร้อม checklist
+- เพิ่ม `docs/CLOUD_SPEC.md` — spec cloud provider, Nginx config, Docker Compose production
+- อัปเดต `README.md` — เพิ่มตารางสถานะโปรเจคที่ตรงความจริง
+- อัปเดต `docs/ARCHITECTURE.md` — แก้ healthcheck URL และสถานะ pre-production
+
 ## 2026-04-18 — v1.9.3: Meeting UI Bug Fixes
 
 ### History Filter
+
 - **ซ่อน session ของ System Agents** — ประวัติหน้าห้องประชุม (`/research`) กรอง session ที่มี `agentIds` ขึ้นต้นด้วย `system-` (เช่น system-dbd, system-rd) ออก ไม่ให้ปนกับประวัติการประชุมทีม
 
 ### Progress Indicator Fix
+
 - **แก้ปัญหาแสดง "6/5"** — เปลี่ยน `phase1DoneCount` จากตัวเลขธรรมดาเป็น `Set<string>` นับตาม agentId ที่ไม่ซ้ำ ป้องกันการนับซ้ำจากข้อความเปิดประชุมของประธาน (role: finding) และ error messages ที่ใช้ role เดียวกัน
 
 ### Meeting Phase Stepper & Modal
+
 - **แก้ label "วาระที่ 2" ตอนปิดประชุม** — เพิ่ม state `isCurrentClosing` เพื่อตรวจจับว่ากำลังสรุปมติ แสดง "สรุปมติที่ประชุม" แทน "วาระที่ N" พร้อม styling สีทอง/ตัวหนา (เหมือนกับ completed synthesis divider)
 - **Confirmation Modal** — แทน browser confirm() ด้วย Modal component สำหรับ clear session
 - **Phase Stepper Redesign** — ปรับ layout ให้ compact และแสดงเฉพาะข้อมูลสำคัญ
@@ -16,21 +38,26 @@
 ## 2026-04-18 — v1.9.2: Stability & Robustness
 
 ### Data Race Fix
+
 - **File Lock บน Research Functions** — `appendResearchMessage()`, `createResearchSession()`, `completeResearchSession()`, `listResearch()`, `cleanupStaleSessions()` ใช้ `withFileLock()` ป้องกัน race condition เมื่อ agents หลายตัวเขียนไฟล์พร้อมกัน (Phase 1 ที่มี 5 agents ผ่าน `Promise.allSettled`)
 
 ### Error Boundaries
+
 - **`app/error.tsx`** — Global error boundary สำหรับทุกหน้า แสดงปุ่ม "ลองใหม่" เมื่อเกิด uncaught error
 - **`app/research/error.tsx`** — Error boundary เฉพาะหน้าห้องประชุม
 
 ### UX Improvements
+
 - **ซ่อน Thinking Messages ในประวัติ** — ข้อความ "กำลังวิเคราะห์..." (role: thinking) ไม่แสดงในมุมมองประวัติการประชุมอีกต่อไป ลดความรกและแสดงเฉพาะผลลัพธ์ที่สำคัญ
 
 ### Docker
+
 - **Timezone** — เพิ่ม `ENV TZ=Asia/Bangkok` ใน Dockerfile
 
 ## 2026-04-18 — v1.9.1: Session Lifecycle Management
 
 ### Stale Session Fix
+
 - **PATCH `/api/team-research/[id]`** — endpoint ใหม่สำหรับ force-complete เซสชันค้าง รับ `{ action: "force-complete", reason: "..." }`
 - **Auto-cleanup >30 นาที** — เซสชันที่ค้างสถานะ "running" เกิน 30 นาที จะถูกปิดอัตโนมัติเมื่อดึงรายการประวัติ พร้อมข้อความ "⏱️ ปิดประชุมอัตโนมัติ — หมดเวลา (30 นาที)"
 - **Stream Disconnect Cleanup** — เมื่อ client ตัดการเชื่อมต่อระหว่าง stream, ระบบจะปิดเซสชันให้อัตโนมัติ แทนที่จะค้างสถานะ "running" ตลอดไป
@@ -38,23 +65,27 @@
 - **sendBeacon on Unload** — เมื่อผู้ใช้ปิดแท็บ/ออกจากหน้า ระบบส่ง beacon เพื่อปิดเซสชันที่กำลังทำงานอยู่
 
 ### Stuck Session UI
+
 - **ปุ่ม "ปิดประชุม" / "ถามต่อ"** — เมื่อเปิดดูเซสชันที่ค้างสถานะ "running" จะแสดงปุ่มให้เลือก: ปิดประชุมทิ้ง หรือ นำวาระกลับไปถามต่อในเซสชันใหม่
 - **Badges ในรายการประวัติ** — แสดง "⚠️ ค้าง" (>30 นาที) หรือ "🔵 กำลังประชุม" (<30 นาที) แทนไอคอนนาฬิกาเดิม
 
 ## 2026-04-17 — v1.9: System Agents & External Knowledge
 
 ### System Agents
+
 - **System Agents (DBD / RD)** — ระบบสร้าง agents อัตโนมัติ 2 ตัว: กรมพัฒนาธุรกิจการค้า (DBD) และ กรมสรรพากร (RD) พร้อม soul, role, trusted URLs ที่กำหนดมาให้
 - **Edit Restriction** — กดแก้ไข System Agent แสดงเฉพาะแท็บ "Model" + "API Key" เท่านั้น (ไม่สามารถแก้ชื่อ/ตำแหน่ง/บุคลิก/ข้อมูล/ขั้นสูง)
 - **Cannot Delete** — System agents มี `isSystem: true` flag ป้องกันการลบ
 
 ### External Knowledge Repository
+
 - **Knowledge ย้ายไป GitHub** — ไฟล์ความรู้ (DBD: จดทะเบียนธุรกิจ/ประเภทนิติบุคคล, RD: ภาพรวมภาษี/คู่มือ VAT) ย้ายจาก `data/system-knowledge/` ไปเก็บที่ repo [`system-knowledge-ledgio-ai`](https://github.com/bosocmputer/system-knowledge-ledgio-ai)
 - **Sync from GitHub** — `syncSystemKnowledge()` ดึง `manifest.json` + ไฟล์ความรู้ผ่าน GitHub Raw URL แทนอ่านจาก local filesystem
 - **Sync API** — `POST /api/team-agents/sync-knowledge` สำหรับ trigger sync ผ่าน API
 - **ปุ่ม "🔄 อัพเดทข้อมูล"** — บนหน้า Agents กดเพื่อ sync ความรู้ล่าสุดจาก GitHub ได้ทันที
 
 ### Chat Page (Individual Agent Chat)
+
 - **Knowledge Upload สำหรับ System Agents** — เปิดให้ system agents (DBD/RD) ใช้ปุ่ม 📚 Knowledge อัพโหลดไฟล์ความรู้ได้
 - **Fix: ReactMarkdown ว่างเปล่า** — แก้ `<ReactMarkdown />` self-closing tag → `<ReactMarkdown>{content}</ReactMarkdown>` ทำให้ข้อความตอบกลับแสดงในกล่องแชทได้
 - **Fix: crypto.randomUUID บน HTTP** — เพิ่ม `genId()` fallback สำหรับ browser ที่ไม่มี secure context (HTTPS) ทำให้หน้า chat ไม่ crash
@@ -64,11 +95,13 @@
 ## 2026-04-14 — v1.8: Parallel Phase 1 & UX Enhancement
 
 ### Performance
+
 - **Parallel Phase 1** — agents วิเคราะห์พร้อมกัน (`Promise.allSettled`) แทนทำทีละคน → ลดเวลาประชุม ~15–30%
 - **LLM Retry with Backoff** — `callLLMWithRetry()` auto-retry 1 ครั้งเมื่อเจอ rate limit (429) พร้อม 2s delay
 - **Optimized Token Usage** — `max_tokens: 2048` (ลดจาก 4096), `temperature: 0.3`, word limits per phase (600/400/800 คำ)
 
 ### UX Improvements
+
 - **Phase Progress Stepper** — แถบสถานะแสดง Phase ปัจจุบัน พร้อม sub-count "นำเสนอ (3/5)" ระหว่าง Phase 1
 - **Phase Separators** — เส้นแบ่ง Phase พร้อม label สี (📋 นำเสนอ / 💬 อภิปราย / 🏛️ สรุปมติ)
 - **Thinking Animation** — card กำลังวิเคราะห์ พร้อม animated dots + staggered animation เมื่อหลาย agent คิดพร้อมกัน

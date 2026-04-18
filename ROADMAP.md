@@ -8,9 +8,12 @@
 ## สถานะ Bug ที่แก้แล้ว
 
 | # | Bug | สถานะ |
-|---|-----|--------|
+| - | --- | ------ |
 | 1 | Dockerfile healthcheck ใช้ `localhost` → Alpine resolve เป็น IPv6 `[::1]` ทำให้ container unhealthy | ✅ แก้แล้ว (→ `127.0.0.1`) |
 | 2 | Token analytics แสดง 0 — ตรวจสอบแล้วพบว่า API ถูกต้อง, key mapping ใช้ `totalInputTokens`/`totalOutputTokens` ถูกต้อง | ✅ ยืนยันแล้ว |
+| 3 | Docker build cache กิน disk 66 GB → disk เต็ม 85% | ✅ แก้แล้ว — `docker builder prune` เหลือ 27% |
+| 4 | ไม่มี Nginx — port 3003 เปิด public ตรง, ไม่มี reverse proxy | ✅ ติดตั้ง Nginx แล้ว port 80 → 3003 |
+| 5 | UFW ไม่ได้เปิด port 80 → เข้า `http://192.168.2.109/` ไม่ได้ | ✅ แก้แล้ว — `ufw allow 80/tcp` |
 
 ---
 
@@ -116,22 +119,36 @@
 
 ---
 
-## Infrastructure ปัจจุบัน (2026-04-18)
+## Infrastructure ปัจจุบัน (อัปเดต 2026-04-18)
 
 ```
 Server: 192.168.2.109 (Ubuntu 24.04, Docker)
+Disk: 109 GB / ใช้ ~28 GB (27%) — หลัง prune build cache
+
+Network (UFW):
+├── port 22   SSH
+├── port 80   Nginx → bossboard :3003  ✅ เปิดแล้ว
+├── port 3003  bossboard (direct)
+├── port 3000  openclaw-admin
+├── port 3001  (reserved)
+├── port 4000  (reserved)
+└── port 5000  (reserved)
+
+Nginx: /etc/nginx/sites-enabled/bossboard
+├── port 80 → proxy_pass http://127.0.0.1:3003
+└── /api/team-research/stream → SSE config (no buffering, timeout 600s)
 
 Containers รันอยู่:
-├── bossboard         :3003  ← LEDGIO AI (this app)
-├── ledgioai          :3004  ← App อื่น (src-app)
-├── ledgioai-db       :5436  ← Postgres 16
-├── ledgioai-redis    :6381  ← Redis 7
-├── openclaw-admin    :3000  ← Admin panel
-├── centrix-web       :3002  ← Centrix frontend
-├── centrix-api       :5001  ← Centrix backend
-├── centrix-postgres  :5434  ← Postgres 16
-├── centrix-redis     :6380  ← Redis 7
-└── openclaw-postgres :5432  ← Postgres 16
+├── bossboard         :3003  ← LEDGIO AI (this app) ✅ healthy
+├── ledgioai          :3004  ← App อื่น (src-app) ✅ healthy
+├── ledgioai-db       :5436  ← Postgres 16 ✅
+├── ledgioai-redis    :6381  ← Redis 7 ✅
+├── openclaw-admin    :3000  ← Admin panel ✅
+├── centrix-web       :3002  ← Centrix frontend ✅
+├── centrix-api       :5001  ← Centrix backend ✅
+├── centrix-postgres  :5434  ← Postgres 16 ✅
+├── centrix-redis     :6380  ← Redis 7 ✅
+└── openclaw-postgres :5432  ← Postgres 16 ✅
 ```
 
 ---
