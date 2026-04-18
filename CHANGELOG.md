@@ -2,6 +2,9 @@
 
 ## 2026-04-18 — v1.9.3: Meeting UI Bug Fixes
 
+### History Filter
+- **ซ่อน session ของ System Agents** — ประวัติหน้าห้องประชุม (`/research`) กรอง session ที่มี `agentIds` ขึ้นต้นด้วย `system-` (เช่น system-dbd, system-rd) ออก ไม่ให้ปนกับประวัติการประชุมทีม
+
 ### Progress Indicator Fix
 - **แก้ปัญหาแสดง "6/5"** — เปลี่ยน `phase1DoneCount` จากตัวเลขธรรมดาเป็น `Set<string>` นับตาม agentId ที่ไม่ซ้ำ ป้องกันการนับซ้ำจากข้อความเปิดประชุมของประธาน (role: finding) และ error messages ที่ใช้ role เดียวกัน
 
