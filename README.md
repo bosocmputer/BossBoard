@@ -131,6 +131,11 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 - **LLM Retry with Backoff** — auto-retry 1 ครั้งเมื่อเจอ rate limit (429) พร้อม 2s delay
 - **Charts**: Auto-render Bar/Line/Pie จาก `chart` blocks ใน AI output
 - **History**: ดูประวัติ sessions เก่า (เก็บ 100 sessions ล่าสุด)
+- **Session Lifecycle Management:**
+  - ⏱️ Auto-cleanup เซสชันค้าง >30 นาที
+  - 📡 ปิดเซสชันอัตโนมัติเมื่อ client ตัดการเชื่อมต่อ / ปิดแท็บ
+  - ⚠️ Badges "ค้าง" / "กำลังประชุม" ในรายการประวัติ
+  - 🔒 ปุ่ม "ปิดประชุม" / "ถามต่อ" สำหรับเซสชันค้าง
 - **Follow-up Suggestions** จาก AI
 - **Meeting Timer** — นับเวลาประชุม (mm:ss) แสดงใน status bar
 - **Token Cost Estimation** — แสดงจำนวน tokens + ค่าใช้จ่ายโดยประมาณ (~$X.XXX) ใน status bar

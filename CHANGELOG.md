@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-04-18 — v1.9.1: Session Lifecycle Management
+
+### Stale Session Fix
+- **PATCH `/api/team-research/[id]`** — endpoint ใหม่สำหรับ force-complete เซสชันค้าง รับ `{ action: "force-complete", reason: "..." }`
+- **Auto-cleanup >30 นาที** — เซสชันที่ค้างสถานะ "running" เกิน 30 นาที จะถูกปิดอัตโนมัติเมื่อดึงรายการประวัติ พร้อมข้อความ "⏱️ ปิดประชุมอัตโนมัติ — หมดเวลา (30 นาที)"
+- **Stream Disconnect Cleanup** — เมื่อ client ตัดการเชื่อมต่อระหว่าง stream, ระบบจะปิดเซสชันให้อัตโนมัติ แทนที่จะค้างสถานะ "running" ตลอดไป
+- **handleStop → Server Sync** — ปุ่มหยุดประชุมเรียก PATCH API เพื่อปิดเซสชันบน server ด้วย (ก่อนหน้านี้ปิดแค่ฝั่ง client)
+- **sendBeacon on Unload** — เมื่อผู้ใช้ปิดแท็บ/ออกจากหน้า ระบบส่ง beacon เพื่อปิดเซสชันที่กำลังทำงานอยู่
+
+### Stuck Session UI
+- **ปุ่ม "ปิดประชุม" / "ถามต่อ"** — เมื่อเปิดดูเซสชันที่ค้างสถานะ "running" จะแสดงปุ่มให้เลือก: ปิดประชุมทิ้ง หรือ นำวาระกลับไปถามต่อในเซสชันใหม่
+- **Badges ในรายการประวัติ** — แสดง "⚠️ ค้าง" (>30 นาที) หรือ "🔵 กำลังประชุม" (<30 นาที) แทนไอคอนนาฬิกาเดิม
+
 ## 2026-04-17 — v1.9: System Agents & External Knowledge
 
 ### System Agents
