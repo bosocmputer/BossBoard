@@ -367,7 +367,7 @@ export default function ResearchPage() {
   const [searchingAgents, setSearchingAgents] = useState<Set<string>>(new Set());
   const [activeAgentIds, setActiveAgentIds] = useState<Set<string>>(new Set());
   const [currentPhase, setCurrentPhase] = useState<0 | 1 | 2 | 3>(0);
-  const [phase1DoneCount, setPhase1DoneCount] = useState(0);
+  const [phase1DoneCount, setPhase1DoneCount] = useState<Set<string>>(new Set());
 
   // Clarification state
   const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
@@ -392,6 +392,7 @@ export default function ResearchPage() {
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [currentChartData, setCurrentChartData] = useState<ChartData | null>(null);
   const [isCurrentQA, setIsCurrentQA] = useState(false);
+  const [isCurrentClosing, setIsCurrentClosing] = useState(false);
 
   // File attachments
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -671,6 +672,7 @@ export default function ResearchPage() {
     setCurrentMessages([]);
     setCurrentFinalAnswer("");
     setIsCurrentQA(isQA);
+    setIsCurrentClosing(!!closeMode);
     if (!meetingStartTime && !isQA) setMeetingStartTime(Date.now());
     setCurrentSuggestions([]);
     setCurrentChartData(null);
@@ -687,7 +689,7 @@ export default function ResearchPage() {
     pendingClarificationQuestionRef.current = q;
     setActiveAgentIds(new Set());
     setCurrentPhase(0);
-    setPhase1DoneCount(0);
+    setPhase1DoneCount(new Set());
     if (!overrideQuestion && !closeMode) setQuestion("");
 
     abortRef.current = new AbortController();
@@ -770,7 +772,7 @@ export default function ResearchPage() {
               setSearchingAgents((prev) => { const n = new Set(prev); n.delete(payload.agentId); return n; });
               if ((payload as ResearchMessage).role !== "thinking") {
                 setActiveAgentIds((prev) => { const n = new Set(prev); n.delete(payload.agentId); return n; });
-                if ((payload as ResearchMessage).role === "finding") setPhase1DoneCount((c) => c + 1);
+                if ((payload as ResearchMessage).role === "finding") setPhase1DoneCount((prev) => new Set([...prev, (payload as ResearchMessage).agentId]));
               }
               setCurrentMessages((prev) => [...prev, payload as ResearchMessage]);
             } else if (currentEvent === "final_answer_delta") {
@@ -825,7 +827,7 @@ export default function ResearchPage() {
       setSearchingAgents(new Set());
       setActiveAgentIds(new Set());
       setCurrentPhase(0);
-      setPhase1DoneCount(0);
+      setPhase1DoneCount(new Set());
 
       // Fallback recovery: if stream ended with no data but we have a session, check the API
       if (
@@ -898,6 +900,7 @@ export default function ResearchPage() {
       setCurrentWebSources([]);
       currentWebSourcesRef.current = [];
       setChairmanId(null);
+      setIsCurrentClosing(false);
       fetchServerHistory();
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
@@ -1462,11 +1465,11 @@ export default function ResearchPage() {
                         <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
                           <div
                             className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.round((phase1DoneCount / selectedIds.size) * 100)}%`, background: "var(--accent)" }}
+                            style={{ width: `${Math.round((phase1DoneCount.size / selectedIds.size) * 100)}%`, background: "var(--accent)" }}
                           />
                         </div>
                         <div className="text-[10px] mt-0.5 text-right" style={{ color: "var(--text-muted)" }}>
-                          {phase1DoneCount}/{selectedIds.size}
+                          {phase1DoneCount.size}/{selectedIds.size}
                         </div>
                       </div>
                     )}
@@ -1866,13 +1869,18 @@ export default function ResearchPage() {
               {/* Current round in progress */}
               {!viewingSession && (currentMessages.length > 0 || running) && (
                 <div className="space-y-3">
-                  {displayRounds.filter(r => !r.isSynthesis).length > 0 && (
+                  {(isCurrentClosing || displayRounds.filter(r => !r.isSynthesis).length > 0) && (
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
-                      <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}>
-                        วาระที่ {displayRounds.filter(r => !r.isSynthesis).length + 1}
+                      <div className="flex-1 border-t" style={{ borderColor: isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
+                      <div className="text-xs px-3 py-1 rounded-full border" style={{
+                        borderColor: "var(--accent)",
+                        color: isCurrentClosing ? "#000" : "var(--accent)",
+                        background: isCurrentClosing ? "var(--accent)" : "var(--accent-8)",
+                        fontWeight: isCurrentClosing ? 700 : 400,
+                      }}>
+                        {isCurrentClosing ? "สรุปมติที่ประชุม" : `วาระที่ ${displayRounds.filter(r => !r.isSynthesis).length + 1}`}
                       </div>
-                      <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
+                      <div className="flex-1 border-t" style={{ borderColor: isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
                     </div>
                   )}
                   {(() => {
