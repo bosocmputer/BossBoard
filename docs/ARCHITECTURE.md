@@ -2,6 +2,8 @@
 
 > สถาปัตยกรรมและการทำงานของระบบ LEDGIO AI (BossBoard)
 
+> **สถานะ:** Demo / Pre-production — ใช้งานได้จริง แต่ยังขาด Authentication และ Production Database | **ดู roadmap:** [ROADMAP.md](../ROADMAP.md)
+
 ---
 
 ## System Overview
@@ -425,7 +427,7 @@ USER node (uid 1000)              # Non-root
 EXPOSE 3000
 
 # Health
-HEALTHCHECK --interval=30s CMD curl -f http://localhost:3000/api/health
+HEALTHCHECK --interval=30s CMD wget --spider http://127.0.0.1:3000/api/health
 
 # Data persistence
 VOLUME ~/.bossboard → /home/node/.bossboard

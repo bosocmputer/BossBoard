@@ -4,9 +4,24 @@
 
 LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่วมกัน เพื่อวิเคราะห์และให้คำตอบด้านบัญชีและภาษี — สร้างทีม AI agents หลายตัว ถามคำถามเดียว แล้วดู agents ถกเถียง วิเคราะห์ และสรุปมติร่วมกัน แบบ real-time
 
-> **Project repo:** BossBoard | **Brand name:** LEDGIO AI
+> **Project repo:** BossBoard | **Brand name:** LEDGIO AI | **Forked and extended from** [xmanrui/OpenClaw-bot-review](https://github.com/xmanrui/OpenClaw-bot-review)
 
-> **Forked and extended from** [xmanrui/OpenClaw-bot-review](https://github.com/xmanrui/OpenClaw-bot-review)
+---
+
+## สถานะโปรเจค
+
+| รายการ | สถานะ |
+| ------ | ------ |
+| Core features (Meeting Room, Chat, Agents, Teams, Tokens) | ✅ ใช้งานได้จริง |
+| Multi-provider LLM (Anthropic, OpenAI, Gemini, Ollama, OpenRouter) | ✅ พร้อม |
+| File upload, Web search, MCP integration | ✅ พร้อม |
+| Docker deployment | ✅ พร้อม |
+| Authentication / Login | ❌ ยังไม่มี — API เปิด public ทั้งหมด |
+| Multi-user isolation | ❌ ยังไม่มี — single-user เท่านั้น |
+| Production database | ❌ ใช้ JSON files — ไม่รองรับ concurrent users |
+| Rate limiting (ครอบคลุมทุก endpoint) | ⚠️ มีแค่ `/stream` endpoint |
+
+> **สรุป:** พร้อมใช้งาน demo และ self-hosted แบบ single-user — ยังไม่พร้อม production สำหรับลูกค้าหลายราย ดู [ROADMAP.md](ROADMAP.md) สำหรับแผนพัฒนาต่อ | ดู [CLOUD_SPEC.md](docs/CLOUD_SPEC.md) สำหรับ spec การเช่า cloud
 
 ---
 
