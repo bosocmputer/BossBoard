@@ -407,70 +407,78 @@ export function writeResearch(sessions: ResearchSession[]) {
   fs.writeFileSync(RESEARCH_FILE, JSON.stringify(trimmed, null, 2));
 }
 
-export function listResearch(): ResearchSession[] {
-  cleanupStaleSessions();
+export async function listResearch(): Promise<ResearchSession[]> {
+  await cleanupStaleSessions();
   return readResearch().reverse();
 }
 
 const STALE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
-function cleanupStaleSessions() {
-  const sessions = readResearch();
-  const now = Date.now();
-  let changed = false;
-  for (const s of sessions) {
-    if (s.status === "running" && now - new Date(s.startedAt).getTime() > STALE_TIMEOUT_MS) {
-      s.status = "completed";
-      s.completedAt = new Date().toISOString();
-      s.finalAnswer = s.finalAnswer || "⏱️ ปิดประชุมอัตโนมัติ — หมดเวลา (30 นาที)";
-      changed = true;
+async function cleanupStaleSessions() {
+  return withFileLock(RESEARCH_FILE, () => {
+    const sessions = readResearch();
+    const now = Date.now();
+    let changed = false;
+    for (const s of sessions) {
+      if (s.status === "running" && now - new Date(s.startedAt).getTime() > STALE_TIMEOUT_MS) {
+        s.status = "completed";
+        s.completedAt = new Date().toISOString();
+        s.finalAnswer = s.finalAnswer || "⏱️ ปิดประชุมอัตโนมัติ — หมดเวลา (30 นาที)";
+        changed = true;
+      }
     }
-  }
-  if (changed) writeResearch(sessions);
+    if (changed) writeResearch(sessions);
+  });
 }
 
 export function getResearchSession(id: string): ResearchSession | null {
   return readResearch().find((s) => s.id === id) ?? null;
 }
 
-export function createResearchSession(data: {
+export async function createResearchSession(data: {
   question: string;
   agentIds: string[];
   dataSource?: string;
-}): ResearchSession {
-  const sessions = readResearch();
-  const session: ResearchSession = {
-    id: crypto.randomUUID(),
-    question: data.question,
-    agentIds: data.agentIds,
-    dataSource: data.dataSource,
-    status: "running",
-    startedAt: new Date().toISOString(),
-    messages: [],
-    totalTokens: 0,
-  };
-  sessions.push(session);
-  writeResearch(sessions);
-  return session;
+}): Promise<ResearchSession> {
+  return withFileLock(RESEARCH_FILE, () => {
+    const sessions = readResearch();
+    const session: ResearchSession = {
+      id: crypto.randomUUID(),
+      question: data.question,
+      agentIds: data.agentIds,
+      dataSource: data.dataSource,
+      status: "running",
+      startedAt: new Date().toISOString(),
+      messages: [],
+      totalTokens: 0,
+    };
+    sessions.push(session);
+    writeResearch(sessions);
+    return session;
+  });
 }
 
-export function appendResearchMessage(sessionId: string, msg: ResearchMessage) {
-  const sessions = readResearch();
-  const idx = sessions.findIndex((s) => s.id === sessionId);
-  if (idx === -1) return;
-  sessions[idx].messages.push(msg);
-  sessions[idx].totalTokens += msg.tokensUsed;
-  writeResearch(sessions);
+export async function appendResearchMessage(sessionId: string, msg: ResearchMessage) {
+  return withFileLock(RESEARCH_FILE, () => {
+    const sessions = readResearch();
+    const idx = sessions.findIndex((s) => s.id === sessionId);
+    if (idx === -1) return;
+    sessions[idx].messages.push(msg);
+    sessions[idx].totalTokens += msg.tokensUsed;
+    writeResearch(sessions);
+  });
 }
 
-export function completeResearchSession(sessionId: string, finalAnswer: string, status: "completed" | "error" = "completed") {
-  const sessions = readResearch();
-  const idx = sessions.findIndex((s) => s.id === sessionId);
-  if (idx === -1) return;
-  sessions[idx].status = status;
-  sessions[idx].completedAt = new Date().toISOString();
-  sessions[idx].finalAnswer = finalAnswer;
-  writeResearch(sessions);
+export async function completeResearchSession(sessionId: string, finalAnswer: string, status: "completed" | "error" = "completed") {
+  return withFileLock(RESEARCH_FILE, () => {
+    const sessions = readResearch();
+    const idx = sessions.findIndex((s) => s.id === sessionId);
+    if (idx === -1) return;
+    sessions[idx].status = status;
+    sessions[idx].completedAt = new Date().toISOString();
+    sessions[idx].finalAnswer = finalAnswer;
+    writeResearch(sessions);
+  });
 }
 
 // --- Settings ---

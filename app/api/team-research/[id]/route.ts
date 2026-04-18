@@ -25,7 +25,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Session is not running" }, { status: 409 });
     }
     const reason = typeof body.reason === "string" ? body.reason : "🔒 ปิดประชุมโดยผู้ใช้";
-    completeResearchSession(id, reason, "completed");
+    await completeResearchSession(id, reason, "completed");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-04-18 — v1.9.2: Stability & Robustness
+
+### Data Race Fix
+- **File Lock บน Research Functions** — `appendResearchMessage()`, `createResearchSession()`, `completeResearchSession()`, `listResearch()`, `cleanupStaleSessions()` ใช้ `withFileLock()` ป้องกัน race condition เมื่อ agents หลายตัวเขียนไฟล์พร้อมกัน (Phase 1 ที่มี 5 agents ผ่าน `Promise.allSettled`)
+
+### Error Boundaries
+- **`app/error.tsx`** — Global error boundary สำหรับทุกหน้า แสดงปุ่ม "ลองใหม่" เมื่อเกิด uncaught error
+- **`app/research/error.tsx`** — Error boundary เฉพาะหน้าห้องประชุม
+
+### UX Improvements
+- **ซ่อน Thinking Messages ในประวัติ** — ข้อความ "กำลังวิเคราะห์..." (role: thinking) ไม่แสดงในมุมมองประวัติการประชุมอีกต่อไป ลดความรกและแสดงเฉพาะผลลัพธ์ที่สำคัญ
+
+### Docker
+- **Timezone** — เพิ่ม `ENV TZ=Asia/Bangkok` ใน Dockerfile
+
 ## 2026-04-18 — v1.9.1: Session Lifecycle Management
 
 ### Stale Session Fix

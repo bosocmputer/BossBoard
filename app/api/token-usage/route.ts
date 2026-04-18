@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const stats = getAgentStats();
     const agents = listAgents();
-    const sessions = listResearch();
+    const sessions = await listResearch();
 
     const agentMap = new Map(agents.map((a) => [a.id, a]));
 

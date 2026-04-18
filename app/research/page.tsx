@@ -1603,13 +1603,7 @@ export default function ResearchPage() {
                       {viewingSession.question}
                     </div>
                   </div>
-                  {viewingSession.messages.map((msg) => (
-                    msg.role === "thinking" ? (
-                      <div key={msg.id} className="flex items-center gap-2 px-3 py-1.5 text-xs opacity-50" style={{ color: "var(--text-muted)" }}>
-                        <span>{msg.agentEmoji}</span>
-                        <span className="italic">{msg.content.slice(0, 100)}</span>
-                      </div>
-                    ) : (
+                  {viewingSession.messages.filter((msg) => msg.role !== "thinking").map((msg) => (
                     <div key={msg.id} className={`border rounded-xl p-3 sm:p-4 ${ROLE_COLOR[msg.role] ?? ""}`}>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className="text-lg">{msg.agentEmoji}</span>
@@ -1620,7 +1614,6 @@ export default function ResearchPage() {
                       </div>
                       <MessageContent content={msg.content} />
                     </div>
-                    )
                   ))}
                   {/* Stuck running session — show force-close / resume buttons */}
                   {viewingSession.status === "running" && !viewingSession.finalAnswer && (

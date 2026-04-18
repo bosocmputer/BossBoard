@@ -723,7 +723,7 @@ export async function POST(req: NextRequest) {
     // Reuse existing session (multi-round meeting)
     sessionId = existingSessionId;
   } else {
-    const newSession = createResearchSession({ question, agentIds, dataSource });
+    const newSession = await createResearchSession({ question, agentIds, dataSource });
     sessionId = newSession.id;
     // Increment session count only on first round
     for (const aid of agentIds) {
@@ -837,7 +837,7 @@ export async function POST(req: NextRequest) {
             tokensUsed: result.inputTokens + result.outputTokens,
             timestamp: new Date().toISOString(),
           };
-          appendResearchMessage(sessionId, answerMsg);
+          await appendResearchMessage(sessionId, answerMsg);
           send("message", answerMsg);
           send("agent_tokens", {
             agentId: agent.id,
@@ -847,7 +847,7 @@ export async function POST(req: NextRequest) {
           });
           updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
           send("final_answer", { content: result.content });
-          completeResearchSession(sessionId, result.content, "completed");
+          await completeResearchSession(sessionId, result.content, "completed");
         } catch (err) {
           const errorMsg: ResearchMessage = {
             id: crypto.randomUUID(),
@@ -860,9 +860,9 @@ export async function POST(req: NextRequest) {
             timestamp: new Date().toISOString(),
           };
           console.error("QA mode error:", err);
-          appendResearchMessage(sessionId, errorMsg);
+          await appendResearchMessage(sessionId, errorMsg);
           send("message", errorMsg);
-          completeResearchSession(sessionId, "QA processing error", "error");
+          await completeResearchSession(sessionId, "QA processing error", "error");
         }
         if (keepaliveInterval) clearInterval(keepaliveInterval);
         send("done", { sessionId });
@@ -954,7 +954,7 @@ export async function POST(req: NextRequest) {
               tokensUsed: openingResult.inputTokens + openingResult.outputTokens,
               timestamp: new Date().toISOString(),
             };
-            appendResearchMessage(sessionId, openingMsg);
+            await appendResearchMessage(sessionId, openingMsg);
             send("message", openingMsg);
             agentTokens[chairman.id] = { input: openingResult.inputTokens, output: openingResult.outputTokens };
           } catch { /* skip opening if error */ }
@@ -977,7 +977,7 @@ export async function POST(req: NextRequest) {
           tokensUsed: 0,
           timestamp: new Date().toISOString(),
         };
-        appendResearchMessage(sessionId, thinkingMsg);
+        await appendResearchMessage(sessionId, thinkingMsg);
         send("message", thinkingMsg);
       }
 
@@ -1061,7 +1061,7 @@ export async function POST(req: NextRequest) {
             tokensUsed: 0,
             timestamp: new Date().toISOString(),
           };
-          appendResearchMessage(sessionId, errorMsg);
+          await appendResearchMessage(sessionId, errorMsg);
           send("message", errorMsg);
           continue;
         }
@@ -1085,7 +1085,7 @@ export async function POST(req: NextRequest) {
           tokensUsed: result.inputTokens + result.outputTokens,
           timestamp: new Date().toISOString(),
         };
-        appendResearchMessage(sessionId, findingMsg);
+        await appendResearchMessage(sessionId, findingMsg);
         send("message", findingMsg);
         send("agent_tokens", {
           agentId: agent.id,
@@ -1183,7 +1183,7 @@ export async function POST(req: NextRequest) {
               tokensUsed: result.inputTokens + result.outputTokens,
               timestamp: new Date().toISOString(),
             };
-            appendResearchMessage(sessionId, chatMsg);
+            await appendResearchMessage(sessionId, chatMsg);
             send("message", chatMsg);
             send("agent_tokens", {
               agentId: agent.id,
@@ -1302,7 +1302,7 @@ export async function POST(req: NextRequest) {
             tokensUsed: result.inputTokens + result.outputTokens,
             timestamp: new Date().toISOString(),
           };
-          appendResearchMessage(sessionId, synthMsg);
+          await appendResearchMessage(sessionId, synthMsg);
           send("message", synthMsg);
 
           // Parse chart data from synthesis (LLM may use ```chart or ```json)
@@ -1320,7 +1320,7 @@ export async function POST(req: NextRequest) {
           const cleanContent = result.content.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim();
 
           send("final_answer", { content: cleanContent });
-          completeResearchSession(sessionId, cleanContent, "completed");
+          await completeResearchSession(sessionId, cleanContent, "completed");
 
           // Update chairman tokens
           const prevTokens = agentTokens[chairman.id] ?? { input: 0, output: 0 };
@@ -1388,12 +1388,12 @@ export async function POST(req: NextRequest) {
 
         } catch (err) {
           console.error("Research session error:", err);
-          completeResearchSession(sessionId, "Processing error", "error");
+          await completeResearchSession(sessionId, "Processing error", "error");
           send("error", { message: "เกิดข้อผิดพลาดในการประมวลผล" });
         }
       } else if (mode !== "close") {
         // Only auto-complete for "full" mode when no chairman API key
-        completeResearchSession(sessionId, agentFindings[0]?.content ?? "", "completed");
+        await completeResearchSession(sessionId, agentFindings[0]?.content ?? "", "completed");
         send("final_answer", { content: agentFindings[0]?.content ?? "" });
       }
 
@@ -1410,7 +1410,7 @@ export async function POST(req: NextRequest) {
       try {
         const existing = getResearchSession(sessionId);
         if (existing && existing.status === "running") {
-          completeResearchSession(sessionId, existing.finalAnswer || "📡 การเชื่อมต่อถูกตัด", "completed");
+          completeResearchSession(sessionId, existing.finalAnswer || "📡 การเชื่อมต่อถูกตัด", "completed").catch(() => {});
         }
       } catch { /* best-effort */ }
     },
