@@ -408,7 +408,25 @@ export function writeResearch(sessions: ResearchSession[]) {
 }
 
 export function listResearch(): ResearchSession[] {
+  cleanupStaleSessions();
   return readResearch().reverse();
+}
+
+const STALE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+function cleanupStaleSessions() {
+  const sessions = readResearch();
+  const now = Date.now();
+  let changed = false;
+  for (const s of sessions) {
+    if (s.status === "running" && now - new Date(s.startedAt).getTime() > STALE_TIMEOUT_MS) {
+      s.status = "completed";
+      s.completedAt = new Date().toISOString();
+      s.finalAnswer = s.finalAnswer || "⏱️ ปิดประชุมอัตโนมัติ — หมดเวลา (30 นาที)";
+      changed = true;
+    }
+  }
+  if (changed) writeResearch(sessions);
 }
 
 export function getResearchSession(id: string): ResearchSession | null {

@@ -6,6 +6,7 @@ import {
   createResearchSession,
   appendResearchMessage,
   completeResearchSession,
+  getResearchSession,
   ResearchMessage,
   AgentPublic,
   updateAgentStats,
@@ -1403,9 +1404,15 @@ export async function POST(req: NextRequest) {
       controller.close();
     },
     cancel() {
-      // Client disconnected — abort any in-flight LLM calls
+      // Client disconnected — abort any in-flight LLM calls and complete session
       if (keepaliveInterval) clearInterval(keepaliveInterval);
       abortController.abort();
+      try {
+        const existing = getResearchSession(sessionId);
+        if (existing && existing.status === "running") {
+          completeResearchSession(sessionId, existing.finalAnswer || "📡 การเชื่อมต่อถูกตัด", "completed");
+        }
+      } catch { /* best-effort */ }
     },
   });
 

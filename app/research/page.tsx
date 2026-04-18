@@ -517,6 +517,19 @@ export default function ResearchPage() {
     return () => clearInterval(interval);
   }, [meetingStartTime]);
 
+  // Force-complete running session when user closes/navigates away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const sid = meetingSessionIdRef.current;
+      if (sid) {
+        const payload = JSON.stringify({ action: "force-complete", reason: "📡 การเชื่อมต่อถูกตัด" });
+        navigator.sendBeacon(`/api/team-research/${sid}`, new Blob([payload], { type: "application/json" }));
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
   useEffect(() => {
     if (autoScroll) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -934,6 +947,15 @@ export default function ResearchPage() {
     abortRef.current?.abort();
     setRunning(false);
     setStatus("หยุดแล้ว — พิมพ์คำถามใหม่ หรือกดสรุปมติ");
+    // Force-complete session on the server
+    const sid = meetingSessionIdRef.current;
+    if (sid) {
+      fetch(`/api/team-research/${sid}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "force-complete", reason: "🔒 ปิดประชุมโดยผู้ใช้" }),
+      }).catch(() => {});
+    }
   };
 
   const loadServerSession = async (session: ServerSession) => {
@@ -1268,8 +1290,12 @@ export default function ResearchPage() {
                     }}
                   >
                     <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
-                    <div className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                      {s.status === "completed" ? <Check size={10} className="inline text-green-500" /> : s.status === "error" ? <X size={10} className="inline text-red-500" /> : <Clock size={10} className="inline" />}{" "}
+                    <div className="text-[11px] mt-1 flex items-center gap-1 flex-wrap" style={{ color: "var(--text-muted)" }}>
+                      {s.status === "completed" ? <Check size={10} className="inline text-green-500" /> : s.status === "error" ? <X size={10} className="inline text-red-500" /> : (
+                        Date.now() - new Date(s.startedAt).getTime() > 30 * 60 * 1000
+                          ? <span className="text-amber-500 font-bold">⚠️ ค้าง</span>
+                          : <span className="text-blue-500 font-bold">🔵 กำลังประชุม</span>
+                      )}{" "}
                       {new Date(s.startedAt).toLocaleDateString("th")}
                       {s.totalTokens > 0 && ` · ${s.totalTokens.toLocaleString()} tokens`}
                     </div>
@@ -1596,6 +1622,71 @@ export default function ResearchPage() {
                     </div>
                     )
                   ))}
+                  {/* Stuck running session — show force-close / resume buttons */}
+                  {viewingSession.status === "running" && !viewingSession.finalAnswer && (
+                    <div className="border-2 border-dashed rounded-xl p-4 text-center space-y-3" style={{ borderColor: "var(--warning, #f59e0b)", background: "var(--surface)" }}>
+                      <div className="flex items-center justify-center gap-2 text-sm font-bold" style={{ color: "var(--warning, #f59e0b)" }}>
+                        <AlertTriangle size={16} /> ประชุมค้าง — ไม่ได้ปิดประชุม
+                      </div>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        เซสชันนี้ยังค้างสถานะ &quot;กำลังประชุม&quot; — เลือกดำเนินการ
+                      </p>
+                      <div className="flex gap-2 justify-center flex-wrap">
+                        <button
+                          onClick={async () => {
+                            await fetch(`/api/team-research/${viewingSession.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ action: "force-complete", reason: "🔒 ปิดประชุมโดยผู้ใช้" }),
+                            });
+                            setViewingSession({ ...viewingSession, status: "completed", finalAnswer: "🔒 ปิดประชุมโดยผู้ใช้" });
+                            fetchServerHistory();
+                          }}
+                          className="text-xs px-4 py-2 rounded-lg border font-bold"
+                          style={{ borderColor: "var(--error, #ef4444)", color: "var(--error, #ef4444)" }}
+                        >
+                          <X size={12} className="inline mr-1" /> ปิดประชุม
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (viewingSession.agentIds && viewingSession.agentIds.length > 0) {
+                              setSelectedIds(new Set(viewingSession.agentIds));
+                            }
+                            const priorRound: ConversationRound = {
+                              question: viewingSession.question,
+                              messages: viewingSession.messages.map((m: any) => ({
+                                id: m.id, agentId: m.agentId, agentName: m.agentName, agentEmoji: m.agentEmoji,
+                                role: m.role, content: m.content, tokensUsed: m.tokensUsed,
+                                timestamp: m.timestamp || new Date().toISOString(),
+                              })),
+                              finalAnswer: "",
+                              agentTokens: {},
+                              suggestions: [],
+                              chairmanId: undefined,
+                            };
+                            // Force-complete the old session first
+                            fetch(`/api/team-research/${viewingSession.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ action: "force-complete", reason: "🔄 ย้ายไปเซสชันใหม่" }),
+                            }).catch(() => {});
+                            clearSession();
+                            setRounds([priorRound]);
+                            setMeetingSessionId(null);
+                            meetingSessionIdRef.current = null;
+                            setQuestion("");
+                            setViewingSession(null);
+                            setHistoryTab("current");
+                            fetchServerHistory();
+                          }}
+                          className="text-xs px-4 py-2 rounded-lg border font-bold"
+                          style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                        >
+                          <RefreshCw size={12} className="inline mr-1" /> ถามต่อในเซสชันใหม่
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {viewingSession.finalAnswer && (
                     <div className="border-2 rounded-xl p-3 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
                       <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}>{(viewingSession.agentIds?.length ?? 0) <= 1 ? <MessageSquare size={16} /> : <Building2 size={16} />} {(viewingSession.agentIds?.length ?? 0) <= 1 ? "คำตอบ" : "มติที่ประชุม"}</div>
