@@ -467,7 +467,10 @@ export default function ResearchPage() {
     try {
       const res = await fetch("/api/team-research");
       const data = await res.json();
-      setServerSessions((data.sessions ?? []).slice(0, 20));
+      const filtered = (data.sessions ?? []).filter((s: ServerSession) =>
+        !s.agentIds?.some((id: string) => id.startsWith("system-"))
+      );
+      setServerSessions(filtered.slice(0, 20));
     } catch { /* ignore */ }
   }, []);
 
