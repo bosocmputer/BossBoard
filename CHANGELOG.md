@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-18 — v1.9.3: Meeting UI Bug Fixes
+
+### Progress Indicator Fix
+- **แก้ปัญหาแสดง "6/5"** — เปลี่ยน `phase1DoneCount` จากตัวเลขธรรมดาเป็น `Set<string>` นับตาม agentId ที่ไม่ซ้ำ ป้องกันการนับซ้ำจากข้อความเปิดประชุมของประธาน (role: finding) และ error messages ที่ใช้ role เดียวกัน
+
+### Meeting Phase Stepper & Modal
+- **แก้ label "วาระที่ 2" ตอนปิดประชุม** — เพิ่ม state `isCurrentClosing` เพื่อตรวจจับว่ากำลังสรุปมติ แสดง "สรุปมติที่ประชุม" แทน "วาระที่ N" พร้อม styling สีทอง/ตัวหนา (เหมือนกับ completed synthesis divider)
+- **Confirmation Modal** — แทน browser confirm() ด้วย Modal component สำหรับ clear session
+- **Phase Stepper Redesign** — ปรับ layout ให้ compact และแสดงเฉพาะข้อมูลสำคัญ
+
 ## 2026-04-18 — v1.9.2: Stability & Robustness
 
 ### Data Race Fix
