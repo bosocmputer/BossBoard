@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-04-19 — v1.10.0: Redis + Postgres Storage Migration
+
+### Phase A: Redis Rate Limiting
+
+- **`lib/redis-client.ts`** — Singleton ioredis client (lazy connect, graceful fallback when unavailable)
+- **`lib/rate-limit-redis.ts`** — Redis sorted-set sliding window rate limiter (key: `rl:{ip}:{windowMs}`) with in-memory fallback
+- **Rate limiting ขยายครอบคลุมทุก endpoint** — POST team-agents (20/min), PATCH/DELETE team-agents/[id] (30/10 per min), POST teams (20/min), POST team-settings (10/min), POST client-memory (60/min), POST upload (10/min)
+- Rate limit survive app restart (ข้อมูลอยู่ใน Redis)
+
+### Phase B: Postgres Storage
+
+- **`prisma/schema.prisma`** — 10 tables: agents, agent_knowledge, teams, team_agents, settings, research_sessions, research_messages, agent_stats, agent_daily_stats, client_memory
+- **`lib/db.ts`** — Prisma singleton (globalThis pattern สำหรับ Next.js hot reload)
+- **`lib/agents-store-db.ts`** — Drop-in Postgres replacement — function signatures เหมือนกันทุก function, รองรับ async
+- **`lib/agents-store.ts`** — ตอนนี้ barrel re-export จาก `agents-store-db.ts` — routes ทุกตัวได้ DB implementation อัตโนมัติ
+- **`lib/agents-store-json.ts`** — JSON file implementation เก็บไว้เป็น backup และ type definitions
+- **`scripts/migrate-json-to-db.ts`** — Migration script: อ่าน JSON → insert Postgres (upsert-safe, ไม่ลบ JSON)
+- **Migration สำเร็จ** — 7 agents, 1 team, settings, 29 sessions/95 messages, 6 agent stats, 11 memory facts
+
+### Async/Await Fixes
+
+- **ทุก function ใน agents-store ทำเป็น async** — `listAgents`, `getSettings`, `saveSettings`, `listTeams`, `getAgentStats`, `updateAgentStats`, `getAgentApiKey`, `getAgentKnowledgeContent`, `getResearchSession`, `upsertMemoryFact`, `deleteMemoryFact` ฯลฯ
+- **แก้ await ในทุก route** — stream/route.ts, [id]/route.ts, team-agents, teams, team-settings, client-memory, agent-stats, token-usage, team-websearch, knowledge
+
+### Bug Fixes & Build
+
+- **`app/api/team-research/upload/route.ts`** — เปลี่ยน `import("pdf-parse")` → `require("pdf-parse/lib/pdf-parse")` แก้ TypeScript strict error ใน Docker build
+- **Alpine Linux OpenSSL** — `apk add --no-cache openssl` + binaryTargets `linux-musl-openssl-3.0.x` ใน schema.prisma
+- **Docker networking** — ใช้ bridge IP `172.17.0.3:5432` (Postgres) และ `172.17.0.4:6379` (Redis) แทน host IP (UFW block)
+- **Prisma version** — downgrade จาก v7 → v5.22.0 (v7 มี breaking change ใน schema URL syntax)
+
+### Infrastructure (server: 192.168.2.109)
+
+- **`GET /api/health`** — เพิ่มตรวจสอบ DB และ Redis connectivity → `{"status":"ok","db":"ok","redis":"ok"}`
+- **Environment variables** — `DATABASE_URL`, `REDIS_URL`, `AGENT_ENCRYPT_KEY` set ใน docker run command
+- **Migration run สำเร็จ** บน server ก่อน switch เป็น DB mode
+
+---
+
 ## 2026-04-18 — v1.9.4: Infrastructure & Docs
 
 ### Bug Fixes
