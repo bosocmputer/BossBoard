@@ -48,10 +48,9 @@ async function parseExcel(buffer: Buffer, filename: string): Promise<ParseResult
 }
 
 async function parsePDF(buffer: Buffer, filename: string): Promise<ParseResult> {
-  const mod = await import("pdf-parse");
-  // pdf-parse may export as default or as the function itself depending on bundler
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pdfParse: (buf: Buffer) => Promise<{ text: string; numpages: number }> = (mod as any).default ?? mod;
+  // Import lib directly to skip index.js test-file logic that fails in Docker standalone
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfParse = require("pdf-parse/lib/pdf-parse");
   const result = await pdfParse(buffer);
   return {
     text: result.text,
