@@ -234,13 +234,7 @@ export async function listAgents(): Promise<AgentPublic[]> {
   return agents.map(dbAgentToPublic);
 }
 
-export function getAgentApiKey(id: string): string {
-  // Sync wrapper — used in stream route. For DB mode we read synchronously using a cached approach.
-  // We return empty and let the async variant handle it.
-  return "";
-}
-
-export async function getAgentApiKeyAsync(id: string): Promise<string> {
+export async function getAgentApiKey(id: string): Promise<string> {
   const agent = await db.agent.findUnique({ where: { id }, select: { apiKeyEncrypted: true } });
   if (!agent) return "";
   return decrypt(agent.apiKeyEncrypted);
