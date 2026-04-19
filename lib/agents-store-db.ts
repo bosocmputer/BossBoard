@@ -23,7 +23,7 @@ import type {
   AgentStats,
   AgentDayStat,
   MemoryFact,
-} from "./agents-store";
+} from "./agents-store-json";
 
 // Re-export types so callers importing from agents-store-db get them too
 export type {
