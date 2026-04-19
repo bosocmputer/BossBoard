@@ -403,6 +403,7 @@ export default function ResearchPage() {
 
   // Server history
   const [serverSessions, setServerSessions] = useState<ServerSession[]>([]);
+  const [totalSessionCount, setTotalSessionCount] = useState(0);
   const [viewingSession, setViewingSession] = useState<ServerSession | null>(null);
   const [historyTab, setHistoryTab] = useState<"current" | "history">("current");
   const [companyName, setCompanyName] = useState("");
@@ -470,6 +471,7 @@ export default function ResearchPage() {
       const filtered = (data.sessions ?? []).filter((s: ServerSession) =>
         !s.agentIds?.some((id: string) => id.startsWith("system-"))
       );
+      setTotalSessionCount(filtered.length);
       setServerSessions(filtered.slice(0, 20));
     } catch { /* ignore */ }
   }, []);
@@ -1274,7 +1276,7 @@ export default function ResearchPage() {
             className="flex-1 py-2 text-xs transition-all"
             style={{ color: historyTab === "history" ? "var(--accent)" : "var(--text-muted)", borderBottom: historyTab === "history" ? "2px solid var(--accent)" : "2px solid transparent" }}
           >
-            <History size={12} className="inline" /> ประวัติ ({serverSessions.length})
+            <History size={12} className="inline" /> ประวัติ ({totalSessionCount})
           </button>
         </div>
 
@@ -1302,6 +1304,9 @@ export default function ResearchPage() {
               <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ไม่มีประวัติ</div>
             ) : (
               <div className="space-y-2">
+                {totalSessionCount > 20 && (
+                  <div className="text-[11px] text-center py-1 rounded-lg" style={{ color: "var(--text-muted)", background: "var(--accent-8)" }}>แสดง 20 ล่าสุด จากทั้งหมด {totalSessionCount} รายการ</div>
+                )}
                 {serverSessions.map((s) => (
                   <button
                     key={s.id}
