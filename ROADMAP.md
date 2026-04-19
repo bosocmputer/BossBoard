@@ -135,17 +135,23 @@ Nginx: /etc/nginx/sites-enabled/bossboard
 └── /api/team-research/stream → SSE config (no buffering, timeout 600s)
 
 BossBoard env vars (docker run):
-├── DATABASE_URL=postgresql://ledgioai:***@172.17.0.3:5432/bossboard
+├── DATABASE_URL=postgresql://ledgioai:ledgioai_dev_2026@172.17.0.3:5432/bossboard
 ├── REDIS_URL=redis://172.17.0.4:6379
-└── AGENT_ENCRYPT_KEY=*** (from ~/.bossboard/.encrypt-key)
+└── AGENT_ENCRYPT_KEY=e2806590b15b4e0108a5a375c6968639
+
+SSH เข้า server:
+└── sshpass -p 'boss123456' ssh -o StrictHostKeyChecking=no bosscatdog@192.168.2.109
 
 Containers รันอยู่:
 ├── bossboard         :3003  ← LEDGIO AI (this app) ✅ healthy
 │                               └── Postgres + Redis connected ✅
 ├── ledgioai          :3004  ← App อื่น (src-app) ✅ healthy
-├── ledgioai-db       :5436  ← Postgres 16 ✅ (bridge: 172.17.0.3:5432)
-│                               └── database: bossboard (10 tables)
-├── ledgioai-redis    :6381  ← Redis 7 ✅ (bridge: 172.17.0.4:6379)
+├── ledgioai-db       :5436  ← Postgres 16 ✅
+│   ├── bridge IP: 172.17.0.3:5432
+│   ├── user: ledgioai  password: ledgioai_dev_2026
+│   └── database: bossboard (10 tables)
+├── ledgioai-redis    :6381  ← Redis 7 ✅
+│   └── bridge IP: 172.17.0.4:6379  (no password)
 ├── openclaw-admin    :3000  ← Admin panel ✅
 ├── centrix-web       :3002  ← Centrix frontend ✅
 ├── centrix-api       :5001  ← Centrix backend ✅
