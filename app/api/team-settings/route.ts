@@ -3,8 +3,7 @@ import { getSettings, saveSettings, CompanyInfo } from "@/lib/agents-store";
 import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 export async function GET() {
-  const settings = getSettings();
-  // Return masked keys (show only last 6 chars)
+  const settings = await getSettings();
   return NextResponse.json({
     hasSerperKey: !!settings.serperApiKey,
     hasSerpApiKey: !!settings.serpApiKey,
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
   const body = await req.json();
   const { serperApiKey, serpApiKey, companyInfo } = body as { serperApiKey?: string; serpApiKey?: string; companyInfo?: CompanyInfo };
-  const result = saveSettings({ serperApiKey, serpApiKey, companyInfo });
+  const result = await saveSettings({ serperApiKey, serpApiKey, companyInfo });
   return NextResponse.json({
     hasSerperKey: !!result.serperApiKey,
     hasSerpApiKey: !!result.serpApiKey,

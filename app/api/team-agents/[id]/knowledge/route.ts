@@ -46,7 +46,7 @@ async function parseText(buffer: Buffer, filename: string): Promise<ParseResult>
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const knowledge = listAgentKnowledge(id);
+  const knowledge = await listAgentKnowledge(id);
   return NextResponse.json({ knowledge });
 }
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const filename = file.name;
 
     // Check for duplicate filename
-    const duplicate = checkDuplicateKnowledge(id, filename);
+    const duplicate = await checkDuplicateKnowledge(id, filename);
     if (duplicate) {
       return NextResponse.json(
         { error: `ไฟล์ "${filename}" มีอยู่แล้ว — ลบไฟล์เดิมก่อนแล้วอัพโหลดใหม่` },
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       uploadedAt: new Date().toISOString(),
     };
 
-    const added = addAgentKnowledge(id, knowledgeFile);
+    const added = await addAgentKnowledge(id, knowledgeFile);
     if (!added) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
@@ -135,7 +135,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (!knowledgeId) {
       return NextResponse.json({ error: "Missing knowledgeId" }, { status: 400 });
     }
-    const ok = deleteAgentKnowledge(id, knowledgeId);
+    const ok = await deleteAgentKnowledge(id, knowledgeId);
     if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (e) {

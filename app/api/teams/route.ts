@@ -4,7 +4,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 export async function GET() {
   try {
-    const teams = listTeams();
+    const teams = await listTeams();
     return NextResponse.json({ teams });
   } catch (e) {
     console.error("GET /api/teams error", e);
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
-    const team = createTeam({
+    const team = await createTeam({
       name: String(name).trim(),
       emoji: typeof emoji === "string" ? emoji.trim() || "👥" : "👥",
       description: typeof description === "string" ? description.trim() : "",

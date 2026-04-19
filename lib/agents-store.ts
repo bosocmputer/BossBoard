@@ -1,8 +1,3 @@
-// When DATABASE_URL is set, delegate all storage to the Postgres implementation.
-if (process.env.DATABASE_URL) {
-  module.exports = require("./agents-store-db");
-}
-
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -276,7 +271,7 @@ function ensureSystemAgents(): void {
   if (changed) writeAgents(agents);
 }
 
-export function listAgents(): AgentPublic[] {
+export async function listAgents(): Promise<AgentPublic[]> {
   ensureSystemAgents();
   return readAgents().map(({ apiKeyEncrypted, ...rest }) => ({
     ...rest,
@@ -284,7 +279,7 @@ export function listAgents(): AgentPublic[] {
   }));
 }
 
-export function getAgentApiKey(id: string): string {
+export async function getAgentApiKey(id: string): Promise<string> {
   const agents = readAgents();
   const agent = agents.find((a) => a.id === id);
   if (!agent) return "";
@@ -436,7 +431,7 @@ async function cleanupStaleSessions() {
   });
 }
 
-export function getResearchSession(id: string): ResearchSession | null {
+export async function getResearchSession(id: string): Promise<ResearchSession | null> {
   return readResearch().find((s) => s.id === id) ?? null;
 }
 
@@ -517,7 +512,7 @@ function readSettings(): AppSettings {
   }
 }
 
-export function getSettings(): AppSettings {
+export async function getSettings(): Promise<AppSettings> {
   const s = readSettings();
   // decrypt keys if present
   return {
@@ -528,7 +523,7 @@ export function getSettings(): AppSettings {
   };
 }
 
-export function saveSettings(data: { serperApiKey?: string; serpApiKey?: string; companyInfo?: CompanyInfo }): AppSettings {
+export async function saveSettings(data: { serperApiKey?: string; serpApiKey?: string; companyInfo?: CompanyInfo }): Promise<AppSettings> {
   ensureDir(SETTINGS_FILE);
   const now = new Date().toISOString();
   const existing = readSettings();
@@ -580,11 +575,11 @@ function writeTeams(teams: Team[]) {
   fs.writeFileSync(TEAMS_FILE, JSON.stringify(teams, null, 2));
 }
 
-export function listTeams(): Team[] {
+export async function listTeams(): Promise<Team[]> {
   return readTeams();
 }
 
-export function createTeam(data: { name: string; emoji: string; description: string; agentIds: string[] }): Team {
+export async function createTeam(data: { name: string; emoji: string; description: string; agentIds: string[] }): Promise<Team> {
   const teams = readTeams();
   const now = new Date().toISOString();
   const team: Team = {
@@ -601,10 +596,10 @@ export function createTeam(data: { name: string; emoji: string; description: str
   return team;
 }
 
-export function updateTeam(
+export async function updateTeam(
   id: string,
   data: Partial<{ name: string; emoji: string; description: string; agentIds: string[] }>
-): Team | null {
+): Promise<Team | null> {
   const teams = readTeams();
   const idx = teams.findIndex((t) => t.id === id);
   if (idx === -1) return null;
@@ -619,7 +614,7 @@ export function updateTeam(
   return team;
 }
 
-export function deleteTeam(id: string): boolean {
+export async function deleteTeam(id: string): Promise<boolean> {
   const teams = readTeams();
   const filtered = teams.filter((t) => t.id !== id);
   if (filtered.length === teams.length) return false;
@@ -662,11 +657,11 @@ function writeAllStats(stats: Record<string, AgentStats>) {
   fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
 }
 
-export function getAgentStats(): Record<string, AgentStats> {
+export async function getAgentStats(): Promise<Record<string, AgentStats>> {
   return readAllStats();
 }
 
-export function updateAgentStats(agentId: string, inputTokens: number, outputTokens: number) {
+export async function updateAgentStats(agentId: string, inputTokens: number, outputTokens: number) {
   const all = readAllStats();
   const today = new Date().toISOString().slice(0, 10);
   if (!all[agentId]) {
@@ -698,7 +693,7 @@ export function updateAgentStats(agentId: string, inputTokens: number, outputTok
   writeAllStats(all);
 }
 
-export function incrementAgentSessionCount(agentId: string) {
+export async function incrementAgentSessionCount(agentId: string) {
   const all = readAllStats();
   const today = new Date().toISOString().slice(0, 10);
   if (!all[agentId]) {
@@ -791,7 +786,7 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-export function addAgentKnowledge(agentId: string, file: KnowledgeFile): KnowledgeFile | null {
+export async function addAgentKnowledge(agentId: string, file: KnowledgeFile): Promise<KnowledgeFile | null> {
   migrateKnowledgeToFiles();
   const agents = readAgents();
   const idx = agents.findIndex((a) => a.id === agentId);
@@ -807,7 +802,7 @@ export function addAgentKnowledge(agentId: string, file: KnowledgeFile): Knowled
   return file;
 }
 
-export function listAgentKnowledge(agentId: string): KnowledgePublic[] {
+export async function listAgentKnowledge(agentId: string): Promise<KnowledgePublic[]> {
   migrateKnowledgeToFiles();
   const agents = readAgents();
   const agent = agents.find((a) => a.id === agentId);
@@ -825,7 +820,7 @@ export function listAgentKnowledge(agentId: string): KnowledgePublic[] {
   });
 }
 
-export function checkDuplicateKnowledge(agentId: string, filename: string): boolean {
+export async function checkDuplicateKnowledge(agentId: string, filename: string): Promise<boolean> {
   const agents = readAgents();
   const agent = agents.find((a) => a.id === agentId);
   if (!agent?.knowledge) return false;
@@ -856,7 +851,7 @@ function chunkText(text: string, chunkSize = 3200): string[] {
   return chunks.filter((c) => c.length > 0);
 }
 
-export function getAgentKnowledgeContent(agentId: string, question?: string): string {
+export async function getAgentKnowledgeContent(agentId: string, question?: string): Promise<string> {
   // For system agents, also include system knowledge
   const systemKnowledge = getSystemKnowledgeContent(agentId, question);
 
@@ -907,7 +902,7 @@ export function getAgentKnowledgeContent(agentId: string, question?: string): st
     : systemKnowledge;
 }
 
-export function deleteAgentKnowledge(agentId: string, knowledgeId: string): boolean {
+export async function deleteAgentKnowledge(agentId: string, knowledgeId: string): Promise<boolean> {
   const agents = readAgents();
   const idx = agents.findIndex((a) => a.id === agentId);
   if (idx === -1 || !agents[idx].knowledge) return false;
@@ -921,8 +916,8 @@ export function deleteAgentKnowledge(agentId: string, knowledgeId: string): bool
   return true;
 }
 
-export function getCompanyInfoContext(): string {
-  const settings = getSettings();
+export async function getCompanyInfoContext(): Promise<string> {
+  const settings = await getSettings();
   const c = settings.companyInfo;
   if (!c || !c.name) return "";
   const parts = [`บริษัท: ${c.name}`];
@@ -959,11 +954,11 @@ function writeMemory(facts: MemoryFact[]) {
   fs.writeFileSync(MEMORY_FILE, JSON.stringify(facts, null, 2));
 }
 
-export function getMemoryFacts(): MemoryFact[] {
+export async function getMemoryFacts(): Promise<MemoryFact[]> {
   return readMemory();
 }
 
-export function upsertMemoryFact(key: string, value: string, source: string): MemoryFact {
+export async function upsertMemoryFact(key: string, value: string, source: string): Promise<MemoryFact> {
   const facts = readMemory();
   const existing = facts.find((f) => f.key === key);
   if (existing) {
@@ -986,7 +981,7 @@ export function upsertMemoryFact(key: string, value: string, source: string): Me
   return newFact;
 }
 
-export function deleteMemoryFact(id: string): boolean {
+export async function deleteMemoryFact(id: string): Promise<boolean> {
   const facts = readMemory();
   const filtered = facts.filter((f) => f.id !== id);
   if (filtered.length === facts.length) return false;
@@ -994,7 +989,7 @@ export function deleteMemoryFact(id: string): boolean {
   return true;
 }
 
-export function getMemoryContext(): string {
+export async function getMemoryContext(): Promise<string> {
   const facts = readMemory();
   if (facts.length === 0) return "";
   const lines = facts.map((f) => `- ${f.key}: ${f.value}`).join("\n");

@@ -25,8 +25,8 @@ function isUnsafeUrl(urlStr: string): boolean {
 
 export async function GET() {
   try {
-    migrateSouls();
-    const agents = listAgents();
+    await (migrateSouls as () => Promise<void> | void)();
+    const agents = await (listAgents as () => Promise<unknown[]>)();
     return NextResponse.json({ agents });
   } catch (e) {
     return NextResponse.json({ error: "เกิดข้อผิดพลาดในระบบ" }, { status: 500 });

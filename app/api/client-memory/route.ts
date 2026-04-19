@@ -3,7 +3,7 @@ import { getMemoryFacts, upsertMemoryFact, deleteMemoryFact } from "@/lib/agents
 import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 export async function GET() {
-  return NextResponse.json({ facts: getMemoryFacts() });
+  return NextResponse.json({ facts: await getMemoryFacts() });
 }
 
 export async function POST(req: NextRequest) {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!value || typeof value !== "string" || value.length > 500) {
     return NextResponse.json({ error: "Invalid value (max 500 chars)" }, { status: 400 });
   }
-  const fact = upsertMemoryFact(key, value, source || "manual");
+  const fact = await upsertMemoryFact(key, value, source || "manual");
   return NextResponse.json({ fact }, { status: 201 });
 }
 
@@ -26,7 +26,7 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  const ok = deleteMemoryFact(id);
+  const ok = await deleteMemoryFact(id);
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ success: true });
 }

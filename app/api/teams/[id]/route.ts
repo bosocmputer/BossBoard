@@ -4,7 +4,8 @@ import { listTeams, updateTeam, deleteTeam } from "@/lib/agents-store";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const team = listTeams().find(t => t.id === id);
+    const teams = await listTeams();
+    const team = teams.find(t => t.id === id);
     if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
     return NextResponse.json({ team });
   } catch (e) {
@@ -23,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (emoji !== undefined) patch.emoji = String(emoji).trim() || "👥";
     if (description !== undefined) patch.description = String(description).trim();
     if (Array.isArray(agentIds)) patch.agentIds = agentIds.filter((x) => typeof x === "string");
-    const team = updateTeam(id, patch);
+    const team = await updateTeam(id, patch);
     if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
     return NextResponse.json({ team });
   } catch (e) {
@@ -35,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const ok = deleteTeam(id);
+    const ok = await deleteTeam(id);
     if (!ok) return NextResponse.json({ error: "Team not found" }, { status: 404 });
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const { query } = await req.json() as { query: string };
   if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
-  const settings = getSettings();
+  const settings = await getSettings();
 
   // Try Serper first
   if (settings.serperApiKey) {

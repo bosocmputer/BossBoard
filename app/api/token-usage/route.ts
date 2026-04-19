@@ -3,13 +3,14 @@ import { getAgentStats, listAgents, listResearch } from "@/lib/agents-store";
 
 export async function GET() {
   try {
-    const stats = getAgentStats();
-    const agents = listAgents();
-    const sessions = await listResearch();
+    const [stats, agents, sessions] = await Promise.all([
+      getAgentStats(),
+      listAgents(),
+      listResearch(),
+    ]);
 
     const agentMap = new Map(agents.map((a) => [a.id, a]));
 
-    // Per-agent breakdown
     const agentBreakdown = Object.values(stats)
       .map((s) => {
         const agent = agentMap.get(s.agentId);
@@ -28,7 +29,6 @@ export async function GET() {
       })
       .sort((a, b) => b.totalTokens - a.totalTokens);
 
-    // Daily aggregation (last 30 days)
     const dailyMap: Record<string, { date: string; input: number; output: number; sessions: number }> = {};
     for (const s of Object.values(stats)) {
       for (const d of s.daily) {
@@ -44,7 +44,6 @@ export async function GET() {
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-30);
 
-    // Recent sessions with token info
     const recentSessions = sessions
       .slice(0, 20)
       .map((s) => ({
@@ -57,7 +56,6 @@ export async function GET() {
         agentCount: new Set(s.messages.map((m) => m.agentId)).size,
       }));
 
-    // Totals
     const totalInput = agentBreakdown.reduce((s, a) => s + a.inputTokens, 0);
     const totalOutput = agentBreakdown.reduce((s, a) => s + a.outputTokens, 0);
 

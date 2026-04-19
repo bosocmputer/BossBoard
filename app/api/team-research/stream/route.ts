@@ -651,14 +651,14 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "Missing question or agentIds" }), { status: 400 });
   }
 
-  const allAgents = listAgents();
+  const allAgents = await listAgents();
   const selectedAgents = allAgents.filter((a) => agentIds.includes(a.id) && a.active);
   if (!selectedAgents.length) {
     return new Response(JSON.stringify({ error: "No active agents found" }), { status: 400 });
   }
 
   // Load web search keys from settings
-  const settings = getSettings();
+  const settings = await getSettings();
   const serperKey = settings.serperApiKey;
   const serpApiKeyVal = settings.serpApiKey;
 
@@ -727,7 +727,7 @@ export async function POST(req: NextRequest) {
     sessionId = newSession.id;
     // Increment session count only on first round
     for (const aid of agentIds) {
-      incrementAgentSessionCount(aid);
+      await incrementAgentSessionCount(aid);
     }
   }
 
@@ -736,8 +736,10 @@ export async function POST(req: NextRequest) {
   const orderedAgents = sortBySeniority(selectedAgents, chairman);
 
   // Company & knowledge context
-  const companyContext = getCompanyInfoContext();
-  const memoryContext = getMemoryContext();
+  const [companyContext, memoryContext] = await Promise.all([
+    getCompanyInfoContext(),
+    getMemoryContext(),
+  ]);
 
   // Client disconnect detection — abort LLM calls when client disconnects
   const abortController = new AbortController();
@@ -791,7 +793,7 @@ export async function POST(req: NextRequest) {
       // === QA Mode: Direct single-agent answer (no meeting ceremony) ===
       if (mode === "qa") {
         const agent = orderedAgents[0];
-        const apiKey = getAgentApiKey(agent.id);
+        const apiKey = await getAgentApiKey(agent.id);
         if (!apiKey) {
           send("error", { message: "ไม่มี API key สำหรับ agent นี้" });
           if (keepaliveInterval) clearInterval(keepaliveInterval);
@@ -816,7 +818,7 @@ export async function POST(req: NextRequest) {
           if (sources.length > 0) send("web_sources", { agentId: agent.id, sources });
         }
 
-        const knowledgeContext = getAgentKnowledgeContent(agent.id, question);
+        const knowledgeContext = await getAgentKnowledgeContent(agent.id, question);
         try {
           send("status", { message: `💬 ${agent.emoji} กำลังวิเคราะห์และเรียบเรียงคำตอบ...` });
           // Use streaming LLM — user sees tokens appearing in real-time
@@ -845,7 +847,7 @@ export async function POST(req: NextRequest) {
             outputTokens: result.outputTokens,
             totalTokens: result.inputTokens + result.outputTokens,
           });
-          updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
+          await updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
           send("final_answer", { content: result.content });
           await completeResearchSession(sessionId, result.content, "completed");
         } catch (err) {
@@ -875,7 +877,7 @@ export async function POST(req: NextRequest) {
 
       // === Phase 0: Pre-flight Clarification (only if no answers provided yet) ===
       if (!clarificationAnswers) {
-        const chairApiKeyP0 = getAgentApiKey(chairman.id);
+        const chairApiKeyP0 = await getAgentApiKey(chairman.id);
         if (chairApiKeyP0) {
           try {
             send("status", { message: "🔍 ตรวจสอบความครบถ้วนของคำถาม..." });
@@ -930,7 +932,7 @@ export async function POST(req: NextRequest) {
 
       // Chairman opens the meeting
       {
-        const apiKey = getAgentApiKey(chairman.id);
+        const apiKey = await getAgentApiKey(chairman.id);
         if (apiKey) {
           try {
             const openingResult = await callLLM(chairman.provider, chairman.model, apiKey, chairman.baseUrl, [
@@ -991,7 +993,7 @@ export async function POST(req: NextRequest) {
 
       const phase1Promises = orderedAgents.map(async (agent): Promise<Phase1Result> => {
         try {
-          const apiKey = getAgentApiKey(agent.id);
+          const apiKey = await getAgentApiKey(agent.id);
           if (!apiKey) return { agent, error: "No API key configured" };
 
           // MCP context
@@ -1015,7 +1017,7 @@ export async function POST(req: NextRequest) {
             ? `คุณเป็นประธานการประชุม นำเสนอมุมมองจากตำแหน่ง ${agent.role} ของคุณ`
             : `นำเสนอมุมมองจากมุมมองของ ${agent.role} อย่างชัดเจนและตรงประเด็น`;
 
-          const knowledgeContext = getAgentKnowledgeContent(agent.id, question);
+          const knowledgeContext = await getAgentKnowledgeContent(agent.id, question);
           const agentVoice = getAgentVoice(agent.role);
           const result = await callLLMWithRetry(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
@@ -1093,7 +1095,7 @@ export async function POST(req: NextRequest) {
           outputTokens: agentTokens[agent.id].output,
           totalTokens: agentTokens[agent.id].input + agentTokens[agent.id].output,
         });
-        updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
+        await updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
 
         agentFindings.push({
           agentId: agent.id,
@@ -1108,7 +1110,7 @@ export async function POST(req: NextRequest) {
       // Consensus check: chairman evaluates if agents agree → skip Phase 2
       let skipDiscussion = false;
       if (agentFindings.length > 1) {
-        const chairApiKeyCC = getAgentApiKey(chairman.id);
+        const chairApiKeyCC = await getAgentApiKey(chairman.id);
         if (chairApiKeyCC) {
           try {
             const findingsSummary = agentFindings
@@ -1141,7 +1143,7 @@ export async function POST(req: NextRequest) {
 
         for (let i = 0; i < orderedAgents.length; i++) {
           const agent = orderedAgents[i];
-          const apiKey = getAgentApiKey(agent.id);
+          const apiKey = await getAgentApiKey(agent.id);
           if (!apiKey) continue;
 
           // Summarize other agents' findings (max 500 chars each to reduce tokens)
@@ -1154,7 +1156,7 @@ export async function POST(req: NextRequest) {
           if (!myFinding) continue;
 
           try {
-            const knowledgeCtx = getAgentKnowledgeContent(agent.id, question);
+            const knowledgeCtx = await getAgentKnowledgeContent(agent.id, question);
             const agentVoice2 = getAgentVoice(agent.role);
             const result = await callLLM(agent.provider, agent.model, apiKey, agent.baseUrl, [
               {
@@ -1191,7 +1193,7 @@ export async function POST(req: NextRequest) {
               outputTokens: agentTokens[agent.id].output,
               totalTokens: agentTokens[agent.id].input + agentTokens[agent.id].output,
             });
-            updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
+            await updateAgentStats(agent.id, result.inputTokens, result.outputTokens);
           } catch (err) {
             console.error(`Agent ${agent.id} Phase 2 error:`, err);
             send("agent_error", { agentId: agent.id, error: "LLM connection error" });
@@ -1211,7 +1213,7 @@ export async function POST(req: NextRequest) {
       // === Fact-checking phase: verify cited laws/facts before synthesis ===
       let factCheckNote = "";
       if (agentFindings.length > 0 && mode !== "close") {
-        const chairApiKeyFC = getAgentApiKey(chairman.id);
+        const chairApiKeyFC = await getAgentApiKey(chairman.id);
         if (chairApiKeyFC) {
           try {
             send("status", { message: "🔎 ตรวจสอบความถูกต้องของข้อมูลที่อ้างอิง..." });
@@ -1248,7 +1250,7 @@ export async function POST(req: NextRequest) {
 
       send("status", { message: "🏛️ Phase 3 — ประธานสรุปมติและ Action Items" });
 
-      const chairApiKey = getAgentApiKey(chairman.id);
+      const chairApiKey = await getAgentApiKey(chairman.id);
 
       // Build allContext from either current round findings or all rounds (close mode)
       let allContext = "";
@@ -1334,7 +1336,7 @@ export async function POST(req: NextRequest) {
             outputTokens: agentTokens[chairman.id].output,
             totalTokens: agentTokens[chairman.id].input + agentTokens[chairman.id].output,
           });
-          updateAgentStats(chairman.id, result.inputTokens, result.outputTokens);
+          await updateAgentStats(chairman.id, result.inputTokens, result.outputTokens);
 
           // Generate follow-up suggestions
           try {
@@ -1379,7 +1381,7 @@ export async function POST(req: NextRequest) {
                 const facts: { key: string; value: string }[] = JSON.parse(jsonMatch[0]);
                 for (const f of facts.slice(0, 5)) {
                   if (f.key && f.value && typeof f.key === "string" && typeof f.value === "string") {
-                    upsertMemoryFact(f.key, f.value, sessionId);
+                    void upsertMemoryFact(f.key, f.value, sessionId);
                   }
                 }
               }
@@ -1407,12 +1409,14 @@ export async function POST(req: NextRequest) {
       // Client disconnected — abort any in-flight LLM calls and complete session
       if (keepaliveInterval) clearInterval(keepaliveInterval);
       abortController.abort();
-      try {
-        const existing = getResearchSession(sessionId);
-        if (existing && existing.status === "running") {
-          completeResearchSession(sessionId, existing.finalAnswer || "📡 การเชื่อมต่อถูกตัด", "completed").catch(() => {});
-        }
-      } catch { /* best-effort */ }
+      (async () => {
+        try {
+          const existing = await getResearchSession(sessionId);
+          if (existing && existing.status === "running") {
+            await completeResearchSession(sessionId, existing.finalAnswer || "📡 การเชื่อมต่อถูกตัด", "completed");
+          }
+        } catch { /* best-effort */ }
+      })();
     },
   });
 
