@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateAgent, deleteAgent } from "@/lib/agents-store";
+import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 const VALID_PROVIDERS = new Set(["anthropic", "openai", "gemini", "ollama", "openrouter", "custom"]);
 
@@ -19,6 +20,9 @@ function isUnsafeUrl(urlStr: string): boolean {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!await rateLimit(getClientIp(req.headers), { maxRequests: 30, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   try {
     const { id } = await params;
     const body = await req.json();
@@ -43,6 +47,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!await rateLimit(getClientIp(_req.headers), { maxRequests: 10, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   try {
     const { id } = await params;
     const ok = await deleteAgent(id);

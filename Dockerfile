@@ -4,7 +4,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY . .
-RUN npm install && npm run build
+RUN npm install && npx prisma generate && npm run build
 
 # Production stage
 FROM node:22-alpine AS runner

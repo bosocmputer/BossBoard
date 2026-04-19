@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  experimental: {
+    outputFileTracingIncludes: {
+      '/**': ['./node_modules/.prisma/**', './node_modules/@prisma/client/**'],
+    },
+  },
   async headers() {
     return [
       {

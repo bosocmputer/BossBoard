@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listAgents, createAgent, AgentProvider, migrateSouls } from "@/lib/agents-store";
+import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 const VALID_PROVIDERS = new Set(["anthropic", "openai", "gemini", "ollama", "openrouter", "custom"]);
 
@@ -33,6 +34,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!await rateLimit(getClientIp(req.headers), { maxRequests: 20, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   try {
     const body = await req.json();
     const { name, emoji, provider, apiKey, baseUrl, model, soul, role, useWebSearch, seniority, mcpEndpoint, mcpAccessMode, trustedUrls } = body;

@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { listTeams, createTeam } from "@/lib/agents-store";
+import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 export async function GET() {
   try {
@@ -11,7 +12,10 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  if (!await rateLimit(getClientIp(req.headers), { maxRequests: 20, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   try {
     const body = await req.json();
     const { name, emoji, description, agentIds } = body;

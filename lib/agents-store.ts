@@ -1,3 +1,8 @@
+// When DATABASE_URL is set, delegate all storage to the Postgres implementation.
+if (process.env.DATABASE_URL) {
+  module.exports = require("./agents-store-db");
+}
+
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";

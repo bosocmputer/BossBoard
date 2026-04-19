@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMemoryFacts, upsertMemoryFact, deleteMemoryFact } from "@/lib/agents-store";
+import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 export async function GET() {
   return NextResponse.json({ facts: getMemoryFacts() });
 }
 
 export async function POST(req: NextRequest) {
+  if (!await rateLimit(getClientIp(req.headers), { maxRequests: 60, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   const body = await req.json();
   const { key, value, source } = body;
   if (!key || typeof key !== "string" || key.length > 100) {

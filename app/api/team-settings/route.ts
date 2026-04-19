@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSettings, saveSettings, CompanyInfo } from "@/lib/agents-store";
+import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 
 export async function GET() {
   const settings = getSettings();
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!await rateLimit(getClientIp(req.headers), { maxRequests: 10, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   const body = await req.json();
   const { serperApiKey, serpApiKey, companyInfo } = body as { serperApiKey?: string; serpApiKey?: string; companyInfo?: CompanyInfo };
   const result = saveSettings({ serperApiKey, serpApiKey, companyInfo });
