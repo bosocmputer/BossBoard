@@ -1,7 +1,7 @@
 # LEDGIO AI — Production Roadmap
 
 > **สถานะปัจจุบัน:** Demo / Pre-production — ใช้งานได้จริงบน server แต่ยังไม่พร้อม production สำหรับลูกค้าหลายราย  
-> **อัปเดตล่าสุด:** 2026-04-18
+> **อัปเดตล่าสุด:** 2026-04-19
 
 ---
 
@@ -36,25 +36,24 @@
 
 ---
 
-## Phase 2 — Storage Migration (ก่อน scale)
+## Phase 2 — Storage Migration ✅ เสร็จแล้ว (2026-04-19)
 
 **เป้าหมาย:** เปลี่ยนจาก JSON files → database เพื่อรองรับ concurrent users
 
-### ปัญหาของ JSON files ปัจจุบัน
-- Concurrent writes จาก multiple users อาจชนและ corrupt file
-- ไม่มี transaction — write ล้มกลางคัน data เสีย
-- ไม่มี query capability — ต้อง load ทั้งไฟล์ทุกครั้ง
-- ไม่มี backup strategy
+### ✅ เสร็จแล้ว
 
-### งานที่ต้องทำ
+- [x] **Postgres** — ใช้ `ledgioai-db` (172.17.0.3:5432) database `bossboard`
+- [x] Prisma v5 schema — 10 tables: agents, agent_knowledge, teams, team_agents, settings, research_sessions, research_messages, agent_stats, agent_daily_stats, client_memory
+- [x] `lib/agents-store-db.ts` — drop-in Postgres replacement (async)
+- [x] `lib/agents-store.ts` — barrel re-export → routes ทุกตัวได้ DB โดยอัตโนมัติ
+- [x] Data migration script (`scripts/migrate-json-to-db.ts`) — run สำเร็จ: 7 agents, 1 team, 29 sessions/95 messages
+- [x] JSON backup ยังอยู่ที่ `~/.bossboard/*.json` (ไม่ถูกลบ)
+- [x] Knowledge file content ยังเก็บบน filesystem (`~/.bossboard/knowledge/`), metadata อยู่ใน DB
+- [x] **Redis rate limiting** — `lib/rate-limit-redis.ts` sorted-set sliding window, fallback to in-memory
 
-- [ ] **Option A — SQLite** (แนะนำสำหรับ self-hosted): migrate ทุก JSON → SQLite ด้วย `better-sqlite3`
-  - agents, teams, settings, research-history, agent-stats, client-memory
-  - ง่ายกว่า Postgres, ยังไม่ต้องการ infra เพิ่ม
-- [ ] **Option B — Postgres** (ถ้าต้องการ multi-server): ใช้ Postgres ที่มีอยู่บน server (port 5436)
-- [ ] Data migration script: JSON → DB
-- [ ] Docker volume mount ให้ครอบคลุม knowledge files (`~/.bossboard/knowledge/`)
-- [ ] Backup cron job สำหรับ database
+### ยังเหลือ
+
+- [ ] Backup cron job สำหรับ database (pg_dump → schedule)
 
 ---
 
@@ -67,9 +66,7 @@
 - [ ] **Nginx reverse proxy** — SSL termination, rate limiting ระดับ network
   - Let's Encrypt certificate (certbot)
   - Config: `proxy_pass http://127.0.0.1:3003`
-- [ ] **Rate limit ครอบทุก API** — ไม่แค่ `/stream`
-  - GET endpoints: 60 req/min per IP
-  - POST (non-stream): 20 req/min per IP
+- [x] **Rate limit ครอบทุก API** — Redis sliding window ครอบทุก POST endpoint แล้ว (2026-04-19)
 - [ ] **Structured logging** — แทน `console.log` ด้วย pino หรือ winston
   - request ID per request
   - error stack trace ไม่ส่งหา client
@@ -103,8 +100,7 @@
 
 ### งานที่ต้องทำ
 
-- [ ] **Redis สำหรับ rate limit** — แทน in-memory store ที่ reset ตาม container restart
-  - มี Redis อยู่บน server แล้ว (port 6381)
+- [x] **Redis สำหรับ rate limit** — ✅ เสร็จแล้ว (2026-04-19) ใช้ `ledgioai-redis` 172.17.0.4:6379
 - [ ] **SSE connection management** — จำกัด concurrent streaming connections ต่อ user
 - [ ] **Background job queue** — สำหรับ long-running meeting sessions (Bull/BullMQ)
 - [ ] **CDN สำหรับ static assets** — ลด load บน server
@@ -119,7 +115,7 @@
 
 ---
 
-## Infrastructure ปัจจุบัน (อัปเดต 2026-04-18)
+## Infrastructure ปัจจุบัน (อัปเดต 2026-04-19)
 
 ```
 Server: 192.168.2.109 (Ubuntu 24.04, Docker)
@@ -138,11 +134,18 @@ Nginx: /etc/nginx/sites-enabled/bossboard
 ├── port 80 → proxy_pass http://127.0.0.1:3003
 └── /api/team-research/stream → SSE config (no buffering, timeout 600s)
 
+BossBoard env vars (docker run):
+├── DATABASE_URL=postgresql://ledgioai:***@172.17.0.3:5432/bossboard
+├── REDIS_URL=redis://172.17.0.4:6379
+└── AGENT_ENCRYPT_KEY=*** (from ~/.bossboard/.encrypt-key)
+
 Containers รันอยู่:
 ├── bossboard         :3003  ← LEDGIO AI (this app) ✅ healthy
+│                               └── Postgres + Redis connected ✅
 ├── ledgioai          :3004  ← App อื่น (src-app) ✅ healthy
-├── ledgioai-db       :5436  ← Postgres 16 ✅
-├── ledgioai-redis    :6381  ← Redis 7 ✅
+├── ledgioai-db       :5436  ← Postgres 16 ✅ (bridge: 172.17.0.3:5432)
+│                               └── database: bossboard (10 tables)
+├── ledgioai-redis    :6381  ← Redis 7 ✅ (bridge: 172.17.0.4:6379)
 ├── openclaw-admin    :3000  ← Admin panel ✅
 ├── centrix-web       :3002  ← Centrix frontend ✅
 ├── centrix-api       :5001  ← Centrix backend ✅
@@ -155,10 +158,10 @@ Containers รันอยู่:
 
 ## Priority ลำดับงาน
 
-| Priority | Phase | เวลาประมาณ |
-|----------|-------|-----------|
-| 🔴 ด่วนมาก | Phase 1: Authentication | 2–3 วัน |
-| 🟠 สำคัญ | Phase 2: Storage → SQLite/Postgres | 3–5 วัน |
-| 🟡 ก่อน prod | Phase 3: Nginx SSL + Monitoring | 1–2 วัน |
-| 🟢 หลัง launch | Phase 4: Business Features | 2–4 สัปดาห์ |
-| 🔵 อนาคต | Phase 5: Scale | ตามความต้องการ |
+| Priority | Phase | เวลาประมาณ | สถานะ |
+|----------|-------|-----------|-------|
+| 🔴 ด่วนมาก | Phase 1: Authentication | 2–3 วัน | ⏳ ยังไม่เริ่ม |
+| 🟠 สำคัญ | Phase 2: Storage → Postgres + Redis | 3–5 วัน | ✅ เสร็จแล้ว (2026-04-19) |
+| 🟡 ก่อน prod | Phase 3: Nginx SSL + Monitoring | 1–2 วัน | 🔄 บางส่วน (Nginx done, SSL pending) |
+| 🟢 หลัง launch | Phase 4: Business Features | 2–4 สัปดาห์ | ⏳ ยังไม่เริ่ม |
+| 🔵 อนาคต | Phase 5: Scale | ตามความต้องการ | ✅ Redis ✅ (ที่เหลือ ⏳) |
