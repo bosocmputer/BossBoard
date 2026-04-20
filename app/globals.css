@@ -98,6 +98,15 @@
   --orange-8: color-mix(in srgb, orange 8%, transparent);
 }
 
+/* ── Global focus state — consistent with login page ── */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-8);
+}
+
 /* ── Base styles ── */
 body {
   background: var(--bg);

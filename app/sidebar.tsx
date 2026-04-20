@@ -198,7 +198,8 @@ export function Sidebar() {
               <Menu size={18} />
             </button>
             <Link href="/" className="flex items-center gap-2 min-w-0">
-              <span className="text-lg font-black tracking-tighter" style={{ color: "var(--accent)" }}>LG</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/logo/TITLELOGO.png" alt="LEDGIO AI" className="w-7 h-7 object-contain flex-shrink-0" />
               <div className="min-w-0">
                 <div className="text-xs font-bold tracking-wide truncate" style={{ color: "var(--text)" }}>LEDGIO AI</div>
                 <div className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
@@ -267,7 +268,8 @@ export function Sidebar() {
           {collapsed ? (
             <div className="flex flex-col items-center gap-3">
               <Link href="/">
-                <span className="text-xl font-black tracking-tighter" style={{ color: "var(--accent)" }}>LG</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/logo/TITLELOGO.png" alt="LEDGIO AI" className="w-8 h-8 object-contain" />
               </Link>
               <button
                 onClick={() => setCollapsed(false)}
@@ -282,7 +284,8 @@ export function Sidebar() {
             <div>
               <div className="flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2.5">
-                  <span className="text-xl font-black tracking-tighter" style={{ color: "var(--accent)" }}>LG</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/logo/TITLELOGO.png" alt="LEDGIO AI" className="w-9 h-9 object-contain flex-shrink-0" />
                   <div>
                     <div className="text-sm font-bold tracking-wide" style={{ color: "var(--text)" }}>LEDGIO AI</div>
                     <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>AI Financial & Tax Advisor</div>
