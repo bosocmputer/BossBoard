@@ -13,7 +13,6 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-ENV NODE_ENV=production
 ENV TZ=Asia/Bangkok
 
 # Copy standalone output
