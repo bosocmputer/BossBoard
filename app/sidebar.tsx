@@ -122,10 +122,11 @@ export function Sidebar() {
         href={href}
         onClick={onNavigate}
         title={collapsed ? label : undefined}
+        aria-current={active ? "page" : undefined}
         className={`flex items-center rounded-xl text-sm transition-all duration-200 ${
           active ? "bg-[var(--accent)]/12 text-[var(--accent)] font-medium" : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]"
         }`}
-        style={{ padding: collapsed ? "10px 0" : "10px 12px", justifyContent: collapsed ? "center" : "flex-start", gap: collapsed ? 0 : 10 }}
+        style={{ padding: collapsed ? "10px 0" : "10px 12px", justifyContent: collapsed ? "center" : "flex-start", gap: collapsed ? 0 : 10, minHeight: 44 }}
       >
         {icon}
         {!collapsed && label}
@@ -151,6 +152,7 @@ export function Sidebar() {
                   href={item.href}
                   onClick={onNavigate}
                   title={collapsed ? t(item.labelKey) : undefined}
+                  aria-current={active ? "page" : undefined}
                   className={`flex items-center rounded-xl text-sm transition-all duration-200 ${
                     active
                       ? "bg-[var(--accent)]/12 text-[var(--accent)] font-medium"
@@ -160,6 +162,7 @@ export function Sidebar() {
                     padding: collapsed ? "10px 0" : "10px 12px",
                     justifyContent: collapsed ? "center" : "flex-start",
                     gap: collapsed ? 0 : 10,
+                    minHeight: 44,
                   }}
                 >
                   <NavIcon icon={item.icon} active={active} />

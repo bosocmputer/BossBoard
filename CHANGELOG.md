@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-04-21 — v1.13.0-alpha: UX Overhaul Phase 1 (Foundation)
+
+### Features
+
+- **Shared components (new):** `Tooltip`, `Input`, `Select`, `Table`, `Tabs`, `Alert`, `Breadcrumb`, `CostDisplay`
+  - Tooltip: hover + focus + tap (mobile), auto-flip placement, keyboard accessible (Esc to close)
+  - Input: label + error/hint + tooltip + icon + suffix, password show/hide toggle, 44px min-height
+  - Select: native-replacement with search + keyboard nav, mobile opens bottom sheet
+  - Table: auto-converts to card list on mobile, optional sorting
+  - Alert: persistent (vs Toast), 4 variants (info/warning/success/danger), dismissible
+  - Breadcrumb: semantic `<nav>` with aria-current
+  - CostDisplay: shows ฿THB + token counts, reuses `lib/pricing.ts`
+- **`lib/pricing.ts` (new):** Model pricing table (USD per 1M tokens), `tokensToTHB()` / `formatTHB()` helpers, configurable USD→THB rate (default 36)
+
+### Accessibility
+
+- `aria-current="page"` ใน sidebar active nav item
+- Skip-to-content link ใน root layout
+- `main` element ได้ `id="main-content"` + `tabIndex={-1}` เพื่อรับ focus จาก skip link
+- Modal: focus trap (Tab/Shift+Tab), auto-focus first element, restore focus on close, `role="dialog"` + `aria-modal`
+- Sidebar nav items: min-height 44px (WCAG tap target)
+
+### Why
+
+Phase 1 ของ UX Overhaul Plan (ดู `docs/ux-overhaul-plan.md`) — foundation ที่ phase ถัดไปต้องใช้ ก่อนจะเริ่ม i18n audit, agent wizard, token THB
+
+---
+
 ## 2026-04-20 — v1.12.1: Global Ambient Background
 
 ### Features
