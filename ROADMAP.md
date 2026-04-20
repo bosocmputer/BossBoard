@@ -1,7 +1,7 @@
 # LEDGIO AI — Production Roadmap
 
-> **สถานะปัจจุบัน:** Demo / Pre-production — ใช้งานได้จริงบน server แต่ยังไม่พร้อม production สำหรับลูกค้าหลายราย  
-> **อัปเดตล่าสุด:** 2026-04-20
+> **สถานะปัจจุบัน:** Production-ready (self-hosted) — Auth + DB + UX Thai accounting ครบถ้วน พร้อมให้ลูกค้าใช้งาน  
+> **อัปเดตล่าสุด:** 2026-04-21 | **เวอร์ชัน:** v1.14.0
 
 ---
 
@@ -81,11 +81,32 @@
 
 ---
 
+## Phase UX — Thai Accounting UX Overhaul ✅ เสร็จแล้ว (2026-04-21)
+
+**เป้าหมาย:** ทำให้พนักงานบัญชีอายุ 25–50 ใช้ระบบได้โดยไม่ต้องรู้เรื่อง AI/LLM
+
+### ✅ เสร็จแล้ว
+
+- [x] **Shared components:** Tooltip, Alert, CostDisplay, Breadcrumb, Input, Select, Table, Tabs
+- [x] **`lib/glossary.ts`:** 22 terms (AI/Cost/Accounting/UI) + `/glossary` page
+- [x] **Thai labels ทุกหน้า:** "Agent"→"ที่ปรึกษา AI", "Session"→"การประชุม", "Soul"→"บทบาท"
+- [x] **Agent wizard mode:** easy (3-tier model) / expert (full list) — default = easy
+- [x] **THB cost display:** `lib/pricing.ts` + tokens hero ≈ ฿X + budget progress bar
+- [x] **Monthly budget setting:** localStorage `monthlyBudgetTHB` + USD→THB rate config
+- [x] **Mobile bottom-sheet modal:** `md:items-center` pattern ทุก Modal
+- [x] **Login polish:** password toggle, forgot link, dynamic year
+- [x] **Guide:** default expand "get-started", FAQ multi-expand
+- [x] **Admin:** Thai role labels ("ผู้จัดการระบบ"/"ผู้ใช้ทั่วไป"), clearer delete confirm
+- [x] **Benefits:** VAT note, CTA differentiation, Solo "ทดลองฟรี 14 วัน"
+- [x] **Dashboard:** Chat vs Research disambiguation cards
+
+---
+
 ## Phase 4 — Business Features
 
 **เป้าหมาย:** feature สำหรับลูกค้าจริง
 
-### งานที่ต้องทำ
+### รายการที่ต้องทำ
 
 - [ ] **Plan enforcement** — จำกัดตาม pricing plan (Solo/Starter/Pro/Enterprise)
   - จำกัดจำนวน agents, sessions, users
@@ -173,6 +194,7 @@ Containers รันอยู่:
 |----------|-------|-----------|-------|
 | 🔴 ด่วนมาก | Phase 1: Authentication | 2–3 วัน | ✅ เสร็จแล้ว (2026-04-20) |
 | 🟠 สำคัญ | Phase 2: Storage → Postgres + Redis | 3–5 วัน | ✅ เสร็จแล้ว (2026-04-19) |
-| 🟡 ก่อน prod | Phase 3: Nginx SSL + Monitoring | 1–2 วัน | 🔄 บางส่วน (Nginx done, SSL pending) |
+| 🟡 ก่อน prod | Phase 3: Nginx SSL + Monitoring | 1–2 วัน | 🔄 บางส่วน (Nginx ✅, SSL ⏳) |
+| 🟢 UX | Phase UX: Thai Accounting UX Overhaul | 7 วัน | ✅ เสร็จแล้ว (2026-04-21) v1.14.0 |
 | 🟢 หลัง launch | Phase 4: Business Features | 2–4 สัปดาห์ | ⏳ ยังไม่เริ่ม |
 | 🔵 อนาคต | Phase 5: Scale | ตามความต้องการ | ✅ Redis ✅ (ที่เหลือ ⏳) |

@@ -8,20 +8,25 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ---
 
-## สถานะโปรเจค
+## สถานะโปรเจค (v1.14.0 — 2026-04-21)
 
 | รายการ | สถานะ |
 | ------ | ------ |
 | Core features (Meeting Room, Chat, Agents, Teams, Tokens) | ✅ ใช้งานได้จริง |
 | Multi-provider LLM (Anthropic, OpenAI, Gemini, Ollama, OpenRouter) | ✅ พร้อม |
 | File upload, Web search, MCP integration | ✅ พร้อม |
-| Docker deployment | ✅ พร้อม |
-| Authentication / Login | ❌ ยังไม่มี — API เปิด public ทั้งหมด |
-| Multi-user isolation | ❌ ยังไม่มี — single-user เท่านั้น |
-| Production database | ❌ ใช้ JSON files — ไม่รองรับ concurrent users |
-| Rate limiting (ครอบคลุมทุก endpoint) | ⚠️ มีแค่ `/stream` endpoint |
+| Docker deployment | ✅ พร้อม — deploy บน 192.168.2.109 |
+| Authentication / Login | ✅ JWT httpOnly cookie, bcrypt, 8h session |
+| Multi-user isolation | ✅ ResearchSession/Memory แยกตาม userId |
+| Production database | ✅ Postgres 16 (Prisma v5, 10 tables) + Redis |
+| Rate limiting (ครอบคลุมทุก endpoint) | ✅ Redis sliding-window ทุก POST endpoint |
+| Thai UX สำหรับพนักงานบัญชี | ✅ wizard mode, THB cost, tooltip glossary, Thai labels |
+| Budget monitoring (ค่าใช้จ่าย THB) | ✅ monthly budget + progress bar |
+| Mobile responsive | ✅ bottom-sheet modals, responsive charts |
+| SSL / HTTPS | ⚠️ ยังไม่มี — HTTP เท่านั้น (LAN) |
+| Plan enforcement / Billing | ⏳ ยังไม่ได้ทำ |
 
-> **สรุป:** พร้อมใช้งาน demo และ self-hosted แบบ single-user — ยังไม่พร้อม production สำหรับลูกค้าหลายราย ดู [ROADMAP.md](ROADMAP.md) สำหรับแผนพัฒนาต่อ | ดู [CLOUD_SPEC.md](docs/CLOUD_SPEC.md) สำหรับ spec การเช่า cloud
+> **สรุป:** พร้อมใช้งาน production สำหรับ self-hosted — Thai accounting office UX ครบถ้วน ดู [ROADMAP.md](ROADMAP.md) สำหรับแผนพัฒนาต่อ | ดู [CHANGELOG.md](CHANGELOG.md) สำหรับประวัติ
 
 ---
 
@@ -34,7 +39,9 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 | Styling     | Tailwind CSS 4                             |
 | Icons       | Lucide React                               |
 | Runtime     | Node.js 22                                 |
-| Data        | JSON files (`~/.bossboard/`), no database  |
+| Database    | PostgreSQL 16 + Prisma v5 (10 tables)      |
+| Cache       | Redis 7 (rate limiting + session)          |
+| Auth        | JWT HS256, bcrypt cost 12, httpOnly cookie |
 | Encryption  | AES-256-CBC (API keys & search keys)       |
 | Streaming   | Server-Sent Events (SSE)                   |
 | Doc Parsing | xlsx, pdf-parse, mammoth                   |
@@ -69,9 +76,11 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ### 👥 Team Agents (`/agents`)
 
-สร้างและจัดการทีม AI agents — แต่ละตัวมี provider, model, API key, soul (บุคลิก), skills, MCP endpoint เป็นของตัวเอง
+สร้างและจัดการทีมที่ปรึกษา AI — แต่ละตัวมี provider, model, API key, บทบาท (soul), skills, MCP endpoint เป็นของตัวเอง
 
-- **4-Step Wizard Form** — สร้าง/แก้ไข agent ผ่าน step form แบบ tab navigation (Template → Model → ข้อมูล → ขั้นสูง)
+- **Wizard Mode (ง่าย/ผู้เชี่ยวชาญ):** โหมดง่ายแสดง 3 ระดับ (ประหยัด / แนะนำ / คุณภาพสูง) โหมดผู้เชี่ยวชาญเห็น full model list
+- **3-Tier Model Picker:** ประหยัด = gemini-2.5-flash-lite, แนะนำ = claude-haiku-4-5, คุณภาพสูง = claude-sonnet-4-6
+- **4-Step Wizard Form** — Template → Model → ข้อมูล → ขั้นสูง (expert mode only)
 - **Emoji Picker** — เลือก emoji จาก grid 80 ตัวใน 4 หมวด (คน, ธุรกิจ, วิเคราะห์, กฎหมาย) — ไม่ต้องพิมพ์เอง
 - **Agent Cards** — แสดง model badge, ลำดับอาวุโส 🏛️, web search 🔍, MCP 🔌 indicators
 - **Toast Notifications** — แจ้งเตือนเมื่อ save/delete/toggle agent สำเร็จ
@@ -163,7 +172,11 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ### 📊 Token Analytics (`/tokens`)
 
-แดชบอร์ดวิเคราะห์การใช้งาน tokens — แสดงสถิติรวม, กราฟใช้งานรายวัน (30 วัน), รายละเอียดตาม agent, sessions ล่าสุด
+แดชบอร์ดวิเคราะห์การใช้งาน tokens — แสดงค่าใช้จ่ายรวมเป็นบาท (≈ ฿X), กราฟรายวัน (30 วัน), รายละเอียดตาม agent พร้อม THB breakdown, sessions ล่าสุด
+
+- **Hero card:** ค่าใช้จ่ายรวม ≈ ฿X (ใหญ่กว่า token count) + แนวโน้มเดือนนี้ vs เดือนก่อน
+- **Budget progress bar:** ถ้าตั้ง monthly budget ใน Settings → แสดง % ที่ใช้ไปพร้อม warning สีส้ม (≥80%) / แดง (เกินงบ)
+- **Per-agent THB:** ค่าใช้จ่ายแต่ละ agent คิดจาก model pricing × USD→THB rate
 
 ### 📖 User Guide (`/guide`)
 
@@ -192,7 +205,11 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 ### ⚙️ Settings (`/settings`)
 
-ตั้งค่า Web Search API keys (Serper / SerpAPI) พร้อมทดสอบ
+ตั้งค่าระบบ — Company Info, Web Search API keys, Budget
+
+- **ข้อมูลบริษัท:** ชื่อ, ประเภทธุรกิจ, มาตรฐานบัญชี (NPAEs/PAEs), รอบบัญชี — ส่งให้ทุก agent อัตโนมัติ
+- **Web Search:** Serper / SerpAPI keys พร้อมทดสอบ
+- **งบประมาณรายเดือน (ใหม่):** ตั้ง monthly budget (฿) + USD→THB rate (default 36) — ใช้ใน Tokens dashboard
 
 ### 🌐 i18n & Theme
 
@@ -205,16 +222,19 @@ LEDGIO AI คือศูนย์รวม AI ที่ทำงานร่ว
 
 | Component           | Description                                                                  |
 | ------------------- | ---------------------------------------------------------------------------- |
-| `Button`            | primary / secondary / ghost / danger variants, sm / md / lg sizes            |
-| `Card`              | hover effect, padding options, rounded-2xl                                   |
-| `Modal`             | Escape key close, backdrop blur, max-width options                           |
-| `Badge`             | default / accent / success / warning / danger / info variants                |
-| `Toggle`            | Switch with label, sm / lg sizes, `role="switch"`                            |
-| `EmptyState`        | Icon / emoji + title + description + optional action                         |
-| `Toast`             | `showToast(type, message)` auto-dismiss 4s, success / error / warning / info |
-| `Skeleton`          | Loading placeholders — `Skeleton`, `SkeletonCard`, `SkeletonList`            |
-| `KeyboardShortcuts` | `?` เปิด shortcuts, ⌘+1–5 สลับหน้า, ⌘+Shift+N ประชุมใหม่                     |
-| `Onboarding`        | Welcome overlay 4 steps — แสดงครั้งแรกที่ user ใหม่เข้าใช้                   |
+| `Button`            | primary / secondary / ghost / danger variants, sm / md / lg sizes           |
+| `Card`              | hover effect, padding options, rounded-2xl                                  |
+| `Modal`             | Escape key + focus trap, backdrop blur — mobile slides from bottom          |
+| `Badge`             | default / accent / success / warning / danger / info variants               |
+| `Toggle`            | Switch with label, sm / lg sizes, `role="switch"`                           |
+| `EmptyState`        | Icon / emoji + title + description + optional action                        |
+| `Toast`             | `showToast(type, message)` auto-dismiss 4s, 4 variants                      |
+| `Skeleton`          | Loading placeholders — `Skeleton`, `SkeletonCard`, `SkeletonList`           |
+| `KeyboardShortcuts` | `?` เปิด shortcuts, ⌘+1–5 สลับหน้า, ⌘+Shift+N ประชุมใหม่                    |
+| `Tooltip`           | Hover + focus + tap (mobile), auto-flip placement, Esc to close             |
+| `Alert`             | Persistent banner, 4 variants (info/warning/success/danger), dismissible    |
+| `CostDisplay`       | แสดง token count + THB side-by-side, ใช้ `lib/pricing.ts`                   |
+| `Breadcrumb`        | Semantic `<nav>` with `aria-current`, auto-derive from pathname             |
 
 ### 🧭 Navigation (Sidebar)
 
@@ -271,16 +291,20 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Data Storage
 
-| File                                 | Contents                                             |
-| ------------------------------------ | ---------------------------------------------------- |
-| `~/.bossboard/agents.json`           | Agent configs (API keys encrypted)                   |
-| `~/.bossboard/teams.json`            | Team groupings                                       |
-| `~/.bossboard/settings.json`         | Web Search API keys (encrypted)                      |
-| `~/.bossboard/research-history.json` | Research session history (last 100)                  |
-| `~/.bossboard/agent-stats.json`      | Per-agent token usage & session stats (last 90 days) |
-| `~/.bossboard/client-memory.json`    | Cross-session memory facts                           |
-| `~/.bossboard/.encryption-key`       | Auto-generated encryption key (if no env var)        |
-| `~/.bossboard/system-knowledge/`     | System agent knowledge files (synced from GitHub)    |
+ข้อมูลเก็บใน **PostgreSQL** (ผ่าน Prisma v5) — ไม่ใช้ JSON files อีกต่อไป
+
+| Table / Path | Contents |
+| --- | --- |
+| `agents` | Agent configs (API keys encrypted AES-256) |
+| `agent_knowledge` | Knowledge file metadata per agent |
+| `teams` / `team_agents` | Team groupings |
+| `settings` | Web Search API keys (encrypted) |
+| `research_sessions` / `research_messages` | Session + message history |
+| `agent_stats` / `agent_daily_stats` | Per-agent token usage (90 days) |
+| `client_memory` | Cross-session memory facts per user |
+| `users` | User accounts (bcrypt passwords) |
+| `~/.bossboard/knowledge/` | Knowledge file content (filesystem) |
+| `~/.bossboard/system-knowledge/` | System agent knowledge (synced from GitHub) |
 
 ---
 
