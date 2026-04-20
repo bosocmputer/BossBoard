@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Sidebar } from "./sidebar";
 import { ToastContainer } from "./components/Toast";
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: "LEDGIO AI — ห้องประชุม AI",
@@ -14,15 +15,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-invoke-path") ?? headersList.get("x-pathname") ?? "";
+  const isAuthPage = pathname.startsWith("/login");
+
   return (
     <html lang="th">
       <body>
         <Providers>
           <div className="min-h-screen md:flex">
-            <Sidebar />
-            <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
-            <ToastContainer />
+            {!isAuthPage && <Sidebar />}
+            <main className={`flex-1 overflow-auto ${isAuthPage ? "" : "pt-14 md:pt-0"}`}>
+              {children}
+            </main>
+            {!isAuthPage && <ToastContainer />}
           </div>
         </Providers>
       </body>

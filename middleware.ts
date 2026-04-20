@@ -7,7 +7,9 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    res.headers.set("x-pathname", pathname);
+    return res;
   }
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -29,6 +31,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   res.headers.set("x-user-id", payload.sub);
   res.headers.set("x-user-role", payload.role);
+  res.headers.set("x-pathname", pathname);
   return res;
 }
 
