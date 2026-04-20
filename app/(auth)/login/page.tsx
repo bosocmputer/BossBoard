@@ -58,17 +58,23 @@ function LoginForm() {
       <div className="relative flex-1 flex flex-col items-center justify-center px-5 py-10">
 
         {/* Logo */}
-        <div className="mb-8 flex flex-col items-center">
+        <div className="mb-8 flex flex-col items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/logo/LEDGIOAILOGO.png"
+            src="/assets/logo/TITLELOGO.png"
             alt="LEDGIO AI"
-            className="w-auto object-contain"
-            style={{ height: "clamp(80px, 18vw, 140px)" }}
+            className="w-auto object-contain drop-shadow-lg"
+            style={{ height: "clamp(72px, 16vw, 110px)" }}
           />
-          <p className="mt-3 text-xs tracking-[0.25em] uppercase font-medium" style={{ color: "#00D4FF", opacity: 0.7 }}>
-            From Ledger to Intelligence
-          </p>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-2xl font-black tracking-tight" style={{ color: "#ffffff" }}>LEDGIO</span>
+              <span className="text-2xl font-black tracking-tight" style={{ color: "#00D4FF" }}>AI</span>
+            </div>
+            <p className="mt-1 text-[11px] tracking-[0.2em] uppercase font-medium" style={{ color: "rgba(0,212,255,0.55)" }}>
+              From Ledger to Intelligence
+            </p>
+          </div>
         </div>
 
         {/* Card */}
