@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-04-20 — v1.12.0: Brand Consistency — Favicon + Design System
+
+### Features
+- **Favicon** — เปลี่ยนจาก emoji 🏛️ เป็น TITLELOGO.png (circle icon) ทั้ง browser tab และ iOS apple-icon
+- **Sidebar logo** — แทน "LG" text ด้วย TITLELOGO.png ทุก position (collapsed, expanded, mobile header)
+- **Input focus glow** — เพิ่ม global CSS focus state (cyan border + glow ring) ให้ทุก input/textarea/select สอดคล้องกับ login page
+- **Light mode accent sync** — เปลี่ยน `--accent` light mode จาก `#0ea5e9` → `#00d4ff` ให้ตรง brand ทั้ง dark และ light
+- **Login page CSS variables** — แทน hardcoded hex ทั้งหมดด้วย CSS variables เพื่อ maintain ง่ายและ respond ต่อ theme change
+- **proxy.ts** — เพิ่ม `/assets/` ใน auth exemption list เพื่อให้ static files แสดงได้โดยไม่ redirect ไป login
+
+### Design System Analysis
+- Login page ใช้เป็น benchmark (dark navy, cyan accent, glassmorphism card)
+- App pages ปัจจุบัน consistent อยู่แล้วในเรื่อง color — แก้แค่ favicon, sidebar logo, และ input focus
+- Ambient blobs/grid เก็บไว้เฉพาะ login page (hero screen) — ไม่ copy ไปทุกหน้าเพื่อไม่ distract content
+
+---
+
 ## 2026-04-20 — v1.11.0: User Isolation + Login Logo
 
 ### Features
