@@ -123,9 +123,6 @@ export default function ChatPage({ agentId }: { agentId: string }) {
   const streamRef = useRef("");
   const streamFlushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Storage key per agent
-  const storageKey = `chat_history_${agentId}`;
-
   // Load agent info
   useEffect(() => {
     fetch("/api/team-agents")
@@ -136,26 +133,6 @@ export default function ChatPage({ agentId }: { agentId: string }) {
       })
       .catch(() => {});
   }, [agentId]);
-
-  // Load chat history from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setMessages(parsed);
-      }
-    } catch { /* ignore */ }
-  }, [storageKey]);
-
-  // Save to localStorage when messages change
-  useEffect(() => {
-    if (messages.length === 0) return;
-    try {
-      // Keep last 50 messages to avoid localStorage overflow
-      localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50)));
-    } catch { /* ignore */ }
-  }, [messages, storageKey]);
 
   // Auto-scroll
   useEffect(() => {
@@ -314,7 +291,6 @@ export default function ChatPage({ agentId }: { agentId: string }) {
   const clearHistory = () => {
     setMessages([]);
     setSuggestions([]);
-    try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
     showToast("success", "ล้างประวัติแล้ว");
   };
 
@@ -553,7 +529,7 @@ export default function ChatPage({ agentId }: { agentId: string }) {
               {f.filename.match(/\.xlsx?$/i) ? <FileSpreadsheet size={12} /> : <File size={12} />}
               <span className="truncate max-w-[120px]" style={{ color: "var(--text)" }}>{f.filename}</span>
               <span style={{ color: "var(--text-muted)" }}>{formatSize(f.size)}</span>
-              <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} style={{ color: "var(--text-muted)" }}>
+              <button type="button" title="ลบไฟล์" onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} style={{ color: "var(--text-muted)" }}>
                 <X size={12} />
               </button>
             </div>

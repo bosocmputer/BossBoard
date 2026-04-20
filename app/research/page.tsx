@@ -123,7 +123,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-const STORAGE_KEY = "research_conversation_v1";
+const STORAGE_KEY_PREFIX = "research_conversation_v2";
 
 const ROLE_LABEL: Record<string, string> = {
   thinking: "กำลังคิด",
@@ -354,6 +354,7 @@ function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): str
 }
 
 export default function ResearchPage() {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [question, setQuestion] = useState("");
@@ -436,10 +437,12 @@ export default function ResearchPage() {
   useEffect(() => { meetingSessionIdRef.current = meetingSessionId; }, [meetingSessionId]);
   useEffect(() => { currentWebSourcesRef.current = currentWebSources; }, [currentWebSources]);
 
-  // Load from localStorage on mount
+  // Load from localStorage when userId is ready
   useEffect(() => {
+    if (!currentUserId) return;
+    const storageKey = `${STORAGE_KEY_PREFIX}_${currentUserId}`;
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.rounds) setRounds(parsed.rounds);
@@ -449,14 +452,16 @@ export default function ResearchPage() {
         }
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [currentUserId]);
 
-  // Save to localStorage when rounds change
+  // Save to localStorage when rounds change (only when userId is known)
   useEffect(() => {
+    if (!currentUserId) return;
+    const storageKey = `${STORAGE_KEY_PREFIX}_${currentUserId}`;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ rounds, meetingSessionId }));
+      localStorage.setItem(storageKey, JSON.stringify({ rounds, meetingSessionId }));
     } catch { /* ignore */ }
-  }, [rounds, meetingSessionId]);
+  }, [rounds, meetingSessionId, currentUserId]);
 
   const fetchAgents = useCallback(async () => {
     const res = await fetch("/api/team-agents");
@@ -481,6 +486,7 @@ export default function ResearchPage() {
     fetchAgents();
     fetchServerHistory();
     fetch("/api/team-settings").then(r => r.json()).then(d => { if (d.settings?.companyInfo?.name) setCompanyName(d.settings.companyInfo.name); }).catch(() => {});
+    fetch("/api/auth/me").then(r => r.json()).then(d => { if (d.id) setCurrentUserId(d.id); }).catch(() => {});
   }, [fetchAgents, fetchServerHistory]);
 
   // Handle ?q=, ?teamId=, ?sessionId= from dashboard/teams page
@@ -986,7 +992,7 @@ export default function ResearchPage() {
     setCurrentMessages([]);
     setCurrentFinalAnswer("");
     setCurrentSuggestions([]);
-    localStorage.removeItem(STORAGE_KEY);
+    if (currentUserId) localStorage.removeItem(`${STORAGE_KEY_PREFIX}_${currentUserId}`);
   };
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
