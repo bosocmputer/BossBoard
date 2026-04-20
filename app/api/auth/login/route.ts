@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     value: token,
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // re-enable when HTTPS is configured
     path: "/",
     maxAge: COOKIE_MAX_AGE,
   });
