@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-04-21 — v1.14.0: UX Overhaul Phase 3–5 (Wizard + THB Budget + Mobile)
+
+### Phase 3 — Core Flow
+
+- **Agent wizard mode:** โหมด "ง่าย/ผู้เชี่ยวชาญ" ในหน้า Agents — โหมดง่ายแสดง 3 ระดับ (ประหยัด / แนะนำ / คุณภาพสูง) แทน dropdown model เต็ม
+- **Chat vs Research disambiguation:** Dashboard มี 2 card อธิบายว่าโหมดไหนใช้เมื่อไหร่
+- **Research clarity:** phase labels → "เสนอความเห็น / แลกเปลี่ยน / สรุป"
+- **Web search toggle warning:** Toast "อาจเพิ่มค่าใช้จ่าย Token" เมื่อเปิด Web Search
+
+### Phase 4 — Cost in THB
+
+- **`lib/pricing.ts` (new):** MODEL_PRICING + `tokensToTHB()` + `formatTHB()` helpers, USD→THB rate จาก localStorage
+- **Tokens page hero:** ค่าใช้จ่ายรวมเป็นบาท (≈ ฿X) ใหญ่กว่า token count
+- **Budget progress bar:** ถ้าตั้ง monthly budget ใน Settings → แสดง % ใช้ไป + warning สีส้ม (≥80%) / แดง (เกินงบ)
+- **Per-agent breakdown:** แสดง THB คู่ token count
+- **Agents pricing:** template `recommendedReason` เปลี่ยนจาก "$0.10/$0.40 per 1M" → "ค่าพิมพ์ ฿3.6 / ตอบ ฿14.4 ต่อ 1 ล้านคำ"
+- **Settings Budget section (new):** set budget + USD→THB rate, persist ไปที่ localStorage
+
+### Phase 5 — Mobile + Login + Guide + Admin + Benefits
+
+- **Modal mobile bottom-sheet:** `md:items-center` + `md:rounded-xl` → mobile ขึ้นจากล่างเหมือน native sheet
+- **Login polish:** password show/hide toggle (Eye icon), forgot password link (ติดต่อผู้ดูแล), dynamic footer year
+- **Guide page:** default expand step "get-started" แทน "api-key" (dead key), FAQ multi-expand ได้พร้อมกัน
+- **Admin users:** role labels เป็น "ผู้จัดการระบบ / ผู้ใช้ทั่วไป", delete confirm text ชัดกว่าเดิม
+- **Benefits page:** Solo "ทดลองฟรี 14 วัน" (consistent), VAT note "ราคายังไม่รวม VAT 7%", CTA differentiation — Solo = outline, others = filled accent
+
+### Why
+
+Phase 3–5 ของ UX Overhaul Plan — ลดความซับซ้อนการสร้าง agent, ทำให้ cost เข้าใจเป็นบาท, mobile-friendly modals, login พิมพ์รหัสผ่านได้สะดวก, FAQ ใช้งานจริงได้
+
+---
+
 ## 2026-04-21 — v1.13.0-beta: UX Overhaul Phase 2 (Plain Thai + Glossary)
 
 ### Features

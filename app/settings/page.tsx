@@ -293,6 +293,9 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Budget & Exchange Rate */}
+      <BudgetSection />
+
       {/* Web Search Section */}
       <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2 mb-1">
@@ -418,6 +421,91 @@ export default function SettingsPage() {
           <li>2. ไปที่ <span style={{ color: "var(--accent)" }}>/agents</span> → แก้ไข Agent → เปิด <strong>Web Search</strong></li>
           <li>3. ใน Research หรือ Meeting Room — Agent ที่เปิด Web Search จะค้นหาข้อมูลก่อนตอบ</li>
         </ol>
+      </div>
+    </div>
+  );
+}
+
+function BudgetSection() {
+  const [budget, setBudget] = useState("");
+  const [rate, setRate] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      setBudget(localStorage.getItem("monthlyBudgetTHB") ?? "");
+      setRate(localStorage.getItem("usdThbRate") ?? "");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleSave = () => {
+    try {
+      if (budget.trim()) localStorage.setItem("monthlyBudgetTHB", budget.trim());
+      else localStorage.removeItem("monthlyBudgetTHB");
+      if (rate.trim()) localStorage.setItem("usdThbRate", rate.trim());
+      else localStorage.removeItem("usdThbRate");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <div className="rounded-xl border p-4 sm:p-6 mb-6" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+      <div className="flex items-center gap-2 mb-1">
+        <Settings size={18} style={{ color: "var(--text-muted)" }} />
+        <h2 className="text-base font-semibold">งบประมาณ & อัตราแลกเปลี่ยน</h2>
+      </div>
+      <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+        กำหนดงบประมาณรายเดือน (ไม่บังคับ) และอัตราแลกเปลี่ยนสำหรับคำนวณค่าใช้จ่าย Token
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="text-sm font-medium block mb-1">งบประมาณรายเดือน (บาท)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            placeholder="เช่น 1000"
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+            className="w-full text-sm px-3 py-2 rounded-lg"
+            style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+          />
+          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+            เว้นว่างได้ — ถ้าตั้งไว้ หน้า Token จะแสดงแถบเตือนเมื่อใช้ใกล้งบ
+          </p>
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">อัตรา USD → THB</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            placeholder="36"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            className="w-full text-sm px-3 py-2 rounded-lg"
+            style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", outline: "none" }}
+          />
+          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+            ค่ามาตรฐาน 36 บาท/USD — อัปเดตตามต้องการ
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          className="px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: "var(--accent)", color: "white" }}
+        >
+          บันทึก
+        </button>
+        {saved && <span className="text-sm" style={{ color: "var(--success)" }}>บันทึกแล้ว ✓</span>}
       </div>
     </div>
   );

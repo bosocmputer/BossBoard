@@ -2,11 +2,13 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -118,22 +120,33 @@ function LoginForm() {
               <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>
                 รหัสผ่าน
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="กรอกรหัสผ่าน"
-                className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text)",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-8)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="กรอกรหัสผ่าน"
+                  className="w-full rounded-xl px-4 py-3 pr-11 text-sm outline-none transition-all"
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text)",
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-8)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-[var(--surface)] transition-colors"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -157,9 +170,14 @@ function LoginForm() {
           </form>
         </div>
 
+        {/* Forgot password */}
+        <p className="mt-5 text-[12px]" style={{ color: "var(--text-muted)" }}>
+          ลืมรหัสผ่าน? <span style={{ color: "var(--accent)" }}>ติดต่อผู้ดูแลระบบ</span>
+        </p>
+
         {/* Footer */}
-        <p className="mt-8 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
-          © 2026 LEDGIO AI · AI Financial & Tax Advisor
+        <p className="mt-4 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+          © {new Date().getFullYear()} LEDGIO AI · AI Financial & Tax Advisor
         </p>
       </div>
     </div>

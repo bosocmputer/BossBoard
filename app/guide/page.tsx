@@ -144,7 +144,8 @@ const STEPS: Step[] = [
 ];
 
 export default function GuidePage() {
-  const [expandedId, setExpandedId] = useState<string | null>("api-key");
+  const [expandedId, setExpandedId] = useState<string | null>("get-started");
+  const [expandedFaqs, setExpandedFaqs] = useState<Set<number>>(new Set());
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -255,12 +256,32 @@ export default function GuidePage() {
               { q: "ใช้กับลูกค้าหลายรายได้ไหม?", a: "ได้ — สร้าง Agent set ต่างกันตาม scope งาน หรือตั้งค่าข้อมูลบริษัทใหม่ได้เสมอ" },
               { q: "รองรับไฟล์อะไรบ้าง?", a: "Excel (.xlsx/.xls), PDF, Word (.docx), Text (.txt/.md), CSV, JSON — อัพโหลดได้ทั้งในห้องประชุมและฐานความรู้ Agent" },
               { q: "เลือก AI ระดับไหนดี?", a: "ระบบจะเลือกระดับที่เหมาะสมตามประเภทงาน งานทั่วไปใช้ระดับเร็วและประหยัด ส่วนงานซับซ้อนใช้ระดับละเอียดและแม่นยำกว่า" },
-            ].map((faq, i) => (
-              <div key={i} className="rounded-xl p-4 border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-                <p className="font-bold text-sm mb-1" style={{ color: "var(--text)" }}>{faq.q}</p>
-                <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{faq.a}</p>
-              </div>
-            ))}
+            ].map((faq, i) => {
+              const open = expandedFaqs.has(i);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setExpandedFaqs((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(i)) next.delete(i); else next.add(i);
+                      return next;
+                    });
+                  }}
+                  className="w-full text-left rounded-xl p-4 border transition-all"
+                  style={{ background: "var(--card)", borderColor: open ? "var(--accent)" : "var(--border)" }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-bold text-sm" style={{ color: "var(--text)" }}>{faq.q}</p>
+                    <span className="text-sm flex-shrink-0" style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</span>
+                  </div>
+                  {open && (
+                    <p className="text-xs leading-relaxed mt-2" style={{ color: "var(--text-muted)" }}>{faq.a}</p>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

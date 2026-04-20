@@ -157,6 +157,32 @@ export default function DashboardPage() {
         </div>
       </Link>
 
+      {/* Chat vs Research disambiguation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <Link href="/research">
+          <div className="p-3 rounded-xl border transition-colors hover:border-[var(--accent)]/50" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+            <div className="flex items-center gap-2 mb-1">
+              <UsersRound size={16} style={{ color: "var(--accent)" }} />
+              <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>ประชุมทีม (Research)</span>
+            </div>
+            <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              ที่ปรึกษาหลายคนถกเถียงและสรุปมติ · ใช้เวลา 3–8 นาที · เหมาะงานวิเคราะห์ลึก
+            </p>
+          </div>
+        </Link>
+        <Link href="/chat">
+          <div className="p-3 rounded-xl border transition-colors hover:border-[var(--accent)]/50" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+            <div className="flex items-center gap-2 mb-1">
+              <MessageSquare size={16} style={{ color: "var(--info)" }} />
+              <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>ถามด่วน (Chat)</span>
+            </div>
+            <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              คุย 1-ต่อ-1 กับที่ปรึกษาคนเดียว · ตอบทันที · ประหยัด Token
+            </p>
+          </div>
+        </Link>
+      </div>
+
       {/* Quick meeting templates */}
       <div className="mb-6">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">

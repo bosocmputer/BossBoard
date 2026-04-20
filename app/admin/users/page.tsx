@@ -72,7 +72,7 @@ export default function AdminUsersPage() {
   }
 
   async function handleDelete(id: string, username: string) {
-    if (!confirm(`ลบผู้ใช้ "${username}" ใช่ไหม? sessions และ memory ของผู้ใช้จะยังคงอยู่`)) return;
+    if (!confirm(`ลบผู้ใช้ "${username}" ใช่ไหม?\n\nข้อมูลการประชุมของผู้ใช้จะยังถูกเก็บไว้ แต่ผู้ใช้จะเข้าระบบไม่ได้อีก`)) return;
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     await fetchUsers();
   }
@@ -123,8 +123,8 @@ export default function AdminUsersPage() {
               className="rounded-lg border px-3 py-2 text-sm outline-none"
               style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text)" }}
             >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              <option value="user">ผู้ใช้ทั่วไป</option>
+              <option value="admin">ผู้จัดการระบบ</option>
             </select>
           </div>
           {createError && <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>{createError}</p>}
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
                       background: u.role === "admin" ? "var(--accent-8)" : "var(--surface)",
                       color: u.role === "admin" ? "var(--accent)" : "var(--text-muted)",
                     }}>
-                      {u.role}
+                      {u.role === "admin" ? "ผู้จัดการระบบ" : "ผู้ใช้ทั่วไป"}
                     </span>
                     <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                       {new Date(u.createdAt).toLocaleDateString("th")}

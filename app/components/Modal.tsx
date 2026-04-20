@@ -49,14 +49,14 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4">
       <button type="button" className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-label="ปิด" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative w-full ${maxWidth} rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xl max-h-[90vh] overflow-y-auto animate-in`}
+        className={`relative w-full ${maxWidth} border border-[var(--border)] bg-[var(--card)] shadow-xl overflow-y-auto animate-in rounded-t-2xl md:rounded-xl max-h-[85vh] md:max-h-[90vh]`}
       >
         {title && (
           <div className="flex items-center justify-between p-5 pb-0">

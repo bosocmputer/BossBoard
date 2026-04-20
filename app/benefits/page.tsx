@@ -27,12 +27,12 @@ export default function BenefitsPage() {
   const plans = [
     {
       name: "Solo",
-      price: "ฟรี",
-      period: "ทดลอง 14 วัน",
+      price: "ทดลองฟรี",
+      period: "14 วัน",
       target: "ลองใช้ดูก่อนตัดสินใจ",
       features: ["Agent ได้ 3 ตัว", "ประชุมได้ 10 sessions", "1 ผู้ใช้", "Export รายงาน", "ค่า AI ตามใช้จริง"],
       excluded: ["File upload", "ฐานความรู้ Agent"],
-      cta: "ติดต่อทดลองใช้",
+      cta: "ทดลองใช้",
       highlight: false,
       color: "var(--text-muted)",
     },
@@ -134,7 +134,7 @@ export default function BenefitsPage() {
           แพ็กเกจราคา
         </h2>
         <p className="text-xs mb-8" style={{ color: "var(--text-muted)" }}>
-          ค่า AI เริ่มต้นไม่ถึง 5 บาท/ครั้ง คิดตามการใช้งานจริง — ไม่มีค่าแอบแฝง
+          ค่า AI เริ่มต้นไม่ถึง 5 บาท/ครั้ง คิดตามการใช้งานจริง — ไม่มีค่าแอบแฝง (ราคายังไม่รวม VAT 7%)
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -179,9 +179,9 @@ export default function BenefitsPage() {
               <button
                 className="w-full py-2.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
                 style={{
-                  background: plan.highlight ? "var(--accent)" : "var(--bg)",
-                  color: plan.highlight ? "#000" : "var(--text)",
-                  border: plan.highlight ? "none" : "1px solid var(--border)",
+                  background: plan.name === "Solo" ? "transparent" : plan.highlight ? "var(--accent)" : "var(--accent)",
+                  color: plan.name === "Solo" ? "var(--accent)" : "#000",
+                  border: plan.name === "Solo" ? "1.5px solid var(--accent)" : "none",
                 }}
               >
                 {plan.cta}

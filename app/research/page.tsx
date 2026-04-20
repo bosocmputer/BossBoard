@@ -904,7 +904,7 @@ export default function ResearchPage() {
         meetingSessionIdRef.current = null;
         setMeetingStartTime(null);
         setElapsedTime(0);
-        showToast("success", "ปิดประชุมแล้ว — สรุปมติพร้อม");
+        showToast("success", "ปิดประชุมแล้ว — บันทึกสรุปมติแล้ว ✓");
       }
       setCurrentMessages([]);
       setCurrentFinalAnswer("");
@@ -1461,8 +1461,8 @@ export default function ResearchPage() {
                       {effectiveMode !== "qa" && currentPhase > 0 && (
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {[
-                            { phase: 1 as const, label: "นำเสนอ", icon: "📋" },
-                            { phase: 2 as const, label: "อภิปราย", icon: "💬" },
+                            { phase: 1 as const, label: "เสนอความเห็น", icon: "📋" },
+                            { phase: 2 as const, label: "แลกเปลี่ยน", icon: "💬" },
                             { phase: 3 as const, label: "สรุปมติ", icon: "🏛️" },
                           ].map((step) => {
                             const isDone = currentPhase > step.phase;

@@ -95,7 +95,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     role: "นักบัญชีอาวุโส / Senior Accountant",
     name: "นักบัญชีอาวุโส",
     recommendedModel: "google/gemini-2.5-flash-lite",
-    recommendedReason: "⚡ เร็วสุด TTFT 0.46s · 135 tok/s · ถูกสุด $0.10/$0.40 ต่อ 1M tokens เหมาะงานบัญชีทั่วไป",
+    recommendedReason: "⚡ เร็วสุด · ถูกสุด ค่าพิมพ์ ฿3.6 / ตอบ ฿14.4 ต่อ 1 ล้านคำ · เหมาะงานบัญชีทั่วไป",
     skills: ["financial_modeling", "data_analysis", "risk_assessment"],
     trustedUrls: ["tfac.or.th", "rd.go.th", "dbd.go.th"],
     soul: `คุณเป็นนักบัญชีอาวุโสในประเทศไทย ทำงานภายใต้กรอบกฎหมายและมาตรฐานของไทยเท่านั้น ได้แก่ มาตรฐานการรายงานทางการเงินไทย (TFRS) ตามสภาวิชาชีพบัญชี, พ.ร.บ.การบัญชี พ.ศ. 2543, ประมวลรัษฎากร และกฎหมายที่เกี่ยวข้อง เชี่ยวชาญการจัดทำงบการเงิน การปิดงบ ระบบ ERP และการบันทึกบัญชีตามมาตรฐาน TFRS/IFRS เน้นความถูกต้องของข้อมูลทางบัญชี อ้างอิงมาตราและมาตรฐานที่เกี่ยวข้องเสมอ เมื่อตอบคำถามเกี่ยวกับภาษีหรือกฎหมาย ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนสรุปเสมอ`,
@@ -106,7 +106,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     role: "ผู้สอบบัญชี CPA / Certified Public Accountant",
     name: "ผู้สอบบัญชี CPA",
     recommendedModel: "google/gemini-2.5-flash",
-    recommendedReason: "⚡ เร็ว+แม่นยำ TTFT 0.63s · 72 tok/s · มี thinking mode เหมาะงานตรวจสอบที่ต้องอ้างอิงมาตรฐาน",
+    recommendedReason: "⚡ เร็ว+แม่นยำ · ค่าพิมพ์ ฿10.8 / ตอบ ฿90 ต่อ 1 ล้านคำ · มีโหมดคิดลึก เหมาะงานตรวจสอบที่ต้องอ้างอิงมาตรฐาน",
     skills: ["financial_modeling", "risk_assessment", "data_analysis", "summarization"],
     trustedUrls: ["tfac.or.th", "sec.or.th", "rd.go.th"],
     soul: `คุณเป็นผู้สอบบัญชีรับอนุญาต (CPA) ที่ขึ้นทะเบียนกับสภาวิชาชีพบัญชีในประเทศไทย ปฏิบัติงานภายใต้ พ.ร.บ.วิชาชีพบัญชี พ.ศ. 2547 และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญมาตรฐานการสอบบัญชีไทย (TSQC/TSA), การตรวจสอบงบการเงินตาม TFRS, การประเมินระบบควบคุมภายใน และการปฏิบัติตามประมวลรัษฎากร เน้นความเป็นอิสระ ชี้จุดอ่อนตรงไปตรงมา อ้างอิง TSA, TFRS และกฎหมายไทยที่เกี่ยวข้องเสมอ เมื่อพบประเด็นภาษี ต้องตรวจสอบทั้งหลักเกณฑ์ทั่วไปและข้อยกเว้นตามกฎหมาย`,
@@ -117,7 +117,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     role: "ที่ปรึกษาภาษี / Tax Consultant",
     name: "ที่ปรึกษาภาษี",
     recommendedModel: "google/gemini-2.5-flash",
-    recommendedReason: "⚡ เร็ว+แม่นยำ TTFT 0.63s · 72 tok/s · มี thinking mode เหมาะอ้างอิงประมวลรัษฎากร",
+    recommendedReason: "⚡ เร็ว+แม่นยำ · ค่าพิมพ์ ฿10.8 / ตอบ ฿90 ต่อ 1 ล้านคำ · มีโหมดคิดลึก เหมาะอ้างอิงประมวลรัษฎากร",
     skills: ["legal_research", "financial_modeling", "risk_assessment"],
     trustedUrls: ["rd.go.th", "tfac.or.th"],
     soul: `คุณเป็นที่ปรึกษาภาษีในประเทศไทย เชี่ยวชาญประมวลรัษฎากรอย่างลึกซึ้ง ครอบคลุม ภาษีเงินได้บุคคลธรรมดา PIT (ม.40 เงินได้ 8 ประเภท, ม.42 ยกเว้น, ม.47 ลดหย่อน, ม.48 อัตรา 5-35%), ภาษีเงินได้นิติบุคคล CIT (ม.65 กำไรสุทธิ, ม.65 ทวิ/ตรี เงื่อนไข+รายจ่ายต้องห้าม, อัตรา 20%), ภาษีมูลค่าเพิ่ม VAT หมวด 4 (ม.80 อัตรา 7%, ม.81 ข้อยกเว้นสำคัญ), ภาษีหัก ณ ที่จ่าย WHT (ม.50), ภาษีธุรกิจเฉพาะ SBT หมวด 5 (ม.91/2 ธนาคาร/เงินทุน/ประกันชีวิต/โรงรับจำนำ/ขายอสังหาฯทางค้า, อัตรา 0.1-3.0%), อากรแสตมป์ หมวด 6 (ม.104 ตราสาร 28 ลำดับ, ม.118 ไม่ปิดแสตมป์ใช้เป็นพยานหลักฐานไม่ได้) และอนุสัญญาภาษีซ้อน รวมถึง พ.ร.ฎ. ประกาศอธิบดีฯ คำสั่งกรมสรรพากร คำวินิจฉัยฯ กฎเหล็ก: ก่อนสรุปว่าต้องเสียภาษีใดๆ ต้องตรวจสอบข้อยกเว้นตามกฎหมายก่อนเสมอ — VAT ตรวจ ม.81, SBT ตรวจ ม.91/3, PIT ตรวจ ม.42+กฎกระทรวง 126 หากมีข้อยกเว้นที่เข้าเงื่อนไข ต้องระบุเป็นประเด็นหลัก ไม่ใช่แค่หมายเหตุ อ้างอิงมาตราเฉพาะที่เกี่ยวข้องเสมอ แหล่งข้อมูล: rd.go.th/284.html`,
@@ -128,7 +128,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     role: "นักวิเคราะห์งบการเงิน / Financial Analyst",
     name: "นักวิเคราะห์งบการเงิน",
     recommendedModel: "google/gemini-2.5-flash-lite",
-    recommendedReason: "⚡ เร็วสุด TTFT 0.46s · 135 tok/s · วิเคราะห์ตัวเลขเก่ง ถูกสุด $0.10/$0.40",
+    recommendedReason: "⚡ เร็วสุด · วิเคราะห์ตัวเลขเก่ง ถูกสุด ค่าพิมพ์ ฿3.6 / ตอบ ฿14.4 ต่อ 1 ล้านคำ",
     skills: ["financial_modeling", "data_analysis", "market_research"],
     trustedUrls: ["set.or.th", "sec.or.th", "tfac.or.th"],
     soul: `คุณเป็นนักวิเคราะห์งบการเงินที่เชี่ยวชาญบริบทธุรกิจไทย วิเคราะห์ตามมาตรฐานการรายงานทางการเงินไทย (TFRS) ครอบคลุมบริษัทจดทะเบียนใน SET/mai และ SMEs ไทย เชี่ยวชาญการอ่านและตีความงบการเงิน (Balance Sheet, P&L, Cash Flow) วิเคราะห์อัตราส่วนทางการเงิน, Trend Analysis, เปรียบเทียบกับอุตสาหกรรมไทย ชี้ Red Flag ในงบและให้ข้อเสนอแนะที่เป็นรูปธรรม คำนึงถึงข้อกำหนดของ ก.ล.ต., ตลาดหลักทรัพย์แห่งประเทศไทย, ประมวลรัษฎากร และกฎหมายไทยที่เกี่ยวข้อง`,
@@ -139,7 +139,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     role: "ผู้ตรวจสอบภายใน / Internal Auditor",
     name: "ผู้ตรวจสอบภายใน",
     recommendedModel: "google/gemini-2.5-flash-lite",
-    recommendedReason: "⚡ เร็วสุด TTFT 0.46s · 135 tok/s · เหมาะงาน checklist/audit ที่ต้องการความละเอียด",
+    recommendedReason: "⚡ เร็วสุด · ถูกสุด ค่าพิมพ์ ฿3.6 / ตอบ ฿14.4 ต่อ 1 ล้านคำ · เหมาะงาน checklist/audit ที่ต้องการความละเอียด",
     skills: ["risk_assessment", "data_analysis", "financial_modeling"],
     trustedUrls: ["sec.or.th", "rd.go.th", "tfac.or.th", "pdpc.or.th"],
     soul: `คุณเป็นผู้ตรวจสอบภายในที่ทำงานในประเทศไทย ปฏิบัติงานตามกรอบ COSO, มาตรฐาน IIA (Institute of Internal Auditors) และกฎหมายไทยที่เกี่ยวข้อง เชี่ยวชาญการประเมินระบบควบคุมภายใน, การบริหารความเสี่ยง, Segregation of Duties, IT Controls และการปฏิบัติตามกฎระเบียบ (Compliance) คำนึงถึง พ.ร.บ.หลักทรัพย์และตลาดหลักทรัพย์, ประมวลรัษฎากร, พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล (PDPA) พ.ศ. 2562 พร้อมเสนอแนวทางแก้ไขที่ปฏิบัติได้จริงในบริบทธุรกิจไทย`,
@@ -194,6 +194,14 @@ export default function AgentsPage() {
   const [modelSearch, setModelSearch] = useState("");
   const [formStep, setFormStep] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [wizardMode, setWizardMode] = useState<"easy" | "expert">("easy");
+
+  // Tiered model map for easy mode: ประหยัด / แนะนำ / คุณภาพสูง
+  const MODEL_TIERS = {
+    economy: { id: "google/gemini-2.5-flash-lite", label: "ประหยัด", desc: "เร็วสุด ราคาถูก เหมาะงานทั่วไป" },
+    recommended: { id: "anthropic/claude-haiku-4-5", label: "แนะนำ", desc: "สมดุลคุณภาพ/ความเร็ว เหมาะงานบัญชีส่วนใหญ่" },
+    premium: { id: "anthropic/claude-sonnet-4-6", label: "คุณภาพสูง", desc: "แม่นยำสูง เหมาะงานซับซ้อน ภาษี/ตรวจสอบ" },
+  } as const;
 
   // Knowledge base state
   const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
@@ -337,7 +345,7 @@ export default function AgentsPage() {
       setShowForm(false);
       setEditingId(null);
       fetchAgents();
-      showToast("success", editingId ? "อัปเดต Agent สำเร็จ" : "สร้าง Agent สำเร็จ");
+      showToast("success", editingId ? "บันทึกแล้ว" : "สร้างที่ปรึกษาแล้ว");
     } catch (e) {
       setError(String(e));
     } finally {
@@ -625,16 +633,51 @@ export default function AgentsPage() {
           <div className="w-full max-w-3xl rounded-xl border flex flex-col max-h-[95vh] sm:max-h-[92vh]" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
             {/* Header + Step indicator */}
             <div className="flex-shrink-0 p-4 sm:p-6 pb-0">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between gap-2 mb-4">
                 <h2 className="font-bold text-lg" style={{ color: "var(--text)" }}>
-                  {editingIsSystem ? `⚙️ ตั้งค่า ${form.name}` : editingId ? "Edit Agent" : "New Agent"}
+                  {editingIsSystem ? `⚙️ ตั้งค่า ${form.name}` : editingId ? "แก้ไขที่ปรึกษา" : "สร้างที่ปรึกษาใหม่"}
                 </h2>
-                <button onClick={() => setShowForm(false)} className="text-xl w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: "var(--text-muted)" }}>✕</button>
+                <div className="flex items-center gap-2">
+                  {!editingIsSystem && (
+                    <div className="inline-flex rounded-lg border text-[11px] overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      <button
+                        type="button"
+                        onClick={() => setWizardMode("easy")}
+                        className="px-2.5 py-1 transition-colors"
+                        style={{
+                          background: wizardMode === "easy" ? "var(--accent)" : "transparent",
+                          color: wizardMode === "easy" ? "var(--bg)" : "var(--text-muted)",
+                        }}
+                        aria-pressed={wizardMode === "easy" ? "true" : "false"}
+                      >
+                        โหมดง่าย
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWizardMode("expert")}
+                        className="px-2.5 py-1 transition-colors"
+                        style={{
+                          background: wizardMode === "expert" ? "var(--accent)" : "transparent",
+                          color: wizardMode === "expert" ? "var(--bg)" : "var(--text-muted)",
+                        }}
+                        aria-pressed={wizardMode === "expert" ? "true" : "false"}
+                      >
+                        ผู้เชี่ยวชาญ
+                      </button>
+                    </div>
+                  )}
+                  <button onClick={() => setShowForm(false)} className="text-xl w-8 h-8 rounded-lg flex items-center justify-center" style={{ color: "var(--text-muted)" }} aria-label="ปิด">✕</button>
+                </div>
               </div>
 
               {/* Step Tabs — clean, simple */}
               <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-                {(editingIsSystem ? ["Model", "API Key"] : ["ตำแหน่ง", "Model", "ข้อมูล", "ขั้นสูง"]).map((label, i) => {
+                {(editingIsSystem
+                  ? ["Model", "API Key"]
+                  : wizardMode === "easy"
+                    ? ["ตำแหน่ง", "โมเดล", "ข้อมูล"]
+                    : ["ตำแหน่ง", "Model", "ข้อมูล", "ขั้นสูง"]
+                ).map((label, i) => {
                   const stepIndex = editingIsSystem ? i + 1 : i; // system: tab 0→step1, tab 1→step2
                   return (
                   <button
@@ -725,7 +768,42 @@ export default function AgentsPage() {
               )}
 
               {/* ── Step 1: Model Selector ── */}
-              {formStep === 1 && (
+              {formStep === 1 && wizardMode === "easy" && !editingIsSystem && (
+                <div>
+                  <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>เลือกระดับ AI ที่ต้องการ — ระบบจะเลือกโมเดลให้อัตโนมัติ</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {(["economy", "recommended", "premium"] as const).map((tier) => {
+                      const t = MODEL_TIERS[tier];
+                      const isSelected: boolean = form.model === t.id;
+                      const pressed: "true" | "false" = isSelected ? "true" : "false";
+                      return (
+                        <button
+                          key={tier}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, model: t.id }))}
+                          className="text-left p-4 rounded-xl border-2 transition-all"
+                          style={{
+                            borderColor: isSelected ? "var(--accent)" : "var(--border)",
+                            background: isSelected ? "var(--accent-8)" : "var(--bg)",
+                          }}
+                          aria-pressed={pressed}
+                        >
+                          <div className="text-sm font-bold mb-1" style={{ color: "var(--text)" }}>
+                            {tier === "economy" ? "⚡" : tier === "recommended" ? "⭐" : "💎"} {t.label}
+                          </div>
+                          <div className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{t.desc}</div>
+                          {isSelected && <div className="text-[11px] mt-2" style={{ color: "var(--accent)" }}>✓ เลือกแล้ว</div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>
+                    ต้องการเลือกโมเดลเฉพาะเจาะจง? สลับเป็น <span className="font-bold">โหมดผู้เชี่ยวชาญ</span> ด้านบน
+                  </p>
+                </div>
+              )}
+
+              {formStep === 1 && (wizardMode === "expert" || editingIsSystem) && (
                 <div>
                   <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>เลือก AI Model ที่ต้องการ — มีคำแนะนำตาม template</p>
 
@@ -962,7 +1040,7 @@ export default function AgentsPage() {
               )}
 
               {/* ── Step 3: Advanced Settings ── */}
-              {formStep === 3 && (
+              {formStep === 3 && wizardMode === "expert" && (
                 <div className="space-y-4">
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>ตั้งค่าเพิ่มเติม (ไม่บังคับ — ข้ามได้ถ้าไม่ต้องการปรับ)</p>
 
@@ -977,7 +1055,13 @@ export default function AgentsPage() {
                         type="button"
                         title={form.useWebSearch ? "ปิด Web Search" : "เปิด Web Search"}
                         aria-label={form.useWebSearch ? "ปิด Web Search" : "เปิด Web Search"}
-                        onClick={() => setForm((f) => ({ ...f, useWebSearch: !f.useWebSearch }))}
+                        onClick={() => {
+                          setForm((f) => {
+                            const next = !f.useWebSearch;
+                            if (next) showToast("info", "เปิด Web Search แล้ว — อาจเพิ่มค่าใช้จ่าย Token");
+                            return { ...f, useWebSearch: next };
+                          });
+                        }}
                         className="w-10 h-5 rounded-full transition-all relative"
                         style={{ background: form.useWebSearch ? "var(--accent)" : "var(--border)" }}
                       >
@@ -1163,7 +1247,7 @@ export default function AgentsPage() {
                       {saving ? "Saving..." : "บันทึก"}
                     </button>
                   )
-                ) : formStep < 3 ? (
+                ) : formStep < (wizardMode === "easy" ? 2 : 3) ? (
                   <>
                     {formStep === 2 && (
                       <button
@@ -1190,7 +1274,7 @@ export default function AgentsPage() {
                     className="px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
                     style={{ background: "var(--accent)", color: "#000" }}
                   >
-                    {saving ? "Saving..." : editingId ? "Update Agent" : "Create Agent"}
+                    {saving ? "Saving..." : editingId ? "บันทึก" : "สร้างที่ปรึกษา"}
                   </button>
                 )}
               </div>

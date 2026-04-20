@@ -19,6 +19,7 @@ import Card from "../components/Card";
 import { Skeleton, SkeletonCard } from "../components/Skeleton";
 import Tooltip from "../components/Tooltip";
 import { GLOSSARY } from "@/lib/glossary";
+import { tokensToTHB, formatTHB } from "@/lib/pricing";
 
 interface AgentBreakdown {
   agentId: string;
@@ -65,6 +66,18 @@ export default function TokensPage() {
   const [loading, setLoading] = useState(true);
   const [showAllAgents, setShowAllAgents] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [budget, setBudget] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const v = localStorage.getItem("monthlyBudgetTHB");
+      const n = v ? parseFloat(v) : NaN;
+      setBudget(!isNaN(n) && n > 0 ? n : null);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/token-usage")
@@ -134,6 +147,52 @@ export default function TokensPage() {
           รายละเอียดการใช้งาน Token ทั้งหมด
         </p>
       </div>
+
+      {/* Hero: Monthly THB cost */}
+      {!loading && data && (() => {
+        const totalTHB = data.agentBreakdown.reduce((sum, a) => {
+          const thb = tokensToTHB(a.inputTokens, a.outputTokens, a.model);
+          return sum + (thb ?? 0);
+        }, 0);
+        const knownCount = data.agentBreakdown.filter((a) => tokensToTHB(a.inputTokens, a.outputTokens, a.model) !== null).length;
+        const unknownCount = data.agentBreakdown.length - knownCount;
+        const pctOfBudget = budget ? Math.min(100, (totalTHB / budget) * 100) : null;
+        const overBudget = budget ? totalTHB > budget : false;
+        const nearBudget = pctOfBudget !== null && pctOfBudget >= 80;
+        const barColor = overBudget ? "var(--danger, #ef4444)" : nearBudget ? "#f97316" : "var(--accent)";
+        return (
+          <Card padding="lg" className="mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>ค่าใช้จ่ายโดยประมาณ (ทั้งหมด)</p>
+                <p className="text-3xl md:text-5xl font-bold" style={{ color: "var(--accent)" }}>≈ {formatTHB(totalTHB)}</p>
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+                  อัตราแลกเปลี่ยน ฿36/USD {unknownCount > 0 && `· ${unknownCount} ที่ปรึกษายังไม่มีราคา`}
+                </p>
+              </div>
+              <Tooltip content="ค่าใช้จ่ายคำนวณจากจำนวน Token × ราคาต่อ 1 ล้าน Token (USD) × อัตราแลกเปลี่ยน (฿36/USD)">
+                <span className="text-[11px] px-2 py-1 rounded border cursor-help" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                  ℹ️ คำนวณอย่างไร?
+                </span>
+              </Tooltip>
+            </div>
+            {budget && pctOfBudget !== null && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span style={{ color: "var(--text-muted)" }}>
+                    ใช้ไป <span className="font-bold" style={{ color: barColor }}>{pctOfBudget.toFixed(0)}%</span> ของงบ {formatTHB(budget)}
+                  </span>
+                  {overBudget && <span className="font-bold" style={{ color: "var(--danger, #ef4444)" }}>⚠️ เกินงบแล้ว</span>}
+                  {!overBudget && nearBudget && <span className="font-bold" style={{ color: "#f97316" }}>⚠️ ใกล้เต็มงบ</span>}
+                </div>
+                <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pctOfBudget}%`, background: barColor }} />
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+      })()}
 
       {/* Summary cards */}
       {loading ? (
@@ -270,6 +329,7 @@ export default function TokensPage() {
               <div className="space-y-2">
                 {visibleAgents.map((agent) => {
                   const pct = data.totalTokens > 0 ? (agent.totalTokens / data.totalTokens) * 100 : 0;
+                  const thb = tokensToTHB(agent.inputTokens, agent.outputTokens, agent.model);
                   return (
                     <div key={agent.agentId} className="px-3 py-3 rounded-xl transition-colors hover:bg-[var(--surface)]">
                       <div className="flex items-center gap-3">
@@ -277,7 +337,12 @@ export default function TokensPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-sm font-medium truncate" style={{ color: "var(--text)" }}>{agent.agentName}</p>
-                            <p className="text-sm font-bold flex-shrink-0" style={{ color: "var(--text)" }}>{fmt(agent.totalTokens)}</p>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {thb !== null && (
+                                <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>≈ {formatTHB(thb)}</span>
+                              )}
+                              <p className="text-sm font-bold" style={{ color: "var(--text)" }}>{fmt(agent.totalTokens)}</p>
+                            </div>
                           </div>
                           <div className="flex items-center gap-3 mt-0.5">
                             <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
