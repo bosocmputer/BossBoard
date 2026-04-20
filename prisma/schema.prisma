@@ -92,7 +92,7 @@ model Settings {
 
 model ResearchSession {
   id          String    @id
-  userId      String
+  userId      String    @map("user_id")
   question    String    @db.Text
   agentIds    String[]
   dataSource  String?
@@ -153,7 +153,7 @@ model AgentDailyStat {
 
 model ClientMemory {
   id        String   @id
-  userId    String
+  userId    String   @map("user_id")
   key       String   @db.VarChar(100)
   value     String   @db.VarChar(500)
   source    String   @db.VarChar(200)

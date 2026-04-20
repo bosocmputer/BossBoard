@@ -147,7 +147,7 @@ async function migrateResearch() {
       where: { id: s.id },
       create: {
         id: s.id,
-        userId: fallbackUserId,
+        user: { connect: { id: fallbackUserId } },
         question: s.question || "",
         agentIds: Array.isArray(s.agentIds) ? s.agentIds : [],
         dataSource: s.dataSource || null,
@@ -238,7 +238,7 @@ async function migrateMemory() {
       where: { userId_key: { userId: fallbackUserId, key: f.key } },
       create: {
         id: f.id,
-        userId: fallbackUserId,
+        user: { connect: { id: fallbackUserId } },
         key: f.key,
         value: f.value || "",
         source: f.source || "migration",
