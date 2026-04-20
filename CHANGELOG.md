@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-04-20 — v1.10.1: Authentication — Login Fixed
+
+### Bug Fixes
+
+- **Cookie `Secure` flag บน HTTP** — Next.js 16 inject `Secure` flag ให้ cookie อัตโนมัติทุกครั้งที่ `NODE_ENV=production` โดยไม่สนใจ `secure: false` ใน code ทำให้ browser บน HTTP reject cookie → login redirect loop
+- **Root cause:** `ENV NODE_ENV=production` ใน Dockerfile ถูก bake ลงใน image layer และ Next.js 16 override cookie options ใน production mode
+- **Fix:** ลบ `ENV NODE_ENV=production` ออกจาก Dockerfile — ไม่ pass `NODE_ENV` ผ่าน container, Next.js standalone ทำงานได้ดีโดยไม่มีตัวแปรนี้
+- **Docker BuildKit issue:** BuildKit 0.19.0 ใช้ Git context แทน local files ทำให้ `COPY . .` transfer แค่ 8KB — แก้โดยใช้ `DOCKER_BUILDKIT=0` สำหรับ rebuild
+
+### Infrastructure
+
+- **Container recreated** — `docker rm bossboard` + `docker run` ใหม่โดยไม่มี `NODE_ENV=production` (ต้อง rm+run ใหม่, `docker restart` ไม่เพียงพอเพราะ env ยังอยู่)
+- **Rebuild command บน server:** `DOCKER_BUILDKIT=0 docker build --no-cache -t bossboard:latest .`
+
+---
+
 ## 2026-04-19 — v1.10.0: Redis + Postgres Storage Migration
 
 ### Phase A: Redis Rate Limiting

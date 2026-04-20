@@ -1,7 +1,7 @@
 # LEDGIO AI — Production Roadmap
 
 > **สถานะปัจจุบัน:** Demo / Pre-production — ใช้งานได้จริงบน server แต่ยังไม่พร้อม production สำหรับลูกค้าหลายราย  
-> **อัปเดตล่าสุด:** 2026-04-19
+> **อัปเดตล่าสุด:** 2026-04-20
 
 ---
 
@@ -23,16 +23,17 @@
 
 ### ✅ เสร็จแล้ว
 
-- [x] `middleware.ts` — block ทุก route, API → 401 JSON, Page → redirect `/login`
-- [x] `app/login/page.tsx` — Thai login form, full-screen overlay
-- [x] `app/api/auth/login` — bcrypt verify + httpOnly cookie (JWT HS256, 8h)
+- [x] `proxy.ts` — block ทุก route (Next.js 16 ใช้ `proxy.ts` แทน `middleware.ts`), API → 401 JSON, Page → redirect `/login`
+- [x] `app/(auth)/login/page.tsx` — Thai login form, route group แยกจาก root layout (ไม่มี Sidebar)
+- [x] `app/api/auth/login` — bcrypt verify + httpOnly cookie (JWT HS256, 8h) — set ผ่าน raw `Set-Cookie` header
 - [x] `app/api/auth/logout` — clear cookie
 - [x] `app/api/auth/me` — return current user info
 - [x] `lib/auth.ts` — Edge-safe JWT helper (jose), lazy secret eval
 - [x] User เก็บใน Postgres table `users` (bcrypt cost 12)
-- [x] `scripts/seed-admin.ts` — seed superadmin (ใช้ `npm run seed:admin`)
-- [x] Sidebar — ซ่อนบน `/login`, logout button
+- [x] `scripts/seed-admin.ts` — seed superadmin / superadmin (ใช้ `npm run seed:admin`)
+- [x] Sidebar — ซ่อนบน `/login` โดยอ่าน `x-pathname` header จาก proxy, logout button
 - [x] JWT_SECRET เพิ่มใน docker run env vars บน server
+- [x] **Cookie Secure fix** — ลบ `ENV NODE_ENV=production` ออกจาก Dockerfile เพราะ Next.js 16 inject `Secure` อัตโนมัติใน production mode ทำให้ cookie ไม่ทำงานบน HTTP
 
 ### ยังเหลือ (อนาคต)
 
