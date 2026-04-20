@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import Image from "next/image";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -44,13 +43,11 @@ function LoginForm() {
       >
         <div className="mb-6 text-center">
           <div className="flex justify-center mb-4">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/assets/logo/LEDGIOAILOGO.png"
               alt="LEDGIO AI"
-              width={160}
-              height={60}
-              priority
-              style={{ objectFit: "contain" }}
+              className="h-14 w-auto object-contain"
             />
           </div>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
