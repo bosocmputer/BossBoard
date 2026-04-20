@@ -1,14 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
 
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET must be at least 32 characters");
-  }
+function getSecret(): Uint8Array {
+  const key = process.env.JWT_SECRET ?? "dev-secret-change-me-in-production-32chars!!";
+  return new TextEncoder().encode(key);
 }
-
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "dev-secret-change-me-in-production-32chars"
-);
 
 export interface JWTPayload {
   sub: string;
@@ -24,12 +19,12 @@ export async function signToken(payload: JWTPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("8h")
-    .sign(secret);
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as JWTPayload;
   } catch {
     return null;
