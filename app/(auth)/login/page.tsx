@@ -33,23 +33,24 @@ function LoginForm() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col" style={{ background: "#04111f" }}>
-      {/* Background gradient blobs */}
+    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ background: "var(--bg)" }}>
+      {/* Ambient blobs — use brand accent via CSS variable */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20 blur-3xl"
-          style={{ background: "radial-gradient(circle, #00D4FF 0%, transparent 70%)" }}
+          className="absolute -top-40 -left-40 w-[480px] h-[480px] rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)", opacity: 0.12 }}
         />
         <div
-          className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full opacity-15 blur-3xl"
-          style={{ background: "radial-gradient(circle, #0A2540 0%, #00D4FF 60%, transparent 100%)" }}
+          className="absolute -bottom-40 -right-40 w-[480px] h-[480px] rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)", opacity: 0.08 }}
         />
-        {/* Subtle grid lines */}
+        {/* Subtle grid */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0"
           style={{
-            backgroundImage: "linear-gradient(#00D4FF 1px, transparent 1px), linear-gradient(90deg, #00D4FF 1px, transparent 1px)",
+            backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
             backgroundSize: "48px 48px",
+            opacity: 0.15,
           }}
         />
       </div>
@@ -57,7 +58,7 @@ function LoginForm() {
       {/* Content */}
       <div className="relative flex-1 flex flex-col items-center justify-center px-5 py-10">
 
-        {/* Logo */}
+        {/* Logo + wordmark */}
         <div className="mb-8 flex flex-col items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -68,10 +69,10 @@ function LoginForm() {
           />
           <div className="text-center">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl font-black tracking-tight" style={{ color: "#ffffff" }}>LEDGIO</span>
-              <span className="text-2xl font-black tracking-tight" style={{ color: "#00D4FF" }}>AI</span>
+              <span className="text-2xl font-black tracking-tight" style={{ color: "var(--text)" }}>LEDGIO</span>
+              <span className="text-2xl font-black tracking-tight" style={{ color: "var(--accent)" }}>AI</span>
             </div>
-            <p className="mt-1 text-[11px] tracking-[0.2em] uppercase font-medium" style={{ color: "rgba(0,212,255,0.55)" }}>
+            <p className="mt-1 text-[11px] tracking-[0.2em] uppercase font-medium" style={{ color: "var(--text-muted)" }}>
               From Ledger to Intelligence
             </p>
           </div>
@@ -81,18 +82,17 @@ function LoginForm() {
         <div
           className="w-full max-w-sm rounded-2xl p-7 shadow-2xl"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(0,212,255,0.15)",
-            backdropFilter: "blur(20px)",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
           }}
         >
-          <h2 className="text-center text-base font-semibold mb-6" style={{ color: "rgba(255,255,255,0.85)" }}>
+          <h2 className="text-center text-base font-semibold mb-6" style={{ color: "var(--text)" }}>
             เข้าสู่ระบบ
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>
                 ชื่อผู้ใช้
               </label>
               <input
@@ -105,17 +105,17 @@ function LoginForm() {
                 placeholder="กรอกชื่อผู้ใช้"
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
                 style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(0,212,255,0.2)",
-                  color: "rgba(255,255,255,0.9)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
                 }}
-                onFocus={(e) => { e.target.style.border = "1px solid rgba(0,212,255,0.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(0,212,255,0.08)"; }}
-                onBlur={(e) => { e.target.style.border = "1px solid rgba(0,212,255,0.2)"; e.target.style.boxShadow = "none"; }}
+                onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-8)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>
                 รหัสผ่าน
               </label>
               <input
@@ -127,17 +127,17 @@ function LoginForm() {
                 placeholder="กรอกรหัสผ่าน"
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
                 style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(0,212,255,0.2)",
-                  color: "rgba(255,255,255,0.9)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
                 }}
-                onFocus={(e) => { e.target.style.border = "1px solid rgba(0,212,255,0.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(0,212,255,0.08)"; }}
-                onBlur={(e) => { e.target.style.border = "1px solid rgba(0,212,255,0.2)"; e.target.style.boxShadow = "none"; }}
+                onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-8)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
               />
             </div>
 
             {error && (
-              <p className="text-xs rounded-xl px-4 py-2.5" style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}>
+              <p className="text-xs rounded-xl px-4 py-2.5" style={{ background: "var(--danger-10)", color: "var(--danger)", border: "1px solid var(--danger-30)" }}>
                 {error}
               </p>
             )}
@@ -147,9 +147,9 @@ function LoginForm() {
               disabled={loading}
               className="w-full rounded-xl py-3 text-sm font-semibold transition-all disabled:opacity-50 cursor-pointer mt-2"
               style={{
-                background: loading ? "rgba(0,212,255,0.5)" : "linear-gradient(135deg, #00D4FF 0%, #0099bb 100%)",
-                color: "#04111f",
-                boxShadow: loading ? "none" : "0 4px 20px rgba(0,212,255,0.3)",
+                background: "var(--accent)",
+                color: "var(--bg)",
+                boxShadow: loading ? "none" : "0 4px 20px var(--accent-20)",
               }}
             >
               {loading ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
@@ -158,7 +158,7 @@ function LoginForm() {
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-[11px]" style={{ color: "rgba(255,255,255,0.2)" }}>
+        <p className="mt-8 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
           © 2026 LEDGIO AI · AI Financial & Tax Advisor
         </p>
       </div>
