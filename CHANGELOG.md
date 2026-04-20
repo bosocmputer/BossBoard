@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-04-20 — v1.11.0: User Isolation + Login Logo
+
+### Features
+- **User-isolated sessions** — ResearchSession และ ClientMemory แยกตาม user (แต่ละ user เห็นข้อมูลของตัวเองเท่านั้น)
+- **Admin sees all sessions** — superadmin/admin เห็น session ทุก user พร้อม badge `@username`
+- **User Management UI** — `/admin/users` (เพิ่ม/ลบ/reset password/toggle role) เห็นเฉพาะ admin
+- **localStorage isolation** — Chat history ลบออกจาก localStorage (in-session only), Research page ใช้ key แยกตาม userId
+- **Login logo** — เปลี่ยนจาก emoji เป็น LEDGIO AI logo จริง
+
+### Bug Fixes
+- **Prisma `@map("user_id")`** — เพิ่ม `@map` directive ให้ `userId` fields เพื่อให้ Prisma client ค้นหา column ถูก (DB ใช้ snake_case `user_id`)
+- **Migration drop old unique index** — ลบ `client_memory_key_key` solo unique index ที่ค้างจาก migration ก่อนหน้า
+
+### Schema Changes
+- `prisma/schema.prisma` — เพิ่ม `userId @map("user_id")` ใน ResearchSession และ ClientMemory, เพิ่ม `sessions`/`memories` relations ใน User model
+- Migration `20260420050000_add_user_isolation` — ADD COLUMN `user_id`, backfill superadmin, FK constraint
+- Migration `20260420060000_fix_user_id_map` — DROP INDEX `client_memory_key_key`
+
+---
+
 ## 2026-04-20 — v1.10.1: Authentication — Login Fixed
 
 ### Bug Fixes

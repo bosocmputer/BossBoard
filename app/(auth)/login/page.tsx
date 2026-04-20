@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Image from "next/image";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -42,10 +43,16 @@ function LoginForm() {
         style={{ background: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="mb-6 text-center">
-          <div className="text-3xl mb-2">🏛️</div>
-          <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
-            BossBoard
-          </h1>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/assets/logo/LEDGIOAILOGO.png"
+              alt="LEDGIO AI"
+              width={160}
+              height={60}
+              priority
+              style={{ objectFit: "contain" }}
+            />
+          </div>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
             เข้าสู่ระบบเพื่อดำเนินการต่อ
           </p>
