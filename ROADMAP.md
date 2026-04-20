@@ -17,22 +17,26 @@
 
 ---
 
-## Phase 1 — Authentication & Multi-user (สำคัญ ก่อน prod)
+## Phase 1 — Authentication ✅ เสร็จแล้ว (2026-04-20)
 
 **เป้าหมาย:** ป้องกันไม่ให้ทุกคนที่รู้ IP:port เข้าใช้ระบบได้
 
-### งานที่ต้องทำ
+### ✅ เสร็จแล้ว
 
-- [ ] เพิ่ม `middleware.ts` — block ทุก route ยกเว้น `/login` และ `/api/auth/*`
-- [ ] สร้าง Login page (`/login`) — username + password form
-- [ ] สร้าง `/api/auth/login` — ตรวจ credentials, set httpOnly cookie (JWT หรือ session token)
-- [ ] สร้าง `/api/auth/logout` — clear cookie
-- [ ] User config เก็บใน `~/.bossboard/users.json` (hash password ด้วย bcrypt)
-- [ ] Multi-user isolation — แต่ละ user เห็นแค่ agents/teams ของตัวเอง (เพิ่ม `userId` field)
+- [x] `middleware.ts` — block ทุก route, API → 401 JSON, Page → redirect `/login`
+- [x] `app/login/page.tsx` — Thai login form, full-screen overlay
+- [x] `app/api/auth/login` — bcrypt verify + httpOnly cookie (JWT HS256, 8h)
+- [x] `app/api/auth/logout` — clear cookie
+- [x] `app/api/auth/me` — return current user info
+- [x] `lib/auth.ts` — Edge-safe JWT helper (jose), lazy secret eval
+- [x] User เก็บใน Postgres table `users` (bcrypt cost 12)
+- [x] `scripts/seed-admin.ts` — seed superadmin (ใช้ `npm run seed:admin`)
+- [x] Sidebar — ซ่อนบน `/login`, logout button
+- [x] JWT_SECRET เพิ่มใน docker run env vars บน server
 
-### Tech แนะนำ
-- **Option A (ง่ายสุด):** NextAuth.js v5 + Credentials provider
-- **Option B (ควบคุมได้เอง):** JWT + httpOnly cookie + middleware manual
+### ยังเหลือ (อนาคต)
+
+- [ ] Multi-user isolation — ถ้าต้องการหลาย user แยก data กัน (เพิ่ม `userId` field)
 
 ---
 
@@ -51,7 +55,7 @@
 - [x] Knowledge file content ยังเก็บบน filesystem (`~/.bossboard/knowledge/`), metadata อยู่ใน DB
 - [x] **Redis rate limiting** — `lib/rate-limit-redis.ts` sorted-set sliding window, fallback to in-memory
 
-### ยังเหลือ
+### Backup (ยังเหลือ)
 
 - [ ] Backup cron job สำหรับ database (pg_dump → schedule)
 
@@ -166,7 +170,7 @@ Containers รันอยู่:
 
 | Priority | Phase | เวลาประมาณ | สถานะ |
 |----------|-------|-----------|-------|
-| 🔴 ด่วนมาก | Phase 1: Authentication | 2–3 วัน | ⏳ ยังไม่เริ่ม |
+| 🔴 ด่วนมาก | Phase 1: Authentication | 2–3 วัน | ✅ เสร็จแล้ว (2026-04-20) |
 | 🟠 สำคัญ | Phase 2: Storage → Postgres + Redis | 3–5 วัน | ✅ เสร็จแล้ว (2026-04-19) |
 | 🟡 ก่อน prod | Phase 3: Nginx SSL + Monitoring | 1–2 วัน | 🔄 บางส่วน (Nginx done, SSL pending) |
 | 🟢 หลัง launch | Phase 4: Business Features | 2–4 สัปดาห์ | ⏳ ยังไม่เริ่ม |
