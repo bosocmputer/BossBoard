@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-04-20 — v1.12.1: Global Ambient Background
+
+### Features
+
+- **Ambient background app-wide** — ใส่ `body::before` (subtle grid) + `body::after` (cyan radial blobs) ใน `globals.css` ให้ทุกหน้าได้ feel ของ login page
+- Opacity ปรับเบา (grid 0.08 dark / 0.15 light, blobs 5-8%) เพื่อไม่แย่งความสนใจจาก content
+- `z-index: -1/-2` + `pointer-events: none` — sidebar/card (solid `var(--card)`) ยังอ่านชัดเจน
+- Light mode มี gradient เบากว่า dark mode อีก step เพื่อไม่ให้ดู muddy
+
+### Why
+
+หน้าอื่นๆ เดิมเป็น flat navy ล้วน ขาด depth ที่ login page มี — แก้ไฟล์เดียว (globals.css) เพื่อ sync feel ทั้ง app
+
+---
+
 ## 2026-04-20 — v1.12.0: Brand Consistency — Favicon + Design System
 
 ### Features
