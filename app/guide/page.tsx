@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface Step {
   id: string;
@@ -261,6 +262,13 @@ export default function GuidePage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Glossary link */}
+        <div className="mt-8 text-center">
+          <Link href="/glossary" className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80" style={{ color: "var(--accent)" }}>
+            📖 ดูคำศัพท์ทั้งหมด (AI / บัญชี / ภาษี)
+          </Link>
         </div>
 
         {/* CTA */}

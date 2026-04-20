@@ -18,6 +18,7 @@ import {
   Award,
   PieChart,
   BookOpen,
+  BookMarked,
   Building2,
   Landmark,
   LogOut,
@@ -69,6 +70,7 @@ const NAV_ITEMS: NavGroup[] = [
     items: [
       { href: "/settings", icon: Settings, labelKey: "nav.settings" },
       { href: "/guide", icon: BookOpen, labelKey: "nav.guide" },
+      { href: "/glossary", icon: BookMarked, labelKey: "nav.glossary" },
     ],
   },
 ];

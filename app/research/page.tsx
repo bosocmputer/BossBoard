@@ -5,6 +5,8 @@ import { showToast } from "../components/Toast";
 import Modal from "../components/Modal";
 import Badge from "../components/Badge";
 import Card from "../components/Card";
+import Tooltip from "../components/Tooltip";
+import { GLOSSARY } from "@/lib/glossary";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -1132,7 +1134,12 @@ export default function ResearchPage() {
       </button>
       {showAdvanced && (
       <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <div className="text-xs mb-1 font-bold flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Brain size={12} /> ความจำการประชุม</div>
+        <div className="text-xs mb-1 font-bold flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+          <Brain size={12} /> ความจำการประชุม
+          <Tooltip content={`${GLOSSARY.contextWindow?.short ?? ""} · เลือกว่าจะให้ AI จำรอบก่อน ๆ มากน้อยแค่ไหน — ยิ่งจำเยอะยิ่งเปลือง Token`}>
+            <span className="text-[10px] px-1 rounded border cursor-help font-normal" style={{ borderColor: "var(--border)" }}>?</span>
+          </Tooltip>
+        </div>
         <select
           value={historyMode}
           onChange={(e) => setHistoryMode(e.target.value as typeof historyMode)}

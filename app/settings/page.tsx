@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Settings, Building2, Search, Save, FlaskConical } from "lucide-react";
+import Tooltip from "../components/Tooltip";
+import { GLOSSARY } from "@/lib/glossary";
 
 interface CompanyInfo {
   name?: string;
@@ -199,7 +201,12 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">มาตรฐานบัญชี</label>
+            <label className="text-sm font-medium flex items-center gap-2 mb-1">
+              <span>มาตรฐานบัญชี</span>
+              <Tooltip content={`${GLOSSARY.npaes?.long ?? ""} · ${GLOSSARY.paes?.long ?? ""}`}>
+                <span className="text-[10px] px-1.5 py-0.5 rounded border cursor-help font-normal" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>?</span>
+              </Tooltip>
+            </label>
             <select
               value={accStandard}
               onChange={(e) => setAccStandard(e.target.value)}

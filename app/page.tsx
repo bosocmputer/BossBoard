@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import Card from "./components/Card";
 import { Skeleton, SkeletonCard } from "./components/Skeleton";
+import Tooltip from "./components/Tooltip";
+import { GLOSSARY } from "@/lib/glossary";
 
 interface DashboardData {
   totalAgents: number;
@@ -121,10 +123,10 @@ export default function DashboardPage() {
 
   const statCards = data
     ? [
-        { label: "Agents", value: data.totalAgents, sub: `${data.activeAgents} ใช้งาน`, icon: Users, color: "var(--accent)" },
-        { label: "ทีม", value: data.totalTeams, sub: "ตั้งค่าแล้ว", icon: Zap, color: "var(--info)" },
-        { label: "ประชุม", value: data.totalSessions, sub: data.runningSessions > 0 ? `${data.runningSessions} กำลังประชุม` : "ทั้งหมด", icon: MessageSquare, color: "var(--purple)" },
-        { label: "การใช้งาน", value: formatTokens(data.totalTokens), sub: "มูลค่ารวม", icon: TrendingUp, color: "var(--success)", href: "/tokens" },
+        { label: "ที่ปรึกษา AI", value: data.totalAgents, sub: `${data.activeAgents} ใช้งาน`, icon: Users, color: "var(--accent)", tooltip: GLOSSARY.agent?.long },
+        { label: "ทีม", value: data.totalTeams, sub: "ตั้งค่าแล้ว", icon: Zap, color: "var(--info)", tooltip: GLOSSARY.team?.long },
+        { label: "การประชุม", value: data.totalSessions, sub: data.runningSessions > 0 ? `${data.runningSessions} กำลังประชุม` : "ทั้งหมด", icon: MessageSquare, color: "var(--purple)", tooltip: GLOSSARY.session?.long },
+        { label: "การใช้งาน (Tokens)", value: formatTokens(data.totalTokens), sub: "มูลค่ารวม", icon: TrendingUp, color: "var(--success)", href: "/tokens", tooltip: GLOSSARY.tokens?.long },
       ]
     : [];
 
@@ -191,7 +193,13 @@ export default function DashboardPage() {
               <Card key={stat.label} padding="md" hover={!!stat.href}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                    {stat.tooltip ? (
+                      <Tooltip content={stat.tooltip}>
+                        <p className="text-xs font-medium mb-1 cursor-help inline-block border-b border-dotted" style={{ color: "var(--text-muted)", borderColor: "var(--text-muted)" }}>{stat.label}</p>
+                      </Tooltip>
+                    ) : (
+                      <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                    )}
                     <p className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>{stat.value}</p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{stat.sub}</p>
                   </div>
@@ -258,9 +266,11 @@ export default function DashboardPage() {
                       <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                         {timeAgo(s.startedAt)}
                       </span>
-                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                        {formatTokens(s.totalTokens)} tokens
-                      </span>
+                      <Tooltip content={GLOSSARY.tokens?.short || ""}>
+                        <span className="text-[11px] cursor-help" style={{ color: "var(--text-muted)" }}>
+                          {formatTokens(s.totalTokens)} tokens
+                        </span>
+                      </Tooltip>
                     </div>
                   </div>
                 </Link>
@@ -296,7 +306,7 @@ export default function DashboardPage() {
                   <span className="text-xl">{agent.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text)" }}>{agent.name}</p>
-                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{agent.sessions} sessions</p>
+                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{agent.sessions} การประชุม</p>
                   </div>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: "var(--accent)" + "18", color: "var(--accent)" }}>
                     #{i + 1}

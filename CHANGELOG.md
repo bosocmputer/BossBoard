@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-04-21 — v1.13.0-beta: UX Overhaul Phase 2 (Plain Thai + Glossary)
+
+### Features
+
+- **`lib/glossary.ts` (new):** 22 entries ของศัพท์ AI / Token / บัญชี / UI — ใช้เป็น source of truth สำหรับ Tooltip + Glossary page
+  - AI: prompt, systemPrompt, contextWindow, streaming, rag, mcp, ttft, tokensPerSec, temperature, agent
+  - Cost: tokens, inputTokens, outputTokens
+  - Accounting: TFRS, NPAEs, PAEs, TSQC, COSO, มาตรา 40, มาตรา 65
+  - UI: session, team
+- **`/glossary` page (new):** ตารางคำศัพท์พร้อม search + category filter (AI/Cost/Accounting/UI), ลิงก์จาก Guide page + sidebar
+- **Tooltip + Thai labels across app:**
+  - Dashboard: stat cards มี tooltip อธิบาย (ที่ปรึกษา AI / การประชุม / Tokens), `sessions` → `การประชุม`
+  - Tokens page: "Total/Input/Output/Sessions" → ภาษาไทย + tooltip เต็ม, chart legend + per-agent list แสดง "พิมพ์/ตอบ"
+  - Agents page: "Soul" → "บทบาท (System Prompt)" + tooltip, "Seniority" → "ลำดับอาวุโส" + tooltip, card badges (Web/URLs/MCP) มี tooltip
+  - Research page: "ความจำการประชุม" มี tooltip อธิบาย context window
+  - Settings: "มาตรฐานบัญชี" มี tooltip อธิบาย NPAEs vs PAEs
+
+### i18n
+
+- เพิ่ม `nav.glossary` key ทั้ง th/en
+
+### Why
+
+Phase 2 ของ UX Overhaul Plan — พนักงานบัญชีที่ไม่คุ้น AI/LLM ต้องอ่าน label แล้วเข้าใจทันที และเรียกดูคำศัพท์ได้จากที่เดียว
+
+---
+
 ## 2026-04-21 — v1.13.0-alpha: UX Overhaul Phase 1 (Foundation)
 
 ### Features

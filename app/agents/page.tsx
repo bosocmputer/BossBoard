@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { showToast } from "../components/Toast";
+import Tooltip from "../components/Tooltip";
+import { GLOSSARY } from "@/lib/glossary";
 
 type Provider = "anthropic" | "openai" | "gemini" | "ollama" | "openrouter" | "custom";
 
@@ -532,9 +534,21 @@ export default function AgentsPage() {
                     {agent.seniority && (
                       <span className="text-[11px]">#{agent.seniority}</span>
                     )}
-                    {agent.useWebSearch && <span className="text-[11px]">🔍 Web</span>}
-                    {agent.trustedUrls && agent.trustedUrls.length > 0 && <span className="text-[11px]">🌐 {agent.trustedUrls.length} URLs</span>}
-                    {agent.mcpEndpoint && <span className="text-[11px]">MCP</span>}
+                    {agent.useWebSearch && (
+                      <Tooltip content="ที่ปรึกษาสามารถค้นข้อมูลจากอินเทอร์เน็ตก่อนตอบได้">
+                        <span className="text-[11px] cursor-help">🔍 ค้นเว็บ</span>
+                      </Tooltip>
+                    )}
+                    {agent.trustedUrls && agent.trustedUrls.length > 0 && (
+                      <Tooltip content="เว็บไซต์อ้างอิงที่ AI จะใช้ค้นหาข้อมูลเป็นหลัก">
+                        <span className="text-[11px] cursor-help">🌐 {agent.trustedUrls.length} เว็บอ้างอิง</span>
+                      </Tooltip>
+                    )}
+                    {agent.mcpEndpoint && (
+                      <Tooltip content={GLOSSARY.mcp?.long || ""}>
+                        <span className="text-[11px] cursor-help">🔌 MCP</span>
+                      </Tooltip>
+                    )}
                   </div>
                   {/* Health indicators */}
                   {agent.active && (!agent.useWebSearch || !agent.trustedUrls?.length) && (
@@ -928,8 +942,11 @@ export default function AgentsPage() {
 
                   {/* Soul */}
                   <div>
-                    <label className="text-xs mb-1 block font-bold" style={{ color: "var(--text-muted)" }}>
-                      Soul (System Prompt) * — บุคลิกและบทบาทของ agent
+                    <label className="text-xs mb-1 flex items-center gap-2 font-bold" style={{ color: "var(--text-muted)" }}>
+                      <span>บทบาท (System Prompt) * — บุคลิกและความเชี่ยวชาญ</span>
+                      <Tooltip content={GLOSSARY.systemPrompt?.long || ""}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border cursor-help font-normal" style={{ borderColor: "var(--border)" }}>?</span>
+                      </Tooltip>
                     </label>
                     <textarea
                       value={form.soul}
@@ -971,8 +988,11 @@ export default function AgentsPage() {
                       </button>
                     </div>
                     <div className="flex-1 p-3 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                      <label className="text-xs font-bold block mb-1" style={{ color: "var(--text)" }}>
-                        🏛️ Seniority (ลำดับพูด)
+                      <label className="text-xs font-bold flex items-center gap-2 mb-1" style={{ color: "var(--text)" }}>
+                        <span>🏛️ ลำดับอาวุโส (Seniority)</span>
+                        <Tooltip content="กำหนดว่าที่ปรึกษาคนนี้จะพูดเป็นลำดับที่เท่าไหร่ในห้องประชุม · 1 = ประธาน (พูดก่อน), 99 = พูดสรุปท้าย">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border cursor-help font-normal" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>?</span>
+                        </Tooltip>
                       </label>
                       <div className="flex items-center gap-2">
                         <input

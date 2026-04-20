@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import Card from "../components/Card";
 import { Skeleton, SkeletonCard } from "../components/Skeleton";
+import Tooltip from "../components/Tooltip";
+import { GLOSSARY } from "@/lib/glossary";
 
 interface AgentBreakdown {
   agentId: string;
@@ -120,8 +122,13 @@ export default function TokensPage() {
           <ArrowLeft size={14} />
           Dashboard
         </Link>
-        <h1 className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>
-          📊 Token Usage
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2" style={{ color: "var(--text)" }}>
+          📊 การใช้งาน Token
+          <Tooltip content={GLOSSARY.tokens?.long || ""}>
+            <span className="text-xs font-normal px-2 py-0.5 rounded-full border cursor-help" style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}>
+              Token คืออะไร?
+            </span>
+          </Tooltip>
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
           รายละเอียดการใช้งาน Token ทั้งหมด
@@ -138,15 +145,21 @@ export default function TokensPage() {
       ) : data ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
           {[
-            { label: "Total Tokens", value: fmt(data.totalTokens), sub: "input + output", icon: TrendingUp, color: "var(--success)" },
-            { label: "Input Tokens", value: fmt(data.totalInput), sub: "prompt tokens", icon: ArrowUpRight, color: "var(--accent)" },
-            { label: "Output Tokens", value: fmt(data.totalOutput), sub: "completion tokens", icon: ArrowDownLeft, color: "var(--info)" },
-            { label: "Sessions", value: data.totalSessions.toLocaleString(), sub: "total sessions", icon: MessageSquare, color: "var(--purple)" },
+            { label: "รวมทั้งหมด", value: fmt(data.totalTokens), sub: "พิมพ์ + ตอบ", icon: TrendingUp, color: "var(--success)", tip: GLOSSARY.tokens?.long },
+            { label: "คำถามที่พิมพ์ (Input)", value: fmt(data.totalInput), sub: "จำนวน Token ที่ส่งให้ AI", icon: ArrowUpRight, color: "var(--accent)", tip: GLOSSARY.inputTokens?.long },
+            { label: "คำตอบจาก AI (Output)", value: fmt(data.totalOutput), sub: "จำนวน Token ที่ AI ตอบ", icon: ArrowDownLeft, color: "var(--info)", tip: GLOSSARY.outputTokens?.long },
+            { label: "การประชุม", value: data.totalSessions.toLocaleString(), sub: "จำนวนการประชุมทั้งหมด", icon: MessageSquare, color: "var(--purple)", tip: GLOSSARY.session?.long },
           ].map((stat) => (
             <Card key={stat.label} padding="md">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                  {stat.tip ? (
+                    <Tooltip content={stat.tip}>
+                      <p className="text-xs font-medium mb-1 cursor-help inline-block border-b border-dotted" style={{ color: "var(--text-muted)", borderColor: "var(--text-muted)" }}>{stat.label}</p>
+                    </Tooltip>
+                  ) : (
+                    <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                  )}
                   <p className="text-2xl md:text-3xl font-bold" style={{ color: "var(--text)" }}>{stat.value}</p>
                   <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{stat.sub}</p>
                 </div>
@@ -174,14 +187,18 @@ export default function TokensPage() {
           </div>
           {/* Legend */}
           <div className="flex items-center gap-4 mb-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "var(--accent)" }} />
-              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Input</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "var(--info)" }} />
-              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Output</span>
-            </div>
+            <Tooltip content={GLOSSARY.inputTokens?.short || ""}>
+              <div className="flex items-center gap-1.5 cursor-help">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "var(--accent)" }} />
+                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>พิมพ์ (Input)</span>
+              </div>
+            </Tooltip>
+            <Tooltip content={GLOSSARY.outputTokens?.short || ""}>
+              <div className="flex items-center gap-1.5 cursor-help">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "var(--info)" }} />
+                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>ตอบ (Output)</span>
+              </div>
+            </Tooltip>
           </div>
           {/* Chart */}
           <div className="flex items-end gap-[2px] h-40 md:h-48">
@@ -236,11 +253,11 @@ export default function TokensPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text)" }}>
               <Users size={16} style={{ color: "var(--text-muted)" }} />
-              Token ตามเอเจนต์
+              Token ตามที่ปรึกษา AI
             </h2>
             {data && data.agentBreakdown.length > 0 && (
               <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {data.agentBreakdown.length} เอเจนต์
+                {data.agentBreakdown.length} ที่ปรึกษา
               </span>
             )}
           </div>
@@ -267,7 +284,7 @@ export default function TokensPage() {
                               {agent.model ? agent.model.split("/").pop() : "—"}
                             </span>
                             <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                              {agent.totalSessions} sessions
+                              {agent.totalSessions} การประชุม
                             </span>
                           </div>
                           {/* Progress bar */}
@@ -290,12 +307,16 @@ export default function TokensPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-3 mt-1">
-                            <span className="text-[10px]" style={{ color: "var(--accent)" }}>
-                              ↑ {fmt(agent.inputTokens)}
-                            </span>
-                            <span className="text-[10px]" style={{ color: "var(--info)" }}>
-                              ↓ {fmt(agent.outputTokens)}
-                            </span>
+                            <Tooltip content={GLOSSARY.inputTokens?.short || ""}>
+                              <span className="text-[10px] cursor-help" style={{ color: "var(--accent)" }}>
+                                พิมพ์ {fmt(agent.inputTokens)}
+                              </span>
+                            </Tooltip>
+                            <Tooltip content={GLOSSARY.outputTokens?.short || ""}>
+                              <span className="text-[10px] cursor-help" style={{ color: "var(--info)" }}>
+                                ตอบ {fmt(agent.outputTokens)}
+                              </span>
+                            </Tooltip>
                             <span className="text-[10px] ml-auto" style={{ color: "var(--text-muted)" }}>
                               {pct.toFixed(1)}%
                             </span>
@@ -333,7 +354,7 @@ export default function TokensPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text)" }}>
               <Clock size={16} style={{ color: "var(--text-muted)" }} />
-              Token ตาม Session
+              Token ตามการประชุม
             </h2>
             <Link href="/research" className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>
               ดูการประชุม →
@@ -364,7 +385,7 @@ export default function TokensPage() {
                         {s.messageCount} ข้อความ
                       </span>
                       <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                        {s.agentCount} เอเจนต์
+                        {s.agentCount} ที่ปรึกษา
                       </span>
                       <span
                         className="text-[10px] font-medium px-1.5 py-0.5 rounded-full ml-auto flex-shrink-0"
@@ -396,7 +417,7 @@ export default function TokensPage() {
           ) : (
             <div className="text-center py-8">
               <MessageSquare size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>ยังไม่มี Session</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>ยังไม่มีการประชุม</p>
             </div>
           )}
         </Card>
