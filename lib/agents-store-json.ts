@@ -74,6 +74,8 @@ export interface KnowledgePublic {
 
 export interface ResearchSession {
   id: string;
+  userId?: string;
+  ownerUsername?: string;
   question: string;
   agentIds: string[];
   dataSource?: string;

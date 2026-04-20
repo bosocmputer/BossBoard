@@ -95,6 +95,7 @@ interface ServerSession {
   totalTokens: number;
   messages: ResearchMessage[];
   finalAnswer?: string;
+  ownerUsername?: string;
 }
 
 interface AttachedFile {
@@ -1326,6 +1327,11 @@ export default function ResearchPage() {
                       )}{" "}
                       {new Date(s.startedAt).toLocaleDateString("th")}
                       {s.totalTokens > 0 && ` · ${s.totalTokens.toLocaleString()} tokens`}
+                      {s.ownerUsername && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+                          @{s.ownerUsername}
+                        </span>
+                      )}
                     </div>
                   </button>
                 ))}

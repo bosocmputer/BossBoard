@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getResearchSession, completeResearchSession } from "@/lib/agents-store";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const session = await getResearchSession(id);
+    const userId = req.headers.get("x-user-id")!;
+    const role = req.headers.get("x-user-role");
+    const ownerFilter = role === "admin" ? undefined : userId;
+    const session = await getResearchSession(id, ownerFilter);
     if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
     return NextResponse.json({ session });
   } catch (e) {
@@ -12,14 +15,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const userId = req.headers.get("x-user-id")!;
+    const role = req.headers.get("x-user-role");
     const body = await req.json();
     if (body.action !== "force-complete") {
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
-    const session = await getResearchSession(id);
+    const ownerFilter = role === "admin" ? undefined : userId;
+    const session = await getResearchSession(id, ownerFilter);
     if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
     if (session.status !== "running") {
       return NextResponse.json({ error: "Session is not running" }, { status: 409 });

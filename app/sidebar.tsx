@@ -21,6 +21,7 @@ import {
   Building2,
   Landmark,
   LogOut,
+  UserCog,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -88,6 +89,11 @@ export function Sidebar() {
   const { t } = useI18n();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setUserRole(d.role ?? null)).catch(() => {});
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -107,6 +113,25 @@ export function Sidebar() {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, [mobileMenuOpen]);
+
+  const renderNavLink = (href: string, icon: React.ReactNode, label: string, onNavigate?: () => void) => {
+    const active = isActive(href);
+    return (
+      <Link
+        key={href}
+        href={href}
+        onClick={onNavigate}
+        title={collapsed ? label : undefined}
+        className={`flex items-center rounded-xl text-sm transition-all duration-200 ${
+          active ? "bg-[var(--accent)]/12 text-[var(--accent)] font-medium" : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]"
+        }`}
+        style={{ padding: collapsed ? "10px 0" : "10px 12px", justifyContent: collapsed ? "center" : "flex-start", gap: collapsed ? 0 : 10 }}
+      >
+        {icon}
+        {!collapsed && label}
+      </Link>
+    );
+  };
 
   const renderNavItems = (onNavigate?: () => void) => (
     <div className="space-y-5">
@@ -145,6 +170,16 @@ export function Sidebar() {
           </div>
         </div>
       ))}
+      {userRole === "admin" && (
+        <div>
+          {!collapsed && (
+            <div className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Admin</div>
+          )}
+          <div className="space-y-0.5">
+            {renderNavLink("/admin/users", <UserCog size={20} strokeWidth={isActive("/admin/users") ? 2.2 : 1.8} style={{ color: isActive("/admin/users") ? "var(--accent)" : "var(--text-muted)", flexShrink: 0 }} />, "จัดการผู้ใช้", onNavigate)}
+          </div>
+        </div>
+      )}
     </div>
   );
 

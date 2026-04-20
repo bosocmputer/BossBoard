@@ -718,12 +718,14 @@ export async function POST(req: NextRequest) {
     return `\n\n---\n📎 เอกสารอ้างอิงที่แนบมา (ใช้ข้อมูลเหล่านี้ประกอบการวิเคราะห์):\n${contexts.map((f) => `[${f.meta}]\n${f.context}`).join("\n\n---\n")}\n---\n`;
   }
 
+  const userId = req.headers.get("x-user-id")!;
+
   let sessionId: string;
   if (existingSessionId) {
     // Reuse existing session (multi-round meeting)
     sessionId = existingSessionId;
   } else {
-    const newSession = await createResearchSession({ question, agentIds, dataSource });
+    const newSession = await createResearchSession({ question, agentIds, dataSource }, userId);
     sessionId = newSession.id;
     // Increment session count only on first round
     for (const aid of agentIds) {
@@ -738,7 +740,7 @@ export async function POST(req: NextRequest) {
   // Company & knowledge context
   const [companyContext, memoryContext] = await Promise.all([
     getCompanyInfoContext(),
-    getMemoryContext(),
+    getMemoryContext(userId),
   ]);
 
   // Client disconnect detection — abort LLM calls when client disconnects
@@ -1381,7 +1383,7 @@ export async function POST(req: NextRequest) {
                 const facts: { key: string; value: string }[] = JSON.parse(jsonMatch[0]);
                 for (const f of facts.slice(0, 5)) {
                   if (f.key && f.value && typeof f.key === "string" && typeof f.value === "string") {
-                    void upsertMemoryFact(f.key, f.value, sessionId);
+                    void upsertMemoryFact(userId, f.key, f.value, sessionId);
                   }
                 }
               }

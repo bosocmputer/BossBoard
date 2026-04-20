@@ -333,13 +333,16 @@ async function cleanupStaleSessions() {
 }
 
 function dbSessionToDomain(s: {
-  id: string; question: string; agentIds: string[]; dataSource: string | null;
+  id: string; userId: string; question: string; agentIds: string[]; dataSource: string | null;
   status: string; startedAt: Date; completedAt: Date | null; finalAnswer: string | null;
   totalTokens: number;
   messages: { id: string; agentId: string; agentName: string; agentEmoji: string; role: string; content: string; tokensUsed: number; timestamp: Date }[];
+  user?: { username: string } | null;
 }): ResearchSession {
   return {
     id: s.id,
+    userId: s.userId,
+    ownerUsername: s.user?.username,
     question: s.question,
     agentIds: s.agentIds,
     dataSource: s.dataSource ?? undefined,
@@ -361,31 +364,39 @@ function dbSessionToDomain(s: {
   };
 }
 
-export async function listResearch(): Promise<ResearchSession[]> {
+export async function listResearch(userId: string, role?: string): Promise<ResearchSession[]> {
   await cleanupStaleSessions();
+  const isAdmin = role === "admin";
   const sessions = await db.researchSession.findMany({
+    where: isAdmin ? undefined : { userId },
     orderBy: { startedAt: "desc" },
     take: 100,
-    include: { messages: { orderBy: { timestamp: "asc" } } },
+    include: {
+      messages: { orderBy: { timestamp: "asc" } },
+      user: isAdmin ? { select: { username: true } } : false,
+    },
   });
   return sessions.map(dbSessionToDomain);
 }
 
-export async function getResearchSession(id: string): Promise<ResearchSession | null> {
+export async function getResearchSession(id: string, userId?: string): Promise<ResearchSession | null> {
   const s = await db.researchSession.findUnique({
     where: { id },
-    include: { messages: { orderBy: { timestamp: "asc" } } },
+    include: { messages: { orderBy: { timestamp: "asc" } }, user: { select: { username: true } } },
   });
-  return s ? dbSessionToDomain(s) : null;
+  if (!s) return null;
+  if (userId && s.userId !== userId) return null;
+  return dbSessionToDomain(s);
 }
 
 export async function createResearchSession(data: {
   question: string; agentIds: string[]; dataSource?: string;
-}): Promise<ResearchSession> {
+}, userId: string): Promise<ResearchSession> {
   const now = new Date();
   const session = await db.researchSession.create({
     data: {
       id: crypto.randomUUID(),
+      userId,
       question: data.question,
       agentIds: data.agentIds,
       dataSource: data.dataSource,
@@ -393,7 +404,7 @@ export async function createResearchSession(data: {
       startedAt: now,
       totalTokens: 0,
     },
-    include: { messages: true },
+    include: { messages: true, user: { select: { username: true } } },
   });
   return dbSessionToDomain(session);
 }
@@ -869,8 +880,11 @@ export async function syncSystemKnowledge(): Promise<{ synced: number; version: 
 
 // ─── Client Memory ────────────────────────────────────────────────────────────
 
-export async function getMemoryFacts(): Promise<MemoryFact[]> {
-  const facts = await db.clientMemory.findMany({ orderBy: { createdAt: "asc" } });
+export async function getMemoryFacts(userId: string): Promise<MemoryFact[]> {
+  const facts = await db.clientMemory.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
   return facts.map((f) => ({
     id: f.id,
     key: f.key,
@@ -881,12 +895,12 @@ export async function getMemoryFacts(): Promise<MemoryFact[]> {
   }));
 }
 
-export async function upsertMemoryFact(key: string, value: string, source: string): Promise<MemoryFact> {
+export async function upsertMemoryFact(userId: string, key: string, value: string, source: string): Promise<MemoryFact> {
   const now = new Date();
-  const existing = await db.clientMemory.findUnique({ where: { key } });
+  const existing = await db.clientMemory.findUnique({ where: { userId_key: { userId, key } } });
   if (existing) {
     const updated = await db.clientMemory.update({
-      where: { key },
+      where: { userId_key: { userId, key } },
       data: { value, source, updatedAt: now },
     });
     return { id: updated.id, key: updated.key, value: updated.value, source: updated.source, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt.toISOString() };
@@ -894,6 +908,7 @@ export async function upsertMemoryFact(key: string, value: string, source: strin
   const created = await db.clientMemory.create({
     data: {
       id: crypto.randomBytes(4).toString("hex"),
+      userId,
       key,
       value,
       source,
@@ -904,15 +919,15 @@ export async function upsertMemoryFact(key: string, value: string, source: strin
   return { id: created.id, key: created.key, value: created.value, source: created.source, createdAt: created.createdAt.toISOString(), updatedAt: created.updatedAt.toISOString() };
 }
 
-export async function deleteMemoryFact(id: string): Promise<boolean> {
-  const existing = await db.clientMemory.findUnique({ where: { id } });
+export async function deleteMemoryFact(userId: string, id: string): Promise<boolean> {
+  const existing = await db.clientMemory.findFirst({ where: { id, userId } });
   if (!existing) return false;
   await db.clientMemory.delete({ where: { id } });
   return true;
 }
 
-export async function getMemoryContext(): Promise<string> {
-  const facts = await getMemoryFacts();
+export async function getMemoryContext(userId: string): Promise<string> {
+  const facts = await getMemoryFacts(userId);
   if (facts.length === 0) return "";
   const lines = facts.map((f) => `- ${f.key}: ${f.value}`).join("\n");
   return `\n\n---\n🧠 ข้อมูลจากการประชุมครั้งก่อน (Cross-Session Memory):\n${lines}\n---\n`;

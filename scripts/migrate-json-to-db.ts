@@ -137,6 +137,8 @@ async function migrateSettings() {
 }
 
 async function migrateResearch() {
+  const superadmin = await db.user.findUnique({ where: { username: "superadmin" } });
+  const fallbackUserId = superadmin?.id ?? "";
   const sessions: any[] = readJson("research-history.json", []);
   let sessionCount = 0;
   let msgCount = 0;
@@ -145,6 +147,7 @@ async function migrateResearch() {
       where: { id: s.id },
       create: {
         id: s.id,
+        userId: fallbackUserId,
         question: s.question || "",
         agentIds: Array.isArray(s.agentIds) ? s.agentIds : [],
         dataSource: s.dataSource || null,
@@ -225,14 +228,17 @@ async function migrateStats() {
 }
 
 async function migrateMemory() {
+  const superadmin = await db.user.findUnique({ where: { username: "superadmin" } });
+  const fallbackUserId = superadmin?.id ?? "";
   const facts: any[] = readJson("client-memory.json", []);
   let count = 0;
   for (const f of facts) {
     if (!f.id || !f.key) continue;
     await db.clientMemory.upsert({
-      where: { key: f.key },
+      where: { userId_key: { userId: fallbackUserId, key: f.key } },
       create: {
         id: f.id,
+        userId: fallbackUserId,
         key: f.key,
         value: f.value || "",
         source: f.source || "migration",

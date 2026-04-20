@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAgentStats, listAgents, listResearch } from "@/lib/agents-store";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const userId = req.headers.get("x-user-id")!;
     const [stats, agents, sessions] = await Promise.all([
       getAgentStats(),
       listAgents(),
-      listResearch(),
+      listResearch(userId, "admin"), // token-usage is admin analytics — show all sessions
     ]);
 
     const agentMap = new Map(agents.map((a) => [a.id, a]));
