@@ -20,6 +20,7 @@ import {
   BookOpen,
   Building2,
   Landmark,
+  LogOut,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -87,6 +88,13 @@ export function Sidebar() {
   const { t } = useI18n();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  if (pathname === "/login") return null;
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
@@ -205,6 +213,14 @@ export function Sidebar() {
                   <Award size={14} />
                   {t("nav.benefits")}
                 </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-[var(--surface)] text-[var(--text-muted)] mt-1"
+                >
+                  <LogOut size={14} />
+                  ออกจากระบบ
+                </button>
               </div>
             </aside>
           </div>
@@ -266,12 +282,19 @@ export function Sidebar() {
           <div className="sidebar-footer">
             <Link
               href="/benefits"
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-[var(--surface)]"
-              style={{ color: "var(--text-muted)" }}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-[var(--surface)] text-[var(--text-muted)]"
             >
               <Award size={14} />
               {t("nav.benefits")}
             </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-[var(--surface)] text-[var(--text-muted)] mt-1"
+            >
+              <LogOut size={14} />
+              ออกจากระบบ
+            </button>
           </div>
         )}
       </aside>

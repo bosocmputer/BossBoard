@@ -159,3 +159,13 @@ model ClientMemory {
 
   @@map("client_memory")
 }
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @db.VarChar(100)
+  role         String   @default("admin") @db.VarChar(20)
+  createdAt    DateTime @default(now())
+
+  @@map("users")
+}
