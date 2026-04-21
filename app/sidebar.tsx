@@ -104,8 +104,11 @@ export function Sidebar() {
     window.location.href = "/login";
   }
 
+  const EXACT_MATCH_ROUTES = new Set(["/", "/chat"]);
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+    EXACT_MATCH_ROUTES.has(href)
+      ? pathname === href
+      : pathname === href || pathname.startsWith(href + "/");
 
   const mobileCurrent = NAV_ITEMS.flatMap((g) => g.items).find((item) => isActive(item.href));
 
