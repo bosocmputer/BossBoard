@@ -1153,7 +1153,7 @@ export async function POST(req: NextRequest) {
         if (chairApiKeyCC) {
           try {
             const findingsSummary = agentFindings
-              .map((f) => `[${f.emoji} ${f.name}]: ${f.content.slice(0, 400)}`)
+              .map((f) => `[${f.emoji} ${f.name}]: ${f.content}`)
               .join("\n\n");
             const consensusResult = await callLLM(chairman.provider, chairman.model, chairApiKeyCC, chairman.baseUrl, [
               {
