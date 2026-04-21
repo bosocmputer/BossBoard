@@ -544,11 +544,11 @@ const CHAIRMAN_ROLES = [
 ];
 
 function detectChairman(agents: AgentPublic[]): AgentPublic {
-  // Use explicit seniority if set
+  // Use explicit seniority if set — highest seniority = chairman
   const sorted = [...agents].sort((a, b) => {
-    const sa = a.seniority ?? 99;
-    const sb = b.seniority ?? 99;
-    if (sa !== sb) return sa - sb;
+    const sa = a.seniority ?? 0;
+    const sb = b.seniority ?? 0;
+    if (sa !== sb) return sb - sa; // descending: highest seniority first
     // Fall back to role keyword matching
     const ra = a.role.toLowerCase();
     const rb = b.role.toLowerCase();
