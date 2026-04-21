@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-21 — v1.14.1: /chat Agent Selector Page
+
+- **`app/chat/page.tsx` (new):** หน้า selector agent — แสดง system agents (DBD/RD) ก่อน แล้วตาม user agents; คลิก → `/chat/[agentId]`; empty state ลิงก์ไป `/agents`
+- **Sidebar:** เพิ่ม "ถามด่วน" (MessageCircle icon) ใน group จัดการ ลิงก์ไป `/chat`
+- **Agent cards:** เพิ่มปุ่ม 💬 ถามด่วน บนทุก agent card ใน `/agents` → ลิงก์ `/chat/[id]`
+- **i18n:** เพิ่ม `nav.chat` key (th: "ถามด่วน", en: "Quick Chat")
+- Fix: Dashboard card "ถามด่วน" href="/chat" → ไม่ 404 แล้ว
+
 ## 2026-04-21 — v1.14.0: UX Overhaul Phase 3–5 (Wizard + THB Budget + Mobile)
 
 ### Phase 3 — Core Flow

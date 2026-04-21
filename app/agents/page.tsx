@@ -586,6 +586,14 @@ export default function AgentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                  <a
+                    href={`/chat/${agent.id}`}
+                    className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
+                    style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                    title="ถามด่วน"
+                  >
+                    💬 ถามด่วน
+                  </a>
                   <button
                     onClick={() => openKnowledge(agent)}
                     className="px-3 py-2 sm:py-1 rounded text-xs border transition-all"
