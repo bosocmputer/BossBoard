@@ -1310,14 +1310,18 @@ export async function POST(req: NextRequest) {
 
       // Build allContext from either current round findings or all rounds (close mode)
       let allContext = "";
+      const SYNTHESIS_MSG_CAP = 2000; // per-message cap to prevent synthesis timeout
       if (mode === "close" && allRounds && allRounds.length > 0) {
-        // Close mode: summarize older rounds, keep last 2 in full
+        // Close mode: cap each message to prevent LLM timeout on large sessions
         allContext = allRounds.map((round: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }, i: number) => {
           const isRecent = i >= allRounds.length - 2;
           const msgs = (round.messages ?? [])
             .filter((m: { role: string }) => m.role !== "thinking")
             .map((m: { agentEmoji: string; agentName: string; role: string; content: string }) => {
-              const text = isRecent ? m.content : m.content.slice(0, 300) + (m.content.length > 300 ? "..." : "");
+              const cap = isRecent ? SYNTHESIS_MSG_CAP : 300;
+              const text = m.content.length > cap
+                ? m.content.slice(0, Math.floor(cap * 0.7)) + "\n\n[...สรุปย่อ...]\n\n" + m.content.slice(-Math.floor(cap * 0.3))
+                : m.content;
               return `[${m.agentEmoji} ${m.agentName} — ${m.role}]:\n${text}`;
             })
             .join("\n\n");
@@ -1325,8 +1329,15 @@ export async function POST(req: NextRequest) {
         }).join("\n\n---\n\n");
       } else {
         // Full/default mode: use current round findings
+        // Cap each finding at 3000 chars to prevent synthesis timeout on large sessions
+        const SYNTHESIS_FINDING_CAP = 3000;
         allContext = agentFindings
-          .map((f) => `[${f.emoji} ${f.name} — ${f.role}]:\n${f.content}`)
+          .map((f) => {
+            const text = f.content.length > SYNTHESIS_FINDING_CAP
+              ? f.content.slice(0, 1500) + "\n\n[...สรุปย่อ...]\n\n" + f.content.slice(-1000)
+              : f.content;
+            return `[${f.emoji} ${f.name} — ${f.role}]:\n${text}`;
+          })
           .join("\n\n---\n\n");
       }
 

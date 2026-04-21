@@ -727,9 +727,15 @@ export default function ResearchPage() {
       };
 
       if (closeMode) {
+        const ALL_ROUNDS_MSG_CAP = 1500; // cap per message before sending to keep body < 500KB
         body.allRounds = rounds.filter(r => !r.isSynthesis).map(r => ({
           question: r.question,
-          messages: r.messages.filter(m => m.role !== "thinking"),
+          messages: r.messages.filter(m => m.role !== "thinking").map(m => ({
+            ...m,
+            content: m.content.length > ALL_ROUNDS_MSG_CAP
+              ? m.content.slice(0, Math.floor(ALL_ROUNDS_MSG_CAP * 0.7)) + "\n[...]\n" + m.content.slice(-Math.floor(ALL_ROUNDS_MSG_CAP * 0.3))
+              : m.content,
+          })),
         }));
       }
 
