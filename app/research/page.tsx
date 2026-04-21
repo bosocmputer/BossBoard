@@ -1820,17 +1820,9 @@ export default function ResearchPage() {
                             setSelectedIds(new Set(viewingSession.agentIds));
                           }
                           // Build prior context from the original session's messages into a round
-                          const priorRound: Convers
-                          // Restore clarification answers so astrology sessions don't re-ask birth info
-                          if (viewingSession.messages) {
-                            const clarAnswers = viewingSession.messages
-                              .filter((m: any) => m.role === "clarification")
-                              .map((m: any) => ({ question: m.agentName || "", answer: m.content || "" }))
-                              .filter((qa: any) => qa.question && qa.answer);
-                            if (clarAnswers.length > 0) lastClarificationAnswersRef.current = clarAnswers;
-                          }ationRound = {
+                          const priorRound: ConversationRound = {
                             question: viewingSession.question,
-                            messages: viewingSession.messages.map((m: any) => flex items-center gap-1 ({
+                            messages: viewingSession.messages.map((m: any) => ({
                               id: m.id,
                               agentId: m.agentId,
                               agentName: m.agentName,
