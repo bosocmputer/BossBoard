@@ -627,6 +627,7 @@ export async function POST(req: NextRequest) {
     fileContexts,
     historyMode = "full", // "full" | "summary" | "last3" | "none"
     disableMcp = false,
+    includeCompanyInfo = true,
     mode = "full", // "full" | "discuss" | "close" | "qa"
     sessionId: existingSessionId,
     allRounds,
@@ -641,6 +642,7 @@ export async function POST(req: NextRequest) {
     fileContexts?: { filename: string; meta: string; context: string; sheets?: string[] }[];
     historyMode?: "full" | "summary" | "last3" | "none";
     disableMcp?: boolean;
+    includeCompanyInfo?: boolean;
     mode?: "full" | "discuss" | "close" | "qa";
     sessionId?: string;
     allRounds?: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }[];
@@ -739,7 +741,7 @@ export async function POST(req: NextRequest) {
 
   // Company & knowledge context
   const [companyContext, memoryContext] = await Promise.all([
-    getCompanyInfoContext(),
+    includeCompanyInfo ? getCompanyInfoContext() : Promise.resolve(""),
     getMemoryContext(userId),
   ]);
 

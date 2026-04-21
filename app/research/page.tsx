@@ -364,6 +364,8 @@ export default function ResearchPage() {
   const [useFileContext, setUseFileContext] = useState(true);
   const [useMcpContext, setUseMcpContext] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [includeCompanyInfo, setIncludeCompanyInfo] = useState(true);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [running, setRunning] = useState(false);
   const [agentTokens, setAgentTokens] = useState<Record<string, AgentTokenState>>({});
   const [status, setStatus] = useState("");
@@ -704,6 +706,7 @@ export default function ResearchPage() {
     setActiveAgentIds(new Set());
     setCurrentPhase(0);
     setPhase1DoneCount(new Set());
+    setIsSynthesizing(false);
     if (!overrideQuestion && !closeMode) setQuestion("");
 
     abortRef.current = new AbortController();
@@ -719,6 +722,7 @@ export default function ResearchPage() {
         fileContexts: useFileContext ? buildFileContexts() : [],
         historyMode,
         disableMcp: !useMcpContext,
+        includeCompanyInfo,
         clarificationAnswers: withClarificationAnswers || undefined,
       };
 
@@ -773,7 +777,7 @@ export default function ResearchPage() {
               const msg = payload.message as string;
               if (msg.includes("Phase 1")) setCurrentPhase(1);
               else if (msg.includes("Phase 2") || msg.includes("อภิปราย")) setCurrentPhase(2);
-              else if (msg.includes("Phase 3") || msg.includes("สรุปมติ")) setCurrentPhase(3);
+              else if (msg.includes("Phase 3") || msg.includes("สรุปมติ")) { setCurrentPhase(3); setIsSynthesizing(true); }
             } else if (currentEvent === "chairman") {
               setChairmanId(payload.agentId);
               chairmanIdRef.current = payload.agentId;
@@ -803,6 +807,7 @@ export default function ResearchPage() {
               if (streamFlushRef.current) { clearTimeout(streamFlushRef.current); streamFlushRef.current = null; }
               currentFinalAnswerRef.current = payload.content;
               setCurrentFinalAnswer(payload.content);
+              setIsSynthesizing(false);
             } else if (currentEvent === "agent_tokens" || ("inputTokens" in payload)) {
               const t = { inputTokens: payload.inputTokens, outputTokens: payload.outputTokens, totalTokens: payload.totalTokens };
               roundTokens[payload.agentId] = t;
@@ -1165,6 +1170,18 @@ export default function ResearchPage() {
               <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: useMcpContext ? "17px" : "2px" }} />
             </div>
           </label>
+          {/* Company info toggle */}
+          <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: includeCompanyInfo ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
+            <span className="text-xs flex items-center gap-1.5" style={{ color: includeCompanyInfo ? "var(--text)" : "var(--text-muted)" }}>
+              <Building2 size={11} /> ข้อมูลบริษัทจาก Settings
+              <Tooltip content="ปิดเมื่อถามเรื่องที่ไม่เกี่ยวกับธุรกิจ เช่น ดูดวง หรือเรื่องส่วนตัว">
+                <span className="text-[10px] px-1 rounded border cursor-help" style={{ borderColor: "var(--border)" }}>?</span>
+              </Tooltip>
+            </span>
+            <div onClick={() => setIncludeCompanyInfo(v => !v)} className="relative w-8 h-4 rounded-full transition-colors flex-shrink-0" style={{ background: includeCompanyInfo ? "var(--accent)" : "var(--border)" }}>
+              <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: includeCompanyInfo ? "17px" : "2px" }} />
+            </div>
+          </label>
         </div>
       </div>
       )}
@@ -1500,6 +1517,17 @@ export default function ResearchPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Synthesis Loading Banner — Phase 3 waiting for chairman summary */}
+              {isSynthesizing && !currentFinalAnswer && (
+                <div className="mx-1 rounded-xl border-2 p-4 flex items-center gap-3" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
+                  <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
+                  <div>
+                    <div className="text-sm font-bold" style={{ color: "var(--accent)" }}>🏛️ ประธานกำลังสรุปมติ...</div>
+                    <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>กรุณารอสักครู่ ประมาณ 15–30 วินาที</div>
                   </div>
                 </div>
               )}
