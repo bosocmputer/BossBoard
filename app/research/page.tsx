@@ -1399,8 +1399,8 @@ export default function ResearchPage() {
               <Settings size={14} /> ตั้งค่า ({selectedIds.size})
             </button>
             {(rounds.length > 0 || viewingSession) && (
-              <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                <Download size={14} /> <span className="hidden sm:inline">Export</span>
+              <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
+                <Download size={14} /> Export
               </button>
             )}
           </div>
@@ -1471,6 +1471,54 @@ export default function ResearchPage() {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 min-h-[200px] sm:min-h-[300px] relative"
             >
+              {/* Persistent meeting state badge — always visible when session active or completed */}
+              {!running && (rounds.length > 0 || meetingSessionId) && (
+                <div className="sticky top-0 z-10 mx-1">
+                  <div className="rounded-lg px-3 py-2 border flex items-center gap-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                    {meetingSessionId && !rounds.some(r => r.isSynthesis) ? (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>รอวาระถัดไป — พิมพ์วาระใหม่หรือกด <strong style={{ color: "var(--accent)" }}>สรุปมติ</strong> เมื่อพร้อมปิดประชุม</span>
+                      </>
+                    ) : rounds.some(r => r.isSynthesis) ? (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
+                        <span className="text-xs font-medium" style={{ color: "var(--green)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--text-muted)" }} />
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>มีข้อมูลการประชุม {rounds.filter(r => !r.isSynthesis).length} วาระ</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Persistent meeting state badge — always visible when session active or completed */}
+              {!running && (rounds.length > 0 || meetingSessionId) && (
+                <div className="sticky top-0 z-10 mx-1">
+                  <div className="rounded-lg px-3 py-2 border flex items-center gap-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                    {meetingSessionId && !rounds.some(r => r.isSynthesis) ? (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>รอวาระถัดไป — พิมพ์วาระใหม่หรือกด <strong style={{ color: "var(--accent)" }}>สรุปมติ</strong> เมื่อพร้อมปิดประชุม</span>
+                      </>
+                    ) : rounds.some(r => r.isSynthesis) ? (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
+                        <span className="text-xs font-medium" style={{ color: "var(--green)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--text-muted)" }} />
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>มีข้อมูลการประชุม {rounds.filter(r => !r.isSynthesis).length} วาระ</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Sticky status bar — minimal progress indicator */}
               {running && status && (
                 <div className="sticky top-0 z-10 mx-1">
@@ -1772,9 +1820,17 @@ export default function ResearchPage() {
                             setSelectedIds(new Set(viewingSession.agentIds));
                           }
                           // Build prior context from the original session's messages into a round
-                          const priorRound: ConversationRound = {
+                          const priorRound: Convers
+                          // Restore clarification answers so astrology sessions don't re-ask birth info
+                          if (viewingSession.messages) {
+                            const clarAnswers = viewingSession.messages
+                              .filter((m: any) => m.role === "clarification")
+                              .map((m: any) => ({ question: m.agentName || "", answer: m.content || "" }))
+                              .filter((qa: any) => qa.question && qa.answer);
+                            if (clarAnswers.length > 0) lastClarificationAnswersRef.current = clarAnswers;
+                          }ationRound = {
                             question: viewingSession.question,
-                            messages: viewingSession.messages.map((m: any) => ({
+                            messages: viewingSession.messages.map((m: any) => flex items-center gap-1 ({
                               id: m.id,
                               agentId: m.agentId,
                               agentName: m.agentName,
@@ -1797,8 +1853,16 @@ export default function ResearchPage() {
                           setQuestion("");
                           setViewingSession(null);
                           setHistoryTab("current");
+                          // Restore clarification answers so astrology sessions don't re-ask birth info
+                          if (viewingSession.messages) {
+                            const clarAnswers = viewingSession.messages
+                              .filter((m: any) => m.role === "clarification")
+                              .map((m: any) => ({ question: m.agentName || "", answer: m.content || "" }))
+                              .filter((qa: any) => qa.question && qa.answer);
+                            if (clarAnswers.length > 0) lastClarificationAnswersRef.current = clarAnswers;
+                          }
                         }}
-                        className="mt-3 text-xs px-3 py-1.5 rounded-lg border"
+                        className="mt-3 text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1"
                         style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                       >
                         <RefreshCw size={12} /> นำวาระนี้กลับมาประชุมอีกครั้ง
@@ -2110,7 +2174,7 @@ export default function ResearchPage() {
                         onClick={() => setShowAdvanced(v => !v)}
                         className="text-xs px-2 py-1 rounded-lg transition-all hover:bg-[var(--bg)]"
                         style={{ color: showAdvanced ? "var(--accent)" : "var(--text-muted)" }}
-                        title="ตั้งค่าขั้นสูง"
+                        title="ตั้งค่าขั้นสูง"gap-1 
                       >
                         <Settings size={14} />
                       </button>
@@ -2122,7 +2186,7 @@ export default function ResearchPage() {
                         disabled={running}
                       >
                         {effectiveMode === "qa" ? <MessageSquare size={12} /> : <Building2 size={12} />}
-                      </button>
+                      </button>gap-1 
                       <div className="text-[11px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
                         {meetingSessionId && effectiveMode !== "qa" && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
@@ -2142,7 +2206,7 @@ export default function ResearchPage() {
                       {rounds.length > 0 && !running && meetingSessionId && effectiveMode !== "qa" && (
                         <button
                           onClick={handleCloseMeeting}
-                          className="h-8 px-3 rounded-lg flex items-center justify-center text-xs font-bold transition-all hover:opacity-80"
+                          className="h-8 px-3 rounded-lg flex items-center gap-1 justify-center text-xs font-bold transition-all hover:opacity-80"
                           style={{ color: "#000", background: "var(--accent)" }}
                           title="ให้ประธานสรุปมติที่ประชุม"
                         >
@@ -2154,7 +2218,7 @@ export default function ResearchPage() {
                           {effectiveMode !== "qa" && (
                             <button
                               onClick={handleSkipToSummary}
-                              className="h-8 px-3 rounded-lg flex items-center justify-center border text-xs font-bold transition-all hover:opacity-80"
+                              className="h-8 px-3 rounded-lg flex items-center gap-1 justify-center border text-xs font-bold transition-all hover:opacity-80"
                               style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-10)" }}
                               title="ข้ามไปสรุปมติเลย"
                             >
