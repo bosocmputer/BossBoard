@@ -881,6 +881,36 @@ export async function POST(req: NextRequest) {
 
       // === Phase 0: Pre-flight Clarification (only if no answers provided yet) ===
       if (!clarificationAnswers) {
+        // === Astrology / Fortune-telling detection — always ask personal info ===
+        const astrologyKeywords = [
+          "ดูดวง", "โหราศาสตร์", "ดวงชะตา", "ดวง", "พยากรณ์", "ทำนาย",
+          "ฤกษ์", "บาจี", "bazi", "ba zi", "tarot", "ไพ่ยิปซี",
+          "ชะตา", "ชงกับ", "ราศี", "จักรราศี", "ดาวพุธ", "ดาวอังคาร",
+          "ดาวเสาร์", "ดาวราหู", "ดาวเกตุ", "ลัคน์", "เลขศาสตร์", "numerology",
+          "ฮวงจุ้ย", "feng shui", "สี่เสา", "midpoint", "ascendant", "ทักษา",
+        ];
+        const questionLower = question.toLowerCase();
+        const chairmanRoleLower = (chairman.soul + " " + chairman.role).toLowerCase();
+        const isAstrologyTopic =
+          astrologyKeywords.some((kw) => questionLower.includes(kw)) ||
+          astrologyKeywords.some((kw) => chairmanRoleLower.includes(kw));
+
+        if (isAstrologyTopic) {
+          send("status", { message: "🔍 ตรวจสอบความครบถ้วนของคำถาม..." });
+          send("clarification_needed", {
+            questions: [
+              { id: "astro_name", question: "ชื่อ-นามสกุล ของผู้ต้องการดูดวง", type: "text" },
+              { id: "astro_dob", question: "วันเดือนปีเกิด (เช่น 15 มกราคม 2530 หรือ 15/01/2530)", type: "text" },
+              { id: "astro_tob", question: "เวลาเกิด (เช่น 08:30) — ถ้าไม่ทราบ ใส่ว่า \"ไม่ทราบ\"", type: "text" },
+              { id: "astro_concern", question: "ประเด็นหลักที่ต้องการทราบ (เช่น การงาน การเงิน ความรัก สุขภาพ)", type: "choice", options: ["การงาน/อาชีพ", "การเงิน/ทรัพย์สิน", "ความรัก/ครอบครัว", "สุขภาพ", "โชคลาภ", "ภาพรวมชีวิต"] },
+            ],
+          });
+          if (keepaliveInterval) clearInterval(keepaliveInterval);
+          send("done", { sessionId, clarificationPending: true });
+          controller.close();
+          return;
+        }
+
         const chairApiKeyP0 = await getAgentApiKey(chairman.id);
         if (chairApiKeyP0) {
           try {
@@ -888,8 +918,8 @@ export async function POST(req: NextRequest) {
             const clarifyResult = await callLLM(chairman.provider, chairman.model, chairApiKeyP0, chairman.baseUrl, [
               {
                 role: "system",
-                content: `คุณเป็นผู้เชี่ยวชาญด้านบัญชีและภาษีไทย ก่อนเริ่มประชุมคุณต้องประเมินว่าคำถามมีข้อมูลเพียงพอหรือไม่ 
-ตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น:
+                content: `คุณคือ ${chairman.name} (${chairman.role}) ทำหน้าที่ประธานก่อนเริ่มประชุม
+ประเมินว่าคำถามต้องการข้อมูลเพิ่มเติมหรือไม่ แล้วตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น:
 {
   "needsClarification": true/false,
   "questions": [
@@ -905,9 +935,14 @@ export async function POST(req: NextRequest) {
 กฎ:
 - ถ้าคำถามชัดเจนพอที่จะตอบได้แม้ไม่มีข้อมูลเพิ่ม → needsClarification: false
 - ถ้าคำตอบจะเปลี่ยนไปมากขึ้นอยู่กับรายละเอียดที่ขาด → needsClarification: true
-- ถามไม่เกิน 3 ข้อ เน้นสิ่งที่กระทบคำตอบจริงๆ
+- ถามไม่เกิน 4 ข้อ เน้นสิ่งที่กระทบคำตอบจริงๆ
 - ตัวเลือก choice ควรครอบคลุมกรณีทั่วไป (3-5 ตัวเลือก)
-- ตัวอย่างสิ่งที่ควรถาม: ประเภทนิติบุคคล, ขนาดกิจการ, จดทะเบียนVATหรือไม่, ประเภทสินค้า/บริการ`,
+
+ตัวอย่างตามโดเมน:
+- บัญชี/ภาษี: ประเภทนิติบุคคล, ขนาดกิจการ, จดทะเบียนVATหรือไม่, ประเภทสินค้า/บริการ
+- โหราศาสตร์/ดูดวง: ชื่อ-นามสกุล, วันเดือนปีเกิด (พ.ศ.), เวลาเกิด (ถ้ามี), ประเด็นที่ต้องการทราบ
+- กฎหมาย: ประเภทคดี, คู่กรณี, ข้อเท็จจริงสำคัญ
+- อื่นๆ: ใช้บริบทของ soul/role เพื่อกำหนดว่าข้อมูลใดจำเป็น`,
               },
               {
                 role: "user",
