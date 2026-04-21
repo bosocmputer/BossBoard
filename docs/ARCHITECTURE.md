@@ -2,57 +2,94 @@
 
 > สถาปัตยกรรมและการทำงานของระบบ LEDGIO AI (BossBoard)
 
-> **สถานะ:** Demo / Pre-production — ใช้งานได้จริง แต่ยังขาด Authentication และ Production Database | **ดู roadmap:** [ROADMAP.md](../ROADMAP.md)
+> **สถานะ:** Production-ready (self-hosted) — Auth + Postgres + Redis + Thai UX ครบถ้วน | **Version:** v1.14.0 | **ดู roadmap:** [ROADMAP.md](../ROADMAP.md)
 
 ---
 
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Next.js 16 App                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │   Pages (8)  │  │  API Routes  │  │  Lib Layer   │  │
-│  │  React 19    │  │  (18 routes) │  │  (9 modules) │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
-│         │                 │                  │          │
-│         └─────────────────┼──────────────────┘          │
-│                           │                             │
-│                    ┌──────▼───────┐                     │
-│                    │ agents-store │                     │
-│                    │  (~900 LOC)  │                     │
-│                    └──────┬───────┘                     │
-│                           │                             │
-└───────────────────────────┼─────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      Next.js 16 App                          │
+│  ┌──────────────┐  ┌───────────────┐  ┌──────────────────┐  │
+│  │  Pages (12)  │  │  API Routes   │  │   Lib Layer      │  │
+│  │  React 19    │  │  (22 routes)  │  │  (12 modules)    │  │
+│  └──────┬───────┘  └──────┬────────┘  └───────┬──────────┘  │
+│         │                 │                   │             │
+│         └─────────────────┼───────────────────┘             │
+│                           │                                 │
+│              ┌────────────┴─────────────┐                   │
+│              │      proxy.ts (Edge)     │  ← Auth guard     │
+│              │  JWT verify per request  │                   │
+│              └────────────┬─────────────┘                   │
+│                           │                                 │
+│              ┌────────────┴─────────────┐                   │
+│              │    agents-store-db.ts    │  ← Data layer     │
+│              │    (Prisma v5 client)    │                   │
+│              └────────────┬─────────────┘                   │
+└───────────────────────────┼─────────────────────────────────┘
                             │
-                    ┌───────▼───────┐
-                    │ ~/.bossboard/ │
-                    │  JSON Files   │
-                    └───────────────┘
+              ┌─────────────┴──────────────┐
+              │                            │
+    ┌─────────▼──────────┐    ┌────────────▼───────────┐
+    │   PostgreSQL 16     │    │       Redis 7           │
+    │  (10 tables, DB:    │    │  (rate limiting,        │
+    │   bossboard)        │    │   session tracking)     │
+    └────────────────────┘    └────────────────────────┘
 ```
 
-LEDGIO AI เป็น **Next.js 16 full-stack application** ที่ทำงานแบบ standalone (ไม่ต้องพึ่ง database) โดยเก็บข้อมูลทั้งหมดเป็น JSON files ใน `~/.bossboard/`
+LEDGIO AI เป็น **Next.js 16 full-stack application** ที่ใช้ PostgreSQL เป็น primary storage, Redis สำหรับ rate limiting และ auth guard ผ่าน Edge-compatible `proxy.ts`
 
 ---
 
-## Pages (8)
+## Pages (12)
 
 | Path | Page | Description |
 |------|------|-------------|
-| `/` | Dashboard | ภาพรวมระบบ — สถิติ, quick actions, sessions ล่าสุด |
+| `/` | Dashboard | ภาพรวมระบบ — สถิติ, chat/research cards, quick templates |
 | `/research` | Meeting Room | ห้องประชุม AI — core feature ของระบบ |
-| `/agents` | Agent Manager | สร้าง/แก้ไข/ลบ AI agents (4-step wizard) |
+| `/agents` | Agent Manager | สร้าง/แก้ไข agent (wizard easy/expert mode) |
+| `/chat/[agentId]` | Chat | สนทนา 1:1 กับ agent เดียว |
 | `/teams` | Team Manager | จัดกลุ่ม agents เป็นทีม |
-| `/tokens` | Token Analytics | สถิติใช้งาน tokens รายวัน/รายagent |
-| `/settings` | Settings | ตั้งค่า Web Search API keys |
-| `/guide` | User Guide | คู่มือใช้งาน 8 ขั้นตอน (ภาษาไทย) |
+| `/tokens` | Token Analytics | ค่าใช้จ่าย THB + สถิติ tokens รายวัน/agent |
+| `/settings` | Settings | Company info, Web Search keys, Budget config |
+| `/guide` | User Guide | คู่มือ 8 ขั้นตอน (ภาษาไทย) |
+| `/glossary` | Glossary | คำศัพท์ AI/บัญชี 22 terms + search |
 | `/benefits` | Benefits | แนะนำแพ็คเกจและราคา |
+| `/admin/users` | Admin Users | จัดการ users (admin only) |
+| `/login` | Login | หน้า login (route group แยก layout) |
+
+---
+
+## Authentication Architecture
+
+```
+Request
+   │
+   ▼
+proxy.ts (Edge Middleware)
+   │
+   ├── /login, /api/auth/*, /api/health → allow
+   │
+   ├── JWT verify (jose, HS256)
+   │     ├── Valid → set x-user-id, x-user-role headers → next()
+   │     └── Invalid/missing
+   │           ├── API route → 401 JSON
+   │           └── Page route → redirect /login?from=...
+   │
+   ▼
+API Route / Page
+   │
+   └── อ่าน x-user-id จาก header → filter data per user
+```
+
+**JWT:** HS256, 8h expiry, httpOnly cookie (`token`)
+**Password:** bcrypt cost 12, stored in `users` table
+**User isolation:** ResearchSession, ClientMemory แยกตาม `userId`
 
 ---
 
 ## Meeting Flow (5 Phases)
-
-การประชุม AI เป็น core feature — ผู้ใช้ถามคำถาม, agents ถกเถียงกัน, ประธานสรุปมติ
 
 ```
 User Question
@@ -60,53 +97,47 @@ User Question
      ▼
 ┌─────────────────────┐
 │ Phase 0: Clarify    │  ← ประธานถามคำถามเพิ่มเติม (optional)
-│ Chairman asks back  │     User ตอบ → ส่งเข้า Phase 1
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ Phase 1: PARALLEL   │  ← ทุก agent วิเคราะห์พร้อมกัน (Promise.allSettled)
-│ All agents analyze  │     แสดง thinking UI ทันที, ส่งผลตาม seniority + 120ms stagger
+│ Phase 1: PARALLEL   │  ← Promise.allSettled() — ทุก agent พร้อมกัน
+│ All agents analyze  │     emit ตาม seniority + 120ms stagger
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ Consensus Check     │  ← ประธานตรวจว่าเห็นพ้องหรือไม่
-│ (optional skip)     │     ถ้าเห็นพ้อง → ข้าม Phase 2 ไป Phase 3 เลย
+│ Consensus Check     │  ← ข้าม Phase 2 ถ้าเห็นพ้องหมด
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
-│ Phase 2: Discussion │  ← agents อ่านความเห็นกัน อภิปราย
-│ Debate & challenge  │     เห็นด้วย/ไม่เห็นด้วย พร้อมเหตุผล
+│ Phase 2: Discussion │  ← agents อภิปราย เห็นด้วย/ไม่เห็นด้วย
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
 │ Phase 3: Synthesis  │  ← Chairman สรุปมติ + Action Items
-│ Chairman concludes  │
 └─────────────────────┘
 ```
 
 ### SSE Streaming Protocol
 
-การประชุมใช้ Server-Sent Events (SSE) ผ่าน `POST /api/team-research/stream`
-
 ```
 Client → POST /api/team-research/stream
          { question, agentIds, mode, sessionId, clarificationAnswers? }
 
-Server → SSE stream (event: name + data: JSON):
-  event: session          data: {sessionId}                    // Session ID
-  event: chairman         data: {agentId, name, emoji, role}   // Chairman info
-  event: status           data: {message}                      // Phase status
-  event: clarification_needed  data: {questions}               // Phase 0
-  event: agent_start      data: {agentId, name, emoji, role}   // Agent begins
-  event: agent_searching  data: {agentId, query}               // Web search
-  event: web_sources      data: {agentId, sources}             // Search results
-  event: message          data: {id, agentId, role, content}   // Agent response
-                           role: thinking | finding | chat | synthesis
-  event: agent_tokens     data: {agentId, input, output}       // Token usage
-  event: final_answer     data: {content}                      // Final synthesis
-  event: chart_data       data: {type, labels, datasets}       // Chart data
-  event: follow_up_suggestions  data: {suggestions}            // Suggested Qs
-  event: done             data: {sessionId}                    // End
+Server → SSE stream:
+  event: session               data: {sessionId}
+  event: chairman              data: {agentId, name, emoji, role}
+  event: status                data: {message}
+  event: clarification_needed  data: {questions}
+  event: agent_start           data: {agentId, name, emoji, role}
+  event: agent_searching       data: {agentId, query}
+  event: web_sources           data: {agentId, sources}
+  event: message               data: {id, agentId, role, content}
+                                role: thinking|finding|chat|synthesis
+  event: agent_tokens          data: {agentId, input, output}
+  event: final_answer          data: {content}
+  event: chart_data            data: {type, labels, datasets}
+  event: follow_up_suggestions data: {suggestions}
+  event: done                  data: {sessionId}
 ```
 
 ---
@@ -115,102 +146,122 @@ Server → SSE stream (event: name + data: JSON):
 
 ### Agent Configuration
 
-แต่ละ agent มีคุณสมบัติ:
-
 | Field | Description |
 |-------|-------------|
 | `id` | UUID v4 |
 | `name` | ชื่อแสดงผล |
 | `emoji` | ไอคอน agent |
 | `provider` | anthropic / openai / gemini / ollama / openrouter / custom |
-| `model` | Model ID (เช่น `claude-4-sonnet-20250514`) |
-| `apiKey` | Encrypted API key (AES-256-CBC) |
-| `soul` | System prompt — บุคลิก, จุดยืน, วิธีถกเถียง |
-| `seniority` | 1–99 ลำดับพูด (ต่ำสุด = ประธาน) |
-| `skills` | Array of 19 skills (web_search, data_analysis, ...) |
+| `model` | Model ID |
+| `apiKey` | Encrypted AES-256-CBC |
+| `soul` | System prompt — บุคลิก, จุดยืน |
+| `seniority` | 1–99 (ต่ำสุด = ประธาน) |
+| `skills` | Array of 19 skills |
 | `mcpEndpoint` | Optional MCP Server URL |
 | `webSearchEnabled` | เปิด/ปิด web search |
-| `baseUrl` | Custom API endpoint (for custom provider) |
-| `isActive` | เปิด/ปิด agent |
+| `isActive` | เปิด/ปิด |
+
+### Agent Wizard Mode (v1.14.0)
+
+| Mode | ขั้นตอน | Model Picker |
+|------|---------|-------------|
+| ง่าย (default) | Template → Model (3-tier) → บทบาท | ประหยัด / แนะนำ / คุณภาพสูง |
+| ผู้เชี่ยวชาญ | Template → Model (full list) → บทบาท → ขั้นสูง | full OpenRouter model list |
+
+**3-Tier Map:**
+- ประหยัด → `google/gemini-2.5-flash-lite` (฿3.6/฿14.4 ต่อ 1M)
+- แนะนำ → `anthropic/claude-haiku-4-5`
+- คุณภาพสูง → `anthropic/claude-sonnet-4-6`
 
 ### 6 Agent Templates
 
-| # | Template | Role |
-|---|----------|------|
-| 1 | นักบัญชีอาวุโส | Senior Accountant — มาตรฐานการบัญชี |
-| 2 | ผู้สอบบัญชี CPA | CPA Auditor — ตรวจสอบและให้ความเห็น |
-| 3 | ที่ปรึกษาภาษี | Tax Consultant — ภาษีเงินได้/VAT/ภาษีหัก ณ ที่จ่าย |
-| 4 | นักวิเคราะห์งบการเงิน | Financial Analyst — วิเคราะห์อัตราส่วนทางการเงิน |
-| 5 | ผู้ตรวจสอบภายใน | Internal Auditor — ความเสี่ยงและ internal control |
-| 6 | Custom | สร้าง agent ตามต้องการ — กำหนด soul/skills เอง |
+| # | Template | Model default |
+|---|----------|--------------|
+| 1 | นักบัญชีอาวุโส | gemini-2.5-flash-lite |
+| 2 | ผู้สอบบัญชี CPA | gemini-2.5-flash |
+| 3 | ที่ปรึกษาภาษี | gemini-2.5-flash |
+| 4 | นักวิเคราะห์งบการเงิน | gemini-2.5-flash-lite |
+| 5 | ผู้ตรวจสอบภายใน | gemini-2.5-flash-lite |
+| 6 | Custom | (ผู้ใช้เลือกเอง) |
 
 ### Chairman Selection
 
-Agent ที่มี **seniority ต่ำสุด** จะเป็นประธาน (Chairman) — รับผิดชอบ:
-- Phase 0: ถามคำถามชี้แจง
-- Phase 4: สรุปมติและ Action Items
-- ตัดสินเมื่อ agents เห็นต่าง
+Agent ที่มี **seniority ต่ำสุด** = ประธาน — รับผิดชอบ Phase 0 (clarify) + Phase 3 (synthesis)
 
 ---
 
 ## Context Stacking (12 Layers)
 
-ทุกครั้งที่ agent ตอบ จะประกอบ context จาก 12 ชั้น:
-
 ```
- 1. System Prompt (soul)           ← บุคลิก/จุดยืนของ agent
+ 1. System Prompt (soul)           ← บุคลิก/จุดยืน
  2. Company Info                   ← ข้อมูลบริษัท (จาก settings)
- 3. Accounting Standard            ← NPAEs / TFRS (จาก settings)
- 4. Agent Skills                   ← ความสามารถ 19 อย่าง
- 5. Meeting Role                   ← chairman / member / ลำดับที่
+ 3. Accounting Standard            ← NPAEs / TFRS
+ 4. Agent Skills                   ← 19 skills
+ 5. Meeting Role                   ← chairman / member / ลำดับ
  6. Anti-Hallucination Rules       ← ต้องอ้างอิงกฎหมาย/มาตรฐาน
- 7. Client Memory                  ← ข้อเท็จจริงข้ามsession
- 8. Knowledge Base (per agent)     ← ไฟล์เอกสารเฉพาะagent
+ 7. Client Memory                  ← ข้อเท็จจริงข้าม session
+ 8. Knowledge Base (per agent)     ← ไฟล์เอกสารเฉพาะ agent
  9. MCP Data                       ← ข้อมูลจาก MCP Server
-10. Web Search Results             ← ผลค้นหาจากอินเทอร์เน็ต
-11. File Attachment                ← ไฟล์แนบจากuser
-12. Conversation History           ← ประวัติการประชุม (full/last3/summary/none)
+10. Web Search Results             ← ผลค้นหาอินเทอร์เน็ต
+11. File Attachment                ← ไฟล์แนบจาก user
+12. Conversation History           ← ประวัติ (full/last3/summary/none)
 ```
 
 ---
 
 ## Data Layer
 
-### agents-store.ts (~900 LOC)
-
-Module หลักที่จัดการข้อมูลทั้งหมด — เป็น abstraction layer เดียวระหว่าง API routes กับ JSON files
+### Database Schema (Prisma v5 — PostgreSQL 16)
 
 ```
-API Routes ──────► agents-store.ts ──────► ~/.bossboard/*.json
-  (18 routes)      (read/write/encrypt)    (7 files)
+users              ← user accounts, bcrypt passwords
+agents             ← agent configs (API keys encrypted)
+agent_knowledge    ← knowledge file metadata per agent
+teams              ← team definitions
+team_agents        ← many-to-many agents↔teams
+settings           ← web search keys, company info
+research_sessions  ← session metadata (userId FK)
+research_messages  ← messages per session
+agent_stats        ← per-agent token totals
+agent_daily_stats  ← daily aggregation (90 days)
+client_memory      ← cross-session facts (userId FK)
 ```
 
-**Key Functions:**
-- `getAgents()` / `saveAgents()` — CRUD agents + encrypt/decrypt API keys
-- `getTeams()` / `saveTeams()` — CRUD teams
-- `getSettings()` / `saveSettings()` — Web Search API keys
-- `getResearchHistory()` / `saveSession()` — Session management (max 100)
-- `getAgentStats()` / `updateAgentStats()` — Token usage tracking
-- `getClientMemory()` / `saveClientMemory()` — Cross-session facts
-- `encrypt()` / `decrypt()` — AES-256-CBC with auto-generated key
+### agents-store-db.ts
 
-### File Schema
+Prisma v5 implementation ของ data layer — re-exported ผ่าน `agents-store.ts` เพื่อให้ API routes ทุกตัวได้ DB โดยอัตโนมัติ
 
-| File | Format | Max Size |
-|------|--------|----------|
-| `agents.json` | `Agent[]` | No limit |
-| `teams.json` | `Team[]` | No limit |
-| `settings.json` | `{ webSearch: {...}, companyInfo: {...} }` | No limit |
-| `research-history.json` | `Session[]` | Last 100 sessions |
-| `agent-stats.json` | `{ [agentId]: { totalSessions, totalTokens, dailyUsage[] } }` | Last 90 days |
-| `client-memory.json` | `{ facts: MemoryFact[] }` | No limit |
-| `.encryption-key` | Plain text (32 chars) | Auto-generated |
+```
+API Routes ──► agents-store.ts ──► agents-store-db.ts ──► Prisma ──► PostgreSQL
+```
+
+**Knowledge files:** metadata ใน DB, content บน filesystem `~/.bossboard/knowledge/`
+
+---
+
+## Cost Tracking (v1.14.0)
+
+```
+LLM Response
+   │
+   ├── input_tokens + output_tokens
+   │
+   ▼
+lib/pricing.ts
+   ├── MODEL_PRICING map (USD per 1M tokens)
+   ├── tokensToTHB(input, output, model) → ฿X.XX
+   └── rate = localStorage.usdThbRate ?? 36
+   │
+   ▼
+Tokens Page Hero Card
+   ├── รวมทุก agent → ≈ ฿X (ใหญ่กว่า token count)
+   ├── Budget progress bar (ถ้าตั้ง monthlyBudgetTHB)
+   └── Per-agent breakdown THB
+```
 
 ---
 
 ## LLM Provider Integration
-
-### Supported Providers
 
 | Provider | Auth | Base URL |
 |----------|------|----------|
@@ -221,60 +272,29 @@ API Routes ──────► agents-store.ts ──────► ~/.bossbo
 | OpenRouter | `Bearer` token | `https://openrouter.ai/api` |
 | Custom | `Bearer` token | User-defined |
 
-### Request Flow
-
-```
-Agent Config
-     │
-     ├── provider + model + apiKey
-     │
-     ▼
-buildRequestPayload()
-     │
-     ├── Normalize to OpenAI-compatible format
-     ├── Add system prompt (12-layer context)
-     ├── Add conversation history
-     │
-     ▼
-fetch(baseUrl, { signal: AbortSignal })
-     │
-     ├── Stream response (SSE)
-     ├── Parse chunks → emit to client
-     ├── Track tokens (input/output)
-     │
-     ▼
-Client receives real-time updates
-```
-
 ### SSRF Protection
 
-ก่อนเรียก API — ระบบตรวจสอบ base URL:
-- Block private IP ranges (10.x, 172.16-31.x, 192.168.x)
+ตรวจ base URL ก่อนเรียก API:
+- Block private IP (10.x, 172.16–31.x, 192.168.x)
 - Block localhost / 127.0.0.1
-- Block cloud metadata endpoints (169.254.169.254)
-- Allow only HTTPS (except localhost for Ollama)
+- Block cloud metadata (169.254.169.254)
+- Allow HTTPS only (ยกเว้น Ollama localhost)
 
 ---
 
 ## Web Search Pipeline
 
 ```
-Agent has webSearchEnabled=true
-     │
-     ▼
-Extract search keywords from user question
-     │
-     ▼
-Call Serper API or SerpAPI
-     │  (API key from settings, encrypted)
-     ▼
-Parse results → top N snippets
-     │
-     ▼
-Inject into agent context (Layer 10)
-     │
-     ▼
-Agent cites sources → displayed as clickable links
+Agent (webSearchEnabled=true)
+   │
+   ▼
+Extract keywords → Serper / SerpAPI
+   │  (key จาก settings, encrypted)
+   ▼
+Parse top N snippets → inject Context Layer 10
+   │
+   ▼
+Agent cites → displayed as clickable links
 ```
 
 ---
@@ -284,69 +304,48 @@ Agent cites sources → displayed as clickable links
 ### Encryption
 
 ```
-API Keys (plaintext)
-     │
-     ▼
-AES-256-CBC encrypt
-     │
-     ├── Key: AGENT_ENCRYPT_KEY env var
-     │   OR auto-generated → ~/.bossboard/.encryption-key
-     ├── IV: random 16 bytes per encryption
-     │
-     ▼
-Stored as "iv:encrypted" in JSON files
+API Keys plaintext
+   │
+   ▼
+AES-256-CBC (IV: random 16 bytes)
+   ├── Key: AGENT_ENCRYPT_KEY env var
+   │   OR auto-generated → ~/.bossboard/.encryption-key
+   └── Stored as "iv:encrypted" in DB
 ```
 
-### Rate Limiting
+### Rate Limiting (Redis)
 
 ```
-POST /api/team-research/stream
-     │
-     ▼
-Sliding window check (per IP)
-     │
-     ├── Window: 60 seconds
-     ├── Max: 5 requests
-     │
-     ├── OK → proceed
-     └── Exceeded → 429 Too Many Requests
+POST endpoints
+   │
+   ▼
+lib/rate-limit-redis.ts
+   ├── Sorted-set sliding window (per IP)
+   ├── Window: 60s, Max: 5 req
+   ├── Fallback: in-memory (Redis unavailable)
+   └── Exceeded → 429 Too Many Requests
 ```
 
-### Security Headers (via middleware)
+### Security Headers
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' ...
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy, X-Content-Type-Options: nosniff,
+X-Frame-Options: DENY, Referrer-Policy, Permissions-Policy
 ```
 
 ---
 
 ## Token Tracking
 
-ทุก LLM call จะ track tokens:
-
 ```
-Agent Response
-     │
-     ├── input_tokens (prompt)
-     ├── output_tokens (completion)
-     ├── total_tokens
-     │
-     ▼
-Save to agent-stats.json
-     │
-     ├── Per-agent breakdown
-     ├── Daily aggregation (30 days)
-     ├── Recent sessions list
-     │
-     ▼
-Display in:
-     ├── /tokens page (analytics dashboard)
-     ├── Meeting status bar (real-time)
-     └── Dashboard (overview stats)
+Agent Response → input/output tokens
+   │
+   ▼
+Save to: agent_stats + agent_daily_stats (Postgres)
+   │
+   ├── /tokens page: THB hero + budget bar + per-agent breakdown
+   ├── Meeting status bar: real-time token count
+   └── Dashboard: overview stats
 ```
 
 ---
@@ -355,85 +354,77 @@ Display in:
 
 ### Parallel Phase 1
 
-Phase 1 ใช้ `Promise.allSettled()` ยิง LLM calls ทุก agent พร้อมกัน — ลดเวลาประชุมได้ ~15–30%
-
 ```
-Sequential (ก่อน):  Agent1 ──► Agent2 ──► Agent3 ──► Agent4 ──► Agent5
-                    [30s]     [30s]     [30s]     [30s]     [30s]  = 150s
-
-Parallel (หลัง):    Agent1 ───────────────────────────────────►
-                    Agent2 ───────────────────────────────────►
-                    Agent3 ───────────────────────────────────►  = ~30–40s
-                    Agent4 ───────────────────────────────────►
-                    Agent5 ───────────────────────────────────►
+Sequential (ก่อน):  A1──►A2──►A3──►A4──►A5  = ~150s
+Parallel (หลัง):    A1─────────────────────►
+                    A2─────────────────────►
+                    A3─────────────────────►  = ~30–40s
+                    A4─────────────────────►
+                    A5─────────────────────►
 ```
 
-**Implementation Details:**
-- Step 1: ส่ง `agent_start` + `thinking` message สำหรับทุก agent ทันที (UI แสดงหลาย agent กำลังคิดพร้อมกัน)
-- Step 2: `Promise.allSettled()` เรียก LLM + web search + MCP พร้อมกัน
-- Step 3: ผลลัพธ์ emit ตาม seniority order + 120ms stagger delay (UX เป็นธรรมชาติ)
-- Agent ที่ fail ไม่กระทบ agent อื่น (fault-tolerant)
-- แต่ละ agent วิเคราะห์อิสระในขอบเขต role ของตัวเอง
+ใช้ `Promise.allSettled()` — agent ที่ fail ไม่กระทบตัวอื่น
 
 ### LLM Call Optimization
 
 | Parameter | Value | Purpose |
 |-----------|-------|---------|
-| `max_tokens` | 2048 | ลดจาก 4096 — เพียงพอสำหรับการวิเคราะห์ |
-| `temperature` | 0.3 | ตอบตรงประเด็น ลดการ hallucinate |
-| Word limit (Phase 1) | 600 คำ | ป้องกัน agent เขียนยาวเกิน |
-| Word limit (Phase 2) | 400 คำ | อภิปรายกระชับ |
-| Word limit (Phase 3) | 800 คำ | สรุปมติครบถ้วน |
+| `max_tokens` | 2048 | เพียงพอสำหรับการวิเคราะห์ |
+| `temperature` | 0.3 | ตรงประเด็น ลด hallucination |
+| Word limit Phase 1 | 600 คำ | ป้องกัน overwrite |
+| Word limit Phase 2 | 400 คำ | อภิปรายกระชับ |
+| Word limit Phase 3 | 800 คำ | สรุปครบถ้วน |
 
 ### Rate Limit Retry
 
-`callLLMWithRetry()` wrapper — retry อัตโนมัติ 1 ครั้งเมื่อเจอ HTTP 429 (rate limit) พร้อม 2s delay
-
-### Agent Voice System
-
-`getAgentVoice()` — inject สไตล์การพูดเฉพาะ role ลงใน system prompt:
-- CPA: อ้างอิงกฎหมาย, ยกมาตรา
-- Tax Consultant: ตั้งคำถามเชิงท้าทาย, ชี้ความเสี่ยง
-- Accountant: พูดเป็นระบบ, อ้างอิงมาตรฐานบัญชี
-- Financial Analyst: วิเคราะห์ตัวเลข, เทียบ ratio
-- Internal Auditor: มองหา red flag, control weakness
+`callLLMWithRetry()` — auto-retry 1 ครั้งเมื่อ HTTP 429, delay 2s
 
 ---
 
-## OpenClaw Legacy
+## Shared UI Components (`app/components/`)
 
-BossBoard ถูก fork มาจาก [OpenClaw](https://github.com/xmanrui/OpenClaw-bot-review) — มี legacy code 2 จุด:
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `lib/openclaw-cli.ts` | Call OpenClaw Gateway API | **Optional** — ไม่จำเป็นต้องติดตั้ง OpenClaw |
-| `lib/openclaw-paths.ts` | Resolve `OPENCLAW_HOME` paths | **Fallback** — ใช้ `~/.bossboard/` เป็นค่าเริ่มต้น |
-| `/api/config` | Read OpenClaw config | **Legacy** — ไม่ใช้ใน core features |
-| `/api/config/agent-model` | Update model via OpenClaw Gateway | **Legacy** — ไม่ใช้ใน core features |
-
-> BossBoard ทำงานได้สมบูรณ์โดยไม่ต้องมี OpenClaw CLI ติดตั้ง — legacy routes จะ return error gracefully
+| Component | Description |
+|-----------|-------------|
+| `Button` | primary/secondary/ghost/danger, sm/md/lg |
+| `Card` | hover effect, padding options |
+| `Modal` | focus trap, Esc close, mobile bottom-sheet |
+| `Badge` | 6 variants |
+| `Toggle` | role="switch" |
+| `Toast` | `showToast(type, msg)` auto-dismiss 4s |
+| `Skeleton` | loading placeholders |
+| `Tooltip` | hover+focus+tap, auto-flip, Esc close |
+| `Alert` | persistent, 4 variants, dismissible |
+| `CostDisplay` | tokens + THB side-by-side |
+| `Breadcrumb` | semantic nav + aria-current |
+| `Input` | label+error+hint+tooltip+icon |
+| `Select` | search + keyboard nav |
+| `Table` | mobile auto-card, sticky header |
+| `Tabs` | arrow key nav |
 
 ---
 
 ## Docker Architecture
 
 ```dockerfile
-# Multi-stage build
-FROM node:22-alpine AS builder    # Build stage
-FROM node:22-alpine AS runner     # Runtime stage
+FROM node:22-alpine AS builder   # Build stage
+FROM node:22-alpine AS runner    # Runtime stage
 
-# Security
-USER node (uid 1000)              # Non-root
+USER node (uid 1000)             # Non-root
 EXPOSE 3000
+HEALTHCHECK CMD wget --spider http://127.0.0.1:3000/api/health
 
-# Health
-HEALTHCHECK --interval=30s CMD wget --spider http://127.0.0.1:3000/api/health
-
-# Data persistence
-VOLUME ~/.bossboard → /home/node/.bossboard
+Env vars required:
+  DATABASE_URL   postgresql://...
+  REDIS_URL      redis://...
+  AGENT_ENCRYPT_KEY
+  JWT_SECRET
+  TZ             Asia/Bangkok
 ```
 
-**Output:** Standalone Next.js build (~50MB) — ไม่ต้อง node_modules ตอน runtime
+**Output:** Standalone Next.js build — ไม่ต้อง `node_modules` ตอน runtime
+
+**Build command (server):** `DOCKER_BUILDKIT=0 docker build --no-cache -t bossboard:latest .`
+> ต้องใช้ `DOCKER_BUILDKIT=0` เพราะ BuildKit 0.19.0 ใช้ Git context แทน local files
 
 ---
 
@@ -445,54 +436,66 @@ BossBoard/
 │   ├── layout.tsx              # Root layout (theme, i18n, sidebar)
 │   ├── page.tsx                # Dashboard
 │   ├── providers.tsx           # Theme + i18n providers
-│   ├── sidebar.tsx             # Navigation sidebar (8 items)
-│   ├── globals.css             # Tailwind CSS 4
-│   ├── icon.tsx                # Favicon generator
-│   ├── agents/page.tsx         # Agent manager (4-step wizard)
+│   ├── sidebar.tsx             # Navigation sidebar
+│   ├── globals.css             # Tailwind CSS 4 + CSS variables
+│   ├── (auth)/login/           # Login page (route group — no sidebar)
+│   ├── agents/page.tsx         # Agent manager (wizard mode)
 │   ├── research/page.tsx       # Meeting room (SSE streaming)
+│   ├── chat/[agentId]/         # 1:1 chat
 │   ├── teams/page.tsx          # Team manager
-│   ├── tokens/page.tsx         # Token analytics
-│   ├── settings/page.tsx       # Web search settings
+│   ├── tokens/page.tsx         # Token analytics + THB cost
+│   ├── settings/page.tsx       # Settings + budget config
 │   ├── guide/page.tsx          # User guide (8 steps)
-│   ├── benefits/page.tsx       # Pricing & benefits
-│   ├── components/             # 10 shared UI components
-│   └── api/                    # 18 API routes
-│       ├── team-research/
-│       │   ├── stream/route.ts # SSE streaming (~1400 LOC)
-│       │   ├── route.ts        # List sessions
-│       │   ├── [id]/route.ts   # Get session
-│       │   └── upload/route.ts # File upload parser
-│       ├── team-agents/
-│       │   ├── route.ts        # CRUD agents
-│       │   └── [id]/
-│       │       ├── route.ts    # Update/delete agent
-│       │       └── knowledge/route.ts  # Agent knowledge base
-│       ├── teams/
-│       │   ├── route.ts        # CRUD teams
-│       │   └── [id]/route.ts   # Update/delete team
-│       ├── team-settings/route.ts   # Web search keys
-│       ├── team-websearch/route.ts  # Web search proxy
-│       ├── team-models/route.ts     # Available models
-│       ├── agent-stats/route.ts     # Usage statistics
-│       ├── token-usage/route.ts     # Token tracking
-│       ├── client-memory/route.ts   # Cross-session memory
-│       ├── health/route.ts          # Healthcheck
-│       └── config/                  # OpenClaw legacy (optional)
+│   ├── glossary/page.tsx       # Glossary 22 terms
+│   ├── benefits/page.tsx       # Pricing
+│   ├── admin/users/page.tsx    # Admin user management
+│   ├── components/             # 15 shared UI components
+│   └── api/                    # 22 API routes
+│       ├── auth/login, logout, me
+│       ├── admin/users/[id]
+│       ├── team-research/stream, route, [id], upload
+│       ├── team-agents/route, [id]/route, [id]/knowledge
+│       ├── teams/route, [id]
+│       ├── team-settings, team-websearch, team-models
+│       ├── agent-stats, token-usage, client-memory
+│       └── health
 ├── lib/
-│   ├── agents-store.ts         # Central data layer (~900 LOC)
-│   ├── config-cache.ts         # In-memory config cache
-│   ├── i18n.tsx                # Thai/English translations (~500 LOC)
-│   ├── json.ts                 # Safe JSON read/write helpers
-│   ├── openclaw-cli.ts         # OpenClaw Gateway client (legacy)
-│   ├── openclaw-paths.ts       # Data directory resolver
+│   ├── agents-store.ts         # Barrel re-export → DB layer
+│   ├── agents-store-db.ts      # Prisma v5 implementation
+│   ├── auth.ts                 # Edge-safe JWT helpers (jose)
+│   ├── glossary.ts             # 22 glossary entries
+│   ├── i18n.tsx                # Thai/English translations
+│   ├── pricing.ts              # Model pricing + tokensToTHB()
 │   ├── platforms.ts            # LLM provider definitions
-│   ├── rate-limit.ts           # Sliding window rate limiter
+│   ├── rate-limit-redis.ts     # Redis sliding-window rate limiter
 │   └── theme.tsx               # Theme provider (auto/dark/light)
-├── public/assets/              # Static assets (logos, images)
-├── scripts/deploy.sh           # Deployment script
+├── prisma/
+│   └── schema.prisma           # 10 tables Prisma schema
+├── scripts/
+│   ├── seed-admin.ts           # Seed superadmin user
+│   └── migrate-json-to-db.ts   # One-time JSON→DB migration
+├── docs/
+│   ├── ARCHITECTURE.md         # (this file)
+│   ├── ROADMAP.md → ../ROADMAP.md
+│   ├── ux-overhaul-plan.md     # UX overhaul execution log
+│   └── CLOUD_SPEC.md           # Cloud deployment spec
+├── public/assets/              # Logos, icons
 ├── Dockerfile                  # Multi-stage Docker build
-├── INSTALL.md                  # Full installation guide
-├── quick_start.md              # 5-minute quickstart
+├── proxy.ts                    # Edge auth middleware
 ├── CHANGELOG.md                # Version history
-└── README.md                   # Project documentation
+├── ROADMAP.md                  # Development roadmap
+└── README.md                   # Project overview
 ```
+
+---
+
+## OpenClaw Legacy
+
+BossBoard fork มาจาก OpenClaw — legacy code 2 จุดที่ยังอยู่:
+
+| File | Status |
+|------|--------|
+| `lib/openclaw-cli.ts` | Optional — ไม่จำเป็น |
+| `/api/config` | Legacy — return error gracefully |
+
+> ระบบทำงานสมบูรณ์โดยไม่ต้องมี OpenClaw
