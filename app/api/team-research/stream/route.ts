@@ -21,7 +21,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 import crypto from "crypto";
 
 // Max request body size (100KB — questions + history + file contexts)
-const MAX_BODY_SIZE = 100 * 1024;
+const MAX_BODY_SIZE = 500 * 1024;
 
 interface LLMMessage {
   role: "user" | "assistant" | "system";
