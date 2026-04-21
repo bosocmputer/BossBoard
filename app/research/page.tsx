@@ -2178,7 +2178,7 @@ export default function ResearchPage() {
                         disabled={running}
                       >
                         {effectiveMode === "qa" ? <MessageSquare size={12} /> : <Building2 size={12} />}
-                      </button>gap-1 
+                      </button>
                       <div className="text-[11px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
                         {meetingSessionId && effectiveMode !== "qa" && <span className="inline-flex items-center gap-1 mr-1"><span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />ประชุมอยู่ {elapsedTime > 0 && <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>} · </span>}
                         {rounds.length > 0 && <span style={{ color: "var(--accent)" }}>{rounds.length} วาระ · </span>}
