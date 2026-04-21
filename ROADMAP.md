@@ -1,7 +1,7 @@
 # LEDGIO AI — Production Roadmap
 
 > **สถานะปัจจุบัน:** Production-ready (self-hosted) — Auth + DB + UX Thai accounting ครบถ้วน พร้อมให้ลูกค้าใช้งาน  
-> **อัปเดตล่าสุด:** 2026-04-21 | **เวอร์ชัน:** v1.14.0
+> **อัปเดตล่าสุด:** 2026-04-21 | **เวอร์ชัน:** v1.14.1
 
 ---
 
@@ -99,6 +99,10 @@
 - [x] **Admin:** Thai role labels ("ผู้จัดการระบบ"/"ผู้ใช้ทั่วไป"), clearer delete confirm
 - [x] **Benefits:** VAT note, CTA differentiation, Solo "ทดลองฟรี 14 วัน"
 - [x] **Dashboard:** Chat vs Research disambiguation cards
+- [x] **`/chat` agent selector page (v1.14.1):** หน้าเลือก agent ก่อนเข้า chat — system agents ก่อน, user agents ตาม; empty state; ไม่ 404 แล้ว
+- [x] **Sidebar "ถามด่วน" nav item (v1.14.1):** MessageCircle icon ลิงก์ `/chat` ใน group จัดการ
+- [x] **Agent card 💬 button (v1.14.1):** ปุ่มลัด `/chat/[id]` บนทุก agent card ใน `/agents`
+- [x] **Sidebar active state fix (v1.14.1):** `/chat` ใช้ exact match — ไม่ highlight เมื่ออยู่ที่ `/chat/[agentId]`
 
 ---
 
