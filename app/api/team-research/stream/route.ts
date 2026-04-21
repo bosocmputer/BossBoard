@@ -604,9 +604,9 @@ interface ConversationTurn {
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limit: max 5 stream requests per IP per 60 seconds
+  // Rate limit: max 20 stream requests per IP per 60 seconds
   const clientIp = getClientIp(req.headers);
-  if (!await rateLimit(clientIp, { maxRequests: 5, windowMs: 60_000 })) {
+  if (!await rateLimit(clientIp, { maxRequests: 20, windowMs: 60_000 })) {
     return new Response(JSON.stringify({ error: "Too many requests. Please wait before starting a new meeting." }), { status: 429 });
   }
 
