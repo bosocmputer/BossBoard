@@ -1457,7 +1457,7 @@ export default function ResearchPage() {
                 <span className="flex-1 truncate">{viewingSession.question}</span>
                 <button
                   onClick={() => { setViewingSession(null); setHistoryTab("current"); }}
-                  className="ml-2 px-2 py-0.5 rounded border opacity-60 hover:opacity-100"
+                  className="ml-2 px-2 py-0.5 rounded border opacity-60 hover:opacity-100 flex items-center gap-1"
                   style={{ borderColor: "var(--border)" }}
                 >
                   <X size={12} /> ปิด

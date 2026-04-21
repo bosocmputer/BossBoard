@@ -1,42 +1,20 @@
 /**
- * Seeds 5 astrology agents + 1 team "ราชสำนักโหราจารย์".
- * Run on server: cd ~/BossBoard && DATABASE_URL=... AGENT_ENCRYPT_KEY=... npx ts-node --project tsconfig.json scripts/seed-astro-agents.ts
- * Safe to run multiple times — skips if agents already exist.
+ * Updates soul prompts, model, and provider for all 5 astrology agents.
+ * Safe to run multiple times — uses updateMany by name.
+ * Run on server: cd ~/BossBoard && DATABASE_URL=... AGENT_ENCRYPT_KEY=... npx ts-node --project tsconfig.json scripts/update-astro-souls.ts
  */
 import { PrismaClient } from "@prisma/client";
-import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 
 const db = new PrismaClient();
 
-const BOSSBOARD_DIR = path.join(process.env.HOME || "~", ".bossboard");
-
-function getEncryptKey(): string {
-  if (process.env.AGENT_ENCRYPT_KEY) return process.env.AGENT_ENCRYPT_KEY;
-  const keyFile = path.join(BOSSBOARD_DIR, ".encrypt-key");
-  if (fs.existsSync(keyFile)) return fs.readFileSync(keyFile, "utf8").trim();
-  return "default-key-32-chars-padded-here";
-}
-
-function encrypt(text: string): string {
-  if (!text) return "";
-  const key = Buffer.from(getEncryptKey().padEnd(32, "0").slice(0, 32));
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
-  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
-  return iv.toString("hex") + ":" + encrypted.toString("hex");
-}
-
 const MODEL = "google/gemini-2.5-flash";
 const PROVIDER = "openrouter";
 
-const AGENTS = [
+const AGENTS: { name: string; soul: string }[] = [
   {
     name: "ปรมาจารย์วิมล (โหราศาสตร์ไทย)",
-    emoji: "🔯",
-    role: "จอมโหราศาสตร์ไทยแห่งคัมภีร์จักรทีปนี",
-    seniority: 90,
     soul: `คุณคือ "อาจารย์วิมล" ปรมาจารย์โหราศาสตร์ไทยระดับสูง ผู้ใช้คัมภีร์ดวงพิชัยสงครามและระบบทักษาพยากรณ์มาตลอดชีวิต
 
 **ข้อมูลที่ต้องการก่อนวิเคราะห์:**
@@ -72,9 +50,6 @@ const AGENTS = [
   },
   {
     name: "ซือฝู่หลิน (โหราศาสตร์จีน BaZi)",
-    emoji: "☯️",
-    role: "ปรมาจารย์สี่เสาชีวิตและธาตุทั้งห้า",
-    seniority: 80,
     soul: `คุณคือ "ซือฝู่หลิน" ปรมาจารย์โป๊ยยี่สี่เถียว (BaZi/Four Pillars) ผู้ควบคุมสมดุลธาตุแห่งจักรวาลตามปรัชญาจีนโบราณ
 
 **ข้อมูลที่ต้องการ:**
@@ -111,9 +86,6 @@ const AGENTS = [
   },
   {
     name: "อาจารย์ศักดา (เลข 7 ตัว 9 ฐาน)",
-    emoji: "🔢",
-    role: "จอมกลยุทธ์เลขศาสตร์และที่ปรึกษาชีวิต",
-    seniority: 70,
     soul: `คุณคือ "อาจารย์ศักดา" จอมกลยุทธ์เลข 7 ตัว 9 ฐาน นักอ่านสถานการณ์และที่ปรึกษาการตัดสินใจเชิงปฏิบัติ
 
 **ข้อมูลที่ต้องการ:**
@@ -150,9 +122,6 @@ const AGENTS = [
   },
   {
     name: "ดร.เทพฤทธิ์ (ยูเรเนียนโหราศาสตร์)",
-    emoji: "🔭",
-    role: "วิศวกรโหราศาสตร์และนักคำนวณ Midpoints",
-    seniority: 60,
     soul: `คุณคือ "ดร.เทพฤทธิ์" วิศวกรโหราศาสตร์ นักโหราศาสตร์ยูเรเนียนผู้นำหลักดาราศาสตร์ประยุกต์และ Midpoints มาวิเคราะห์ชะตาชีวิตอย่างแม่นยำ
 
 **ข้อมูลที่ต้องการ:**
@@ -185,9 +154,6 @@ const AGENTS = [
   },
   {
     name: "อาจารย์นิรันดร์ (ทักษามหาพยากรณ์)",
-    emoji: "🧭",
-    role: "โค้ชชีวิตและผู้ประสานพลังกาลเวลา",
-    seniority: 50,
     soul: `คุณคือ "อาจารย์นิรันดร์" โค้ชผู้บริหารชีวิตและผู้เชี่ยวชาญการใช้พลังของกาลเวลาผ่านระบบทักษามหาพยากรณ์ คุณทำหน้าที่เป็น Moderator ของทีม — พูดเป็นคนสุดท้ายเสมอ
 
 **ข้อมูลที่ต้องการ:**
@@ -222,70 +188,30 @@ const AGENTS = [
 ];
 
 async function main() {
-  console.log("🔯 เริ่มสร้าง agents ดูดวง ราชสำนักโหราจารย์...\n");
-
-  const agentIds: string[] = [];
+  console.log("🔯 อัปเดต souls + model สำหรับ agents ราชสำนักโหราจารย์...\n");
 
   for (const data of AGENTS) {
-    const existing = await db.agent.findFirst({ where: { name: data.name } });
-    if (existing) {
-      console.log(`⏭  "${data.name}" มีอยู่แล้ว — ข้าม (id: ${existing.id})`);
-      agentIds.push(existing.id);
-      continue;
-    }
-
-    const now = new Date();
-    const agent = await db.agent.create({
+    const result = await db.agent.updateMany({
+      where: { name: data.name },
       data: {
-        id: crypto.randomUUID(),
-        name: data.name,
-        emoji: data.emoji,
-        provider: PROVIDER,
-        apiKeyEncrypted: encrypt(""),
-        model: MODEL,
         soul: data.soul,
-        role: data.role,
-        active: true,
-        useWebSearch: false,
-        seniority: data.seniority,
-        trustedUrls: [],
-        createdAt: now,
-        updatedAt: now,
+        model: MODEL,
+        provider: PROVIDER,
+        updatedAt: new Date(),
       },
     });
-
-    agentIds.push(agent.id);
-    console.log(`✅ สร้าง "${data.name}" (id: ${agent.id}, seniority: ${data.seniority})`);
+    if (result.count > 0) {
+      console.log(`✅ อัปเดต "${data.name}" — ${result.count} record(s)`);
+    } else {
+      console.log(`⚠️  ไม่พบ "${data.name}" ในฐานข้อมูล`);
+    }
   }
 
-  // สร้าง team
-  const TEAM_NAME = "ราชสำนักโหราจารย์";
-  const existingTeam = await db.team.findFirst({ where: { name: TEAM_NAME } });
-
-  if (existingTeam) {
-    console.log(`\n⏭  Team "${TEAM_NAME}" มีอยู่แล้ว — ข้าม`);
-  } else {
-    const now = new Date();
-    const teamId = crypto.randomUUID();
-    const team = await db.team.create({
-      data: {
-        id: teamId,
-        name: TEAM_NAME,
-        emoji: "🏯",
-        description: "ทีมผู้เชี่ยวชาญโหราศาสตร์ 5 แขนง — ไทย จีน เลข ยูเรเนียน ทักษา วิเคราะห์ดวงรอบด้านและสรุปแผนชีวิตที่ลงมือทำได้จริง",
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-    await db.teamAgent.createMany({
-      data: agentIds.map((agentId, position) => ({ teamId: team.id, agentId, position })),
-    });
-    console.log(`\n✅ สร้าง team "${TEAM_NAME}" (id: ${team.id}) พร้อม ${agentIds.length} agents`);
-  }
-
-  console.log("\n🎉 เสร็จแล้ว! เปิด /agents และ /teams เพื่อตรวจสอบ");
+  await db.$disconnect();
+  console.log("\n✅ อัปเดตเสร็จสิ้น");
 }
 
-main()
-  .catch((e) => { console.error("❌ Error:", e); process.exit(1); })
-  .finally(() => db.$disconnect());
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
