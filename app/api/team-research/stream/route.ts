@@ -637,7 +637,6 @@ export async function POST(req: NextRequest) {
     allRounds,
     clarificationAnswers,
     clientId,
-    birthInfo,
   } = body as {
     question: string;
     agentIds: string[];
@@ -654,7 +653,6 @@ export async function POST(req: NextRequest) {
     allRounds?: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }[];
     clarificationAnswers?: { question: string; answer: string }[];
     clientId?: string;
-    birthInfo?: { dob?: string; timeOfBirth?: string; placeOfBirth?: string };
   };
 
   if (!question || !agentIds?.length) {
@@ -814,21 +812,6 @@ export async function POST(req: NextRequest) {
         clarificationContext = `\n\n---\n📋 ข้อมูลเพิ่มเติมจากผู้ถาม (ตอบก่อนเริ่มประชุม):\n${clarificationAnswers.map((a) => `ถาม: ${a.question}\nตอบ: ${a.answer}`).join("\n\n")}\n---\n⚠️ ใช้ข้อมูลเหล่านี้ประกอบการวิเคราะห์ ตอบให้ตรงกับสถานการณ์จริงของผู้ถาม\n`;
       }
 
-      // Build birth info context for astrology sessions
-      let birthInfoContext = "";
-      if (birthInfo && (birthInfo.dob || birthInfo.timeOfBirth || birthInfo.placeOfBirth)) {
-        birthInfoContext = `\n\n---\n🌟 ข้อมูลเจ้าชะตา:\n${birthInfo.dob ? `- วันเกิด: ${birthInfo.dob}` : ""}\n${birthInfo.timeOfBirth ? `- เวลาเกิด: ${birthInfo.timeOfBirth}` : "- เวลาเกิด: ไม่ทราบ"}\n${birthInfo.placeOfBirth ? `- สถานที่เกิด: ${birthInfo.placeOfBirth}` : ""}\n---\n⚠️ ใช้ข้อมูลวันเกิดนี้เป็นฐานการคำนวณดวงทุกศาสตร์ ห้ามอ้างวันเกิดอื่น\n`;
-      }
-
-      // Detect astrology/fortune-telling session — used to inject ทายทัก section into prompts
-      const _astroKw = ["ดูดวง","โหราศาสตร์","ดวงชะตา","ดวง","พยากรณ์","ทำนาย","ฤกษ์","bazi","ba zi","tarot","ไพ่ยิปซี","ชะตา","ชงกับ","ราศี","จักรราศี","เลขศาสตร์","numerology","ฮวงจุ้ย","feng shui","สี่เสา","midpoint","ascendant","ทักษา"];
-      const _qLow = question.toLowerCase();
-      const _chairLow = (chairman.soul + " " + chairman.role).toLowerCase();
-      const isAstrologySession =
-        _astroKw.some((kw) => _qLow.includes(kw)) ||
-        _astroKw.some((kw) => _chairLow.includes(kw)) ||
-        (clarificationAnswers ?? []).some((a) => a.question.toLowerCase().includes("เกิด") || a.question.toLowerCase().includes("ดวง"));
-
       // Current date context — inject so LLM knows the actual date (avoids wrong year like 2567)
       const _now = new Date();
       const _ceYear = _now.getFullYear();
@@ -840,7 +823,7 @@ export async function POST(req: NextRequest) {
       const antiHallucinationRules = `\n\n🚫 กฎเหล็กป้องกันข้อมูลเท็จ (Anti-Hallucination):\n- ห้ามสร้างเลขที่คำวินิจฉัย คำพิพากษา หรือคำสั่งที่ไม่แน่ใจ 100% (เช่น "คำวินิจฉัย กค 0811/xxxx") — ถ้าไม่แน่ใจ ให้เขียนว่า "ตามแนวคำวินิจฉัยของกรมสรรพากร" โดยไม่ระบุเลขที่\n- ห้ามสร้างชื่อ พ.ร.บ. พ.ร.ก. ประกาศ หรือกฎกระทรวง ที่ไม่มีอยู่จริง\n- ถ้าอ้างอิงมาตรากฎหมาย ต้องแน่ใจว่าเลขมาตราถูกต้อง — ถ้าไม่แน่ใจ ให้ระบุเป็นหลักการแทน\n- ถ้าข้อมูลจาก Web Search ขัดกับความรู้เดิม ให้เชื่อ Web Search มากกว่า (เพราะอาจมีการแก้ไขกฎหมาย)\n- แยกชัดเจนระหว่าง "ข้อเท็จจริงที่แน่ชัด" กับ "ความเห็น/การตีความ"\n` + getTaxCalculatorContext();
 
       // Astrology-specific anti-hallucination rules (injected only for astrology sessions)
-      const astrologyAntiHallucinationRules = isAstrologySession ? `\n\n�️ กฎเหล็กภาษาและรูปแบบสำหรับโหราศาสตร์ (บังคับเด็ดขาด):\n- คำนวณดวงในใจก่อน แล้วแปลงเป็นภาษาชีวิตก่อนพิมพ์ออกมาทุกครั้ง\n- ❌ ห้ามแสดงในคำตอบเด็ดขาด: ตาราง BaZi / ตาราง 4 เสา / Chinese characters (壬午丑子 ฯลฯ) / Heavenly Stem / Earthly Branch / orb degrees / ephemeris / conjunction / opposition / "Day Pillar Stem"\n- ❌ ห้ามแสดงในคำตอบเด็ดขาด: ตารางลัคนา / เลของศาราศี / ตารางดาวพระเคราะห์ประจำเรือน\n- ✅ แทนทุกอย่างด้วยภาษาไทยชีวิตธรรมดา เช่น "คุณเป็นคนที่มีพลังงานสูง มักแบกเรื่องคนเดียว", "ช่วงนี้ดวงชะตาเปิดประตูให้เรื่องความรัก", "ธาตุดินในตัวคุณทำให้มีความมั่นคงแต่อาจยึดติดบ้าง"\n- ใช้น้ำเสียงอบอุ่น เห็นอกเห็นใจ เหมือนหมอดูคุยกับลูกค้าที่รักโดยตรง ไม่ใช่รายงานวิชาการ\n\n🔮 กฎเหล็กเฉพาะโหราศาสตร์:\n- ถ้าไม่มีเวลาเกิดสำหรับลัคนา ให้ระบุชัดว่า "ไม่สามารถระบุราศีลัคนาได้" แต่ยังวิเคราะห์ส่วนอื่นได้\n- ทายทักทุกข้อต้องระบุครบ 5 ส่วน: ① เรื่องอะไร ② เดือน/ช่วงเวลา ③ สาเหตุ (ภาษาชีวิต) ④ % ความน่าจะเป็น (≤75%) ⑤ วิธีรับมือ\n- ห้ามเดาข้อมูลที่ไม่มี — ถ้าไม่มีข้อมูลเกิดให้บอกตรงๆ ว่าต้องการ\n` : "";
+      const astrologyAntiHallucinationRules = false ? `\n\n�️ กฎเหล็กภาษาและรูปแบบสำหรับโหราศาสตร์ (บังคับเด็ดขาด):\n- คำนวณดวงในใจก่อน แล้วแปลงเป็นภาษาชีวิตก่อนพิมพ์ออกมาทุกครั้ง\n- ❌ ห้ามแสดงในคำตอบเด็ดขาด: ตาราง BaZi / ตาราง 4 เสา / Chinese characters (壬午丑子 ฯลฯ) / Heavenly Stem / Earthly Branch / orb degrees / ephemeris / conjunction / opposition / "Day Pillar Stem"\n- ❌ ห้ามแสดงในคำตอบเด็ดขาด: ตารางลัคนา / เลของศาราศี / ตารางดาวพระเคราะห์ประจำเรือน\n- ✅ แทนทุกอย่างด้วยภาษาไทยชีวิตธรรมดา เช่น "คุณเป็นคนที่มีพลังงานสูง มักแบกเรื่องคนเดียว", "ช่วงนี้ดวงชะตาเปิดประตูให้เรื่องความรัก", "ธาตุดินในตัวคุณทำให้มีความมั่นคงแต่อาจยึดติดบ้าง"\n- ใช้น้ำเสียงอบอุ่น เห็นอกเห็นใจ เหมือนหมอดูคุยกับลูกค้าที่รักโดยตรง ไม่ใช่รายงานวิชาการ\n\n🔮 กฎเหล็กเฉพาะโหราศาสตร์:\n- ถ้าไม่มีเวลาเกิดสำหรับลัคนา ให้ระบุชัดว่า "ไม่สามารถระบุราศีลัคนาได้" แต่ยังวิเคราะห์ส่วนอื่นได้\n- ทายทักทุกข้อต้องระบุครบ 5 ส่วน: ① เรื่องอะไร ② เดือน/ช่วงเวลา ③ สาเหตุ (ภาษาชีวิต) ④ % ความน่าจะเป็น (≤75%) ⑤ วิธีรับมือ\n- ห้ามเดาข้อมูลที่ไม่มี — ถ้าไม่มีข้อมูลเกิดให้บอกตรงๆ ว่าต้องการ\n` : "";
 
       // === QA Mode: Direct single-agent answer (no meeting ceremony) ===
       if (mode === "qa") {
@@ -1101,37 +1084,22 @@ export async function POST(req: NextRequest) {
           }
 
           const isChairman = agent.id === chairman.id;
-          const roleInstruction = isAstrologySession
-            ? `คุณกำลังพูดคุยกับเจ้าชะตาโดยตรงในฐานะ${agent.role} — ไม่ใช่นำเสนอในที่ประชุม ไม่ใช่รายงานวิชาการ`
-            : isChairman
+          const roleInstruction = isChairman
             ? `คุณเป็นประธานการประชุม นำเสนอมุมมองจากตำแหน่ง ${agent.role} ของคุณ`
             : `นำเสนอมุมมองจากมุมมองของ ${agent.role} อย่างชัดเจนและตรงประเด็น`;
-
-          // For astrology: inject hard ban BEFORE soul so LLM reads it first
-          const astrologySystemPrefix = isAstrologySession
-            ? "🔮 โหมดนี้คือ: หมอดูคุยกับเจ้าชะตาโดยตรง ไม่ใช่นักวิชาการ ไม่ใช่รายงานประชุม\n\n"
-            + "❌ ห้ามเด็ดขาดในคำตอบ: ตาราง BaZi, ตาราง 4 เสา, Chinese characters (壬午丁丑 ฯลฯ), Heavenly Stem, Earthly Branch, เลของศาราศี, ephemeris, conjunction, orb, ตารางลัคนา\n"
-            + "✅ คำนวณทุกอย่างในใจก่อน แล้วพูดออกมาเป็นภาษาไทยชีวิตธรรมดาเท่านั้น\n"
-            + "✅ ขึ้นต้นทันทีด้วยการทักนิสัย เช่น \"คุณ[ชื่อ] คุณเป็นคนที่...\" โดยไม่มีคำนำใดๆ\n\n"
-            : "";
 
           const knowledgeContext = await getAgentKnowledgeContent(agent.id, question);
           const agentVoice = getAgentVoice(agent.role);
           const result = await callLLMWithRetry(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: isAstrologySession
-                ? `${astrologySystemPrefix}${agent.soul}${agentVoice}${knowledgeContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${birthInfoContext}${dateContext}${astrologyAntiHallucinationRules}`
-                : `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${birthInfoContext}${dateContext}${antiHallucinationRules}${astrologyAntiHallucinationRules}`,
+              content: `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${dateContext}${antiHallucinationRules}`,
             },
             {
               role: "user",
-              content: isAstrologySession
-                ? `⚠️ กฎเหล็กสำคัญที่สุด: เขียนคำตอบเป็นภาษาชีวิตธรรมดาเท่านั้น ห้ามแสดงตาราง/Chinese characters/BaZi/องศา/ศัพท์เทคนิคโหราศาสตร์ใดๆ ในคำตอบเด็ดขาด — คำนวณในใจ แล้วแปลงเป็นภาษาไทยปกติก่อนเขียน\n\nคำถาม/สิ่งที่ต้องการรู้: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์จากมุมมองของ${agent.role} โดยทำตามลำดับต่อไปนี้:\n\n🔮 **ขั้น 1 — ทักนิสัยตัวตน** (สร้างความเชื่อมั่น)\nบอกลักษณะนิสัยหลัก 2-3 อย่างที่เกิดจากดวง เขียนให้คนอ่านแล้วรู้สึก "ใช่เลย" เช่น "คุณเป็นคนที่มีความรับผิดชอบสูง มักแบกปัญหาคนเดียว..."\n\n🔮 **ขั้น 2 — ทักอดีต/ปัจจุบัน** (สร้างความเชื่อมั่นก่อนทำนาย)\nบอกสิ่งที่น่าจะเคยเกิดขึ้นแล้ว หรือกำลังเกิดอยู่ตอนนี้ เช่น "ช่วง 1-2 ปีที่ผ่านมา น่าจะรู้สึกว่ากำลังอยู่ในช่วงเปลี่ยนผ่านสำคัญ...", "ตอนนี้น่าจะรู้สึกว่า..."\n\n⭐ **ขั้น 3 — ทำนายอนาคต** (หลังสร้างความเชื่อมั่นแล้ว)\n- ระยะสั้น (3 เดือนนี้): อย่างน้อย 2 ทายทัก ระบุเดือนชัดเจน\n- ระยะยาว (1 ปีข้างหน้า): อย่างน้อย 2 ทายทัก ระบุช่วงเวลา\nแต่ละทายทักระบุ: ① เรื่องอะไร ② เดือน/ช่วงเวลา ③ สาเหตุ (ภาษาชีวิต เช่น "ดวงดาวสนับสนุน..." ไม่ใช่ "Uranus orb") ④ % ความน่าจะเป็น (≤75%) ⑤ วิธีรับมือ\n\n💡 **ขั้น 4 — คำแนะนำปฏิบัติ**\nคำแนะนำ 2-3 ข้อที่ทำได้จริงวันนี้เลย\n\n⚠️ วิเคราะห์เฉพาะในขอบเขตบทบาท ${agent.role} ของคุณเท่านั้น ไม่ต้องรุกล้ำบทบาทผู้เชี่ยวชาญคนอื่น\n⚠️ ความยาว: ไม่เกิน 700 คำ${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}`
-                : `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์เชิงลึกจากมุมมองเฉพาะทางของ ${agent.role} พร้อมระบุ:\n1. ประเด็นสำคัญจากมุมมองเฉพาะบทบาทของคุณ\n2. ความเสี่ยงหรือข้อกังวลจากมุมมองของคุณ\n3. ข้อเสนอแนะเฉพาะทาง${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}\n\n⚠️ ความยาว: ตอบกระชับไม่เกิน 800 คำ เน้นประเด็นสำคัญที่สุด 3-5 ข้อ ไม่ต้องอารัมภบทยาว\n⚠️ วิเคราะห์เฉพาะในขอบเขตบทบาท ${agent.role} ของคุณเท่านั้น ไม่ต้องรุกล้ำบทบาทผู้เชี่ยวชาญคนอื่น\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ตอบเจาะจงกรณีที่ผู้ถามถาม อย่าพูดหลักการทั่วไปที่ไม่ตรงกับกรณีของเขา\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ตามกฎหมายก่อนเสมอ (เช่น ม.81 สำหรับ VAT, ม.65 ทวิ/ตรี สำหรับ CIT)\n- ถ้ามีข้อยกเว้นที่ทำให้กรณีนี้ต่างจากกฎทั่วไป ให้ระบุข้อยกเว้นนั้นเป็นจุดหลัก ไม่ใช่แค่หมายเหตุท้าย\n- อ้างอิงมาตรากฎหมาย พ.ร.ก. คำวินิจฉัย หรือแนวปฏิบัติที่เกี่ยวข้องให้ชัดเจน\n- ห้ามให้ข้อมูลที่ขัดแย้งกันในคำตอบเดียวกัน`,
-              // isAstrologySession flag is set above — routes to different prompt structure
+              content: `วาระการประชุม: ${question}\n\n${roleInstruction}\n\nกรุณาวิเคราะห์เชิงลึกจากมุมมองเฉพาะทางของ ${agent.role} พร้อมระบุ:\n1. ประเด็นสำคัญจากมุมมองเฉพาะบทบาทของคุณ\n2. ความเสี่ยงหรือข้อกังวลจากมุมมองของคุณ\n3. ข้อเสนอแนะเฉพาะทาง${fileContexts?.length ? "\n\nอ้างอิงข้อมูลจากเอกสารที่แนบมาด้วย" : ""}\n\n⚠️ ความยาว: ตอบกระชับไม่เกิน 800 คำ เน้นประเด็นสำคัญที่สุด 3-5 ข้อ ไม่ต้องอารัมภบทยาว\n⚠️ วิเคราะห์เฉพาะในขอบเขตบทบาท ${agent.role} ของคุณเท่านั้น ไม่ต้องรุกล้ำบทบาทผู้เชี่ยวชาญคนอื่น\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- ตอบในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- ตอบเจาะจงกรณีที่ผู้ถามถาม อย่าพูดหลักการทั่วไปที่ไม่ตรงกับกรณีของเขา\n- ก่อนสรุปว่าต้องเสียภาษีหรือปฏิบัติตามกฎใด ต้องตรวจสอบข้อยกเว้น (exemptions) ตามกฎหมายก่อนเสมอ (เช่น ม.81 สำหรับ VAT, ม.65 ทวิ/ตรี สำหรับ CIT)\n- ถ้ามีข้อยกเว้นที่ทำให้กรณีนี้ต่างจากกฎทั่วไป ให้ระบุข้อยกเว้นนั้นเป็นจุดหลัก ไม่ใช่แค่หมายเหตุท้าย\n- อ้างอิงมาตรากฎหมาย พ.ร.ก. คำวินิจฉัย หรือแนวปฏิบัติที่เกี่ยวข้องให้ชัดเจน\n- ห้ามให้ข้อมูลที่ขัดแย้งกันในคำตอบเดียวกัน`,
             },
-          ], clientSignal, 1, isAstrologySession ? 6144 : 4096);
+          ], clientSignal, 1, 4096);
 
           return { agent, result, searchContext };
         } catch (err) {
@@ -1313,59 +1281,9 @@ export async function POST(req: NextRequest) {
 
       } // end if (mode !== "close") — Phase 1+2
 
-      // === Phase 1.5: Astrology Consistency Verification (only for astrology sessions with multiple agents) ===
-      if (isAstrologySession && agentFindings.length >= 2 && mode !== "close") {
-        const chairApiKeyV = await getAgentApiKey(chairman.id);
-        if (chairApiKeyV) {
-          try {
-            send("status", { message: "🔮 Phase 1.5 — ตรวจสอบความสอดคล้องระหว่างผู้เชี่ยวชาญ..." });
-            const findingsSummary = agentFindings
-              .map((f) => `[${f.emoji} ${f.name} (${f.role})]:\n${f.content.slice(0, 800)}`)
-              .join("\n\n---\n\n");
-            const verifyResult = await callLLM(chairman.provider, chairman.model, chairApiKeyV, chairman.baseUrl, [
-              {
-                role: "system",
-                content: `คุณเป็นผู้ตรวจสอบความสอดคล้องของการวิเคราะห์โหราศาสตร์ ตรวจสอบว่าผู้เชี่ยวชาญแต่ละคนให้ข้อมูลขัดแย้งกันหรือไม่ในประเด็นเหล่านี้:
-1. Ascendant/ลัคนาราศี — ผู้เชี่ยวชาญระบุตรงกันหรือไม่
-2. Day Master/ธาตุประจำตัว — ผู้เชี่ยวชาญระบุตรงกันหรือไม่
-3. ฐานเลขหรือช่วงอายุ — คำนวณตรงกันหรือไม่
-4. ทิศทางชีวิตโดยรวม — สอดคล้องหรือขัดแย้งกัน
-
-ตอบกระชับในรูปแบบนี้:
-- ถ้าพบความขัดแย้ง: ระบุว่า "⚠️ ความขัดแย้ง: [ประเด็น] — [ชื่อ A] ระบุว่า [X] แต่ [ชื่อ B] ระบุว่า [Y]"
-- ถ้าไม่พบความขัดแย้ง: ระบุว่า "✅ ข้อมูลสอดคล้องกัน"
-- จบด้วย: "📌 ข้อสังเกตสำหรับประธาน: [สิ่งที่ประธานควรตรวจสอบหรือระบุให้ชัดเจนในรายงานสรุป]"
-ห้ามอธิบายยืดยาว ตอบไม่เกิน 200 คำ`,
-              },
-              { role: "user", content: `วาระ: ${question}\n\nข้อมูลจากผู้เชี่ยวชาญ:\n${findingsSummary}` },
-            ], clientSignal);
-            const verifyContent = verifyResult.content.trim();
-            if (verifyContent) {
-              const verifyMsg: ResearchMessage = {
-                id: crypto.randomUUID(),
-                agentId: chairman.id,
-                agentName: `${chairman.name} (ตรวจสอบความสอดคล้อง)`,
-                agentEmoji: "🔍",
-                role: "verification" as ResearchMessage["role"],
-                content: `**Phase 1.5 — ตรวจสอบความสอดคล้องระหว่างผู้เชี่ยวชาญ**\n\n${verifyContent}`,
-                tokensUsed: verifyResult.inputTokens + verifyResult.outputTokens,
-                timestamp: new Date().toISOString(),
-              };
-              await appendResearchMessage(sessionId, verifyMsg);
-              send("message", verifyMsg);
-              // Pass conflicts into factCheckNote so synthesis chairman is aware
-              if (verifyContent.includes("⚠️")) {
-                // Will be picked up by factCheckNote below
-                (globalThis as Record<string, unknown>)[`_astroConflict_${sessionId}`] = `\n\n🔮 ผลตรวจสอบความสอดคล้องโหราศาสตร์:\n${verifyContent}`;
-              }
-            }
-          } catch { /* skip verification on error */ }
-        }
-      }
-
-      // === Fact-checking phase: verify cited laws/facts before synthesis (skip for astrology — prompt is tax/law specific) ===
+      // === Fact-checking phase: verify cited laws/facts before synthesis ===
       let factCheckNote = "";
-      if (agentFindings.length > 0 && mode !== "close" && !isAstrologySession) {
+      if (agentFindings.length > 0 && mode !== "close") {
         const chairApiKeyFC = await getAgentApiKey(chairman.id);
         if (chairApiKeyFC) {
           try {
@@ -1393,13 +1311,6 @@ export async function POST(req: NextRequest) {
               send("status", { message: "⚠️ พบข้อสังเกตจากการตรวจสอบ — ส่งต่อให้ประธานพิจารณา" });
             } else {
               send("status", { message: "✅ ตรวจสอบข้อเท็จจริงแล้ว — ไม่พบข้อผิดพลาด" });
-            }
-            // Merge astrology conflict note if any
-            const _astroConflictKey = `_astroConflict_${sessionId}`;
-            const _astroConflict = (globalThis as Record<string, unknown>)[_astroConflictKey] as string | undefined;
-            if (_astroConflict) {
-              factCheckNote += _astroConflict;
-              delete (globalThis as Record<string, unknown>)[_astroConflictKey];
             }
           } catch { /* skip fact-check on error */ }
         }
@@ -1457,22 +1368,13 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
             {
               role: "system",
-              content: isAstrologySession
-                ? "🔮 คุณเป็นหมอดูชั้นเยี่ยม กำลังเขียนคำพยากรณ์ส่วนตัวส่งถึงเจ้าชะตาโดยตรง\n\n"
-                  + "❌ ห้ามเด็ดขาด: เขียนเป็นรายงาน/มติที่ประชุม, กล่าวถึงชื่อหมอดูหรือชื่อศาสตร์, ตาราง BaZi, Chinese characters, เลของศา, ศัพท์เทคนิคโหราศาสตร์ทุกชนิด\n"
-                  + "✅ เขียนคำพยากรณ์ที่คนอ่านแล้วรู้สึกว่า \"หมอดูเข้าใจฉันจริงๆ\"\n"
-                  + "✅ เปิดด้วยทักนิสัยก่อนเสมอ → ทักอดีต/ปัจจุบัน → ค่อยทำนายอนาคต\n"
-                  + "✅ ภาษาอบอุ่น เหมือนหมอดูคุยกับลูกค้าในห้องส่วนตัว ไม่ใช่รายงานวิชาการ\n"
-                  + `${failureNote}${birthInfoContext}${dateContext}${astrologyAntiHallucinationRules}`
-                : `${companyContext}${memoryContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน ห้ามสรุปผิดจากข้อเท็จจริงที่นำเสนอ${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}${factCheckNote}${domainKnowledge}${clarificationContext}${birthInfoContext}${dateContext}${antiHallucinationRules}${astrologyAntiHallucinationRules}`,
+              content: `${companyContext}${memoryContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน ห้ามสรุปผิดจากข้อเท็จจริงที่นำเสนอ${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}${factCheckNote}${domainKnowledge}${clarificationContext}${dateContext}${antiHallucinationRules}`,
             },
             {
               role: "user",
-              content: isAstrologySession
-                ? `${mode === "close" && allRounds && allRounds.length > 1 ? `การดูดวงครั้งนี้มี ${allRounds.length} คำถาม:\n\n` : `คำถาม/สิ่งที่ต้องการรู้: ${question}\n\n`}ข้อมูลจากหมอดูแต่ละท่าน:\n\n${allContext}\n\n---\nกรุณาเขียน **คำพยากรณ์ส่วนตัว** สำหรับเจ้าชะตา (ไม่ใช่รายงานประชุม ไม่ต้องกล่าวถึงชื่อหมอดู) เข้าเนื้อหาเลย:\n\n✨ **ตัวตนและนิสัย**\nสรุปลักษณะนิสัยหลักที่หมอดูหลายท่านเห็นตรงกัน เขียนให้คนอ่านแล้วพยักหน้าว่า "ใช่เลย" แสดง (X/5 ศาสตร์เห็นตรงกัน) ต่อท้ายแต่ละจุด\n\n🔮 **อดีตและปัจจุบัน**\nสรุปสิ่งที่น่าจะเคยเกิดขึ้นแล้ว และสิ่งที่กำลังเกิดอยู่ตอนนี้ เขียนให้คนอ่านรู้สึกว่าหมอดูเข้าใจชีวิตเขา\n\n⭐ **อนาคต 3 เดือนข้างหน้า**\nสิ่งที่น่าจับตามองในระยะสั้น — ระบุเดือน + วิธีรับมือ แสดง (X/5 ศาสตร์เห็นตรงกัน) ต่อท้ายแต่ละทายทัก\n\n🌟 **อนาคต 1 ปีข้างหน้า**\nแนวโน้มชีวิตใหญ่ — จุดที่ดีและจุดที่ต้องระวัง ระบุช่วงเวลา\n\n💡 **คำแนะนำที่ลงมือได้วันนี้เลย**\n3-5 ข้อที่ทำได้จริง ไม่ใช่คำแนะนำนามธรรม\n\n⚠️ กฎเหล็ก:\n- เขียนเป็นภาษาธรรมดาที่คนทั่วไปอ่านแล้วเข้าใจทันที ห้ามใช้ศัพท์โหราศาสตร์ทุกชนิด\n- ใช้น้ำเสียงอบอุ่น เห็นอกเห็นใจ เหมือนหมอดูที่ไว้วางใจคุยกับเจ้าชะตาโดยตรง\n- ความยาวไม่เกิน 1200 คำ ไม่ต้องระบุชื่อหมอดูหรืออธิบายหลักการ\n\nจากนั้นเพิ่ม JSON metadata:\n\`\`\`metadata\n{"riskLevel":"low|medium|high","actionItems":["...","..."],"legalRefs":[],"deadlines":[]}\n\`\`\`\n- riskLevel: ภาพรวมดวงชะตา (low=ดีมาก, medium=ปานกลาง, high=ต้องระวัง)\n- actionItems: คำแนะนำสั้นๆ ≤15 คำ ต่อข้อ ไม่เกิน 5 ข้อ`
-                : `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ ความยาว: สรุปไม่เกิน 1500 คำ เน้นความชัดเจนและกระชับ\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"\n\nจากนั้นเพิ่ม JSON metadata สำหรับ UI แสดง Action Items และ Legal Refs:\n\`\`\`metadata\n{"riskLevel":"low|medium|high","actionItems":["...","..."],"legalRefs":["ม.77/1","ม.86/4"],"deadlines":["..."]}\n\`\`\`\n- riskLevel: ประเมินความเสี่ยงด้านภาษี/กฎหมายโดยรวม (low/medium/high)\n- actionItems: รายการที่ต้องดำเนินการ (สั้นกระชับ ≤15 คำ ต่อข้อ ไม่เกิน 8 ข้อ)\n- legalRefs: มาตรากฎหมาย/มาตรฐาน/ประกาศที่อ้างอิง (ไม่เกิน 8 รายการ)\n- deadlines: กำหนดเวลาสำคัญที่ระบุในมติ (ถ้ามี)`,
+              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน\n\n⚠️ ความยาว: สรุปไม่เกิน 1500 คำ เน้นความชัดเจนและกระชับ\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"\n\nจากนั้นเพิ่ม JSON metadata สำหรับ UI แสดง Action Items และ Legal Refs:\n\`\`\`metadata\n{"riskLevel":"low|medium|high","actionItems":["...","..."],"legalRefs":["ม.77/1","ม.86/4"],"deadlines":["..."]}\n\`\`\`\n- riskLevel: ประเมินความเสี่ยงด้านภาษี/กฎหมายโดยรวม (low/medium/high)\n- actionItems: รายการที่ต้องดำเนินการ (สั้นกระชับ ≤15 คำ ต่อข้อ ไม่เกิน 8 ข้อ)\n- legalRefs: มาตรากฎหมาย/มาตรฐาน/ประกาศที่อ้างอิง (ไม่เกิน 8 รายการ)\n- deadlines: กำหนดเวลาสำคัญที่ระบุในมติ (ถ้ามี)`,
             },
-          ], clientSignal, isAstrologySession ? 8192 : 6144);
+          ], clientSignal, 6144);
 
           const synthMsg: ResearchMessage = {
             id: crypto.randomUUID(),
