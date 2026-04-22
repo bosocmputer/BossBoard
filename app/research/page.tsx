@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { showToast } from "../components/Toast";
 import Modal from "../components/Modal";
 import Badge from "../components/Badge";
@@ -390,6 +390,11 @@ export default function ResearchPage() {
   const pendingClarificationQuestionRef = useRef<string>("");
   const lastClarificationAnswersRef = useRef<{ question: string; answer: string }[] | undefined>(undefined);
 
+  // Personality checkpoint (astrology) state
+  const [pendingPersonalityCheck, setPendingPersonalityCheck] = useState(false);
+  const [personalityFeedback, setPersonalityFeedback] = useState("");
+  const [showFeedbackInput, setShowFeedbackInput] = useState(false);
+
   // Web sources state
   const [currentWebSources, setCurrentWebSources] = useState<WebSource[]>([]);
   const currentWebSourcesRef = useRef<WebSource[]>([]);
@@ -427,6 +432,12 @@ export default function ResearchPage() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [clientProfiles, setClientProfiles] = useState<{ id: string; name: string }[]>([]);
+  const [birthInfo, setBirthInfo] = useState<{ dob: string; timeOfBirth: string; placeOfBirth: string }>({ dob: "", timeOfBirth: "", placeOfBirth: "" });
+  const [timeUnknown, setTimeUnknown] = useState(false);
+
+  // Detect astrology session from question text
+  const _astroKw = ["ดูดวง","โหราศาสตร์","ดวงชะตา","ดวง","พยากรณ์","ทำนาย","ฤกษ์","bazi","ba zi","tarot","ไพ่ยิปซี","ชะตา","ชง","ราศี","เลขศาสตร์","numerology","ฮวงจุ้ย","feng shui","สี่เสา","ทักษา"];
+  const isAstrologyQuestion = useMemo(() => _astroKw.some(kw => question.toLowerCase().includes(kw)), [question]);
 
   const [autoScroll, setAutoScroll] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -720,6 +731,9 @@ export default function ResearchPage() {
     setPendingClarification(false);
     setClarificationQuestions([]);
     setClarificationAnswers({});
+    setPendingPersonalityCheck(false);
+    setPersonalityFeedback("");
+    setShowFeedbackInput(false);
     pendingClarificationQuestionRef.current = q;
     setActiveAgentIds(new Set());
     setCurrentPhase(0);
@@ -743,6 +757,11 @@ export default function ResearchPage() {
         includeCompanyInfo,
         clarificationAnswers: withClarificationAnswers || undefined,
         clientId: selectedClientId || undefined,
+        birthInfo: isAstrologyQuestion ? {
+          dob: birthInfo.dob || undefined,
+          timeOfBirth: timeUnknown ? "ไม่ทราบ" : (birthInfo.timeOfBirth || undefined),
+          placeOfBirth: birthInfo.placeOfBirth || undefined,
+        } : undefined,
       };
 
       if (closeMode) {
@@ -850,6 +869,11 @@ export default function ResearchPage() {
               setClarificationAnswers({});
               setPendingClarification(true);
               // Auto-scroll to show clarification form
+              setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 200);
+            } else if (currentEvent === "findings_ready") {
+              // Astrology personality checkpoint — ask user to confirm before synthesis
+              setRunning(false);
+              setPendingPersonalityCheck(true);
               setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 200);
             } else if (currentEvent === "web_sources") {
               const newSources: WebSource[] = payload.sources ?? [];
@@ -963,6 +987,19 @@ export default function ResearchPage() {
     setPendingClarification(false);
     setClarificationQuestions([]);
     handleRun(pendingClarificationQuestionRef.current || undefined, false, answers);
+  };
+
+  // Handle personality checkpoint — continue to synthesis (with optional feedback)
+  const handlePersonalityConfirm = (feedback?: string) => {
+    setPendingPersonalityCheck(false);
+    setPersonalityFeedback("");
+    setShowFeedbackInput(false);
+    // Re-run with personality feedback injected as clarification context
+    const existing = lastClarificationAnswersRef.current ?? [];
+    const withFeedback: { question: string; answer: string }[] = feedback
+      ? [...existing, { question: "ความคิดเห็นเกี่ยวกับสิ่งที่หมอดูทักมา", answer: feedback }]
+      : existing;
+    handleRun(pendingClarificationQuestionRef.current || undefined, false, withFeedback.length > 0 ? withFeedback : undefined);
   };
 
   const handleSkipClarification = () => {
@@ -1652,6 +1689,67 @@ export default function ResearchPage() {
                 </div>
               )}
 
+              {/* Personality Checkpoint UI — astrology sessions */}
+              {pendingPersonalityCheck && (
+                <div className="mx-1 space-y-3">
+                  <div className="border-2 rounded-xl p-4 sm:p-5" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xl">🔮</span>
+                      <div>
+                        <div className="font-bold text-sm" style={{ color: "var(--accent)" }}>หมอดูวิเคราะห์เสร็จแล้ว</div>
+                        <div className="text-xs" style={{ color: "var(--text-muted)" }}>ที่ทักมาทั้งหมด ตรงกับตัวคุณไหม?</div>
+                      </div>
+                    </div>
+                    {showFeedbackInput ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={personalityFeedback}
+                          onChange={e => setPersonalityFeedback(e.target.value)}
+                          placeholder="เช่น ด้านความรัก ตรงมาก แต่เรื่องการเงินไม่ค่อยตรง / ช่วงนี้กำลังเจอปัญหาเรื่อง..."
+                          rows={3}
+                          className="w-full text-xs px-3 py-2 rounded-lg border outline-none resize-none"
+                          style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handlePersonalityConfirm(personalityFeedback)}
+                            className="flex-1 py-2 rounded-lg text-sm font-bold transition-all"
+                            style={{ background: "var(--accent)", color: "#000" }}
+                          >
+                            ✓ ส่ง — ให้หมอดูสรุปดวง
+                          </button>
+                          <button
+                            onClick={() => setShowFeedbackInput(false)}
+                            className="px-4 py-2 rounded-lg text-xs border"
+                            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                          >
+                            ย้อนกลับ
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          onClick={() => handlePersonalityConfirm()}
+                          className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
+                          style={{ background: "var(--accent)", color: "#000" }}
+                        >
+                          ✅ ใช่เลย — สรุปดวงต่อเลย!
+                        </button>
+                        <button
+                          onClick={() => setShowFeedbackInput(true)}
+                          className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all border"
+                          style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "transparent" }}
+                        >
+                          💬 มีบางอย่างเพิ่มเติม...
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Clarification Questions UI */}
               {pendingClarification && clarificationQuestions.length > 0 && (
                 <div className="mx-1 space-y-3">
@@ -2293,6 +2391,52 @@ export default function ResearchPage() {
                   className="border rounded-xl overflow-hidden transition-colors"
                   style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
                 >
+                  {/* Birth info panel — shows when astrology keyword detected */}
+                  {isAstrologyQuestion && (
+                    <div className="border-b px-3 py-2" style={{ borderColor: "var(--border)", background: "var(--accent-8)" }}>
+                      <div className="text-[11px] font-bold mb-2 flex items-center gap-1" style={{ color: "var(--accent)" }}>🌟 ข้อมูลเจ้าชะตา (ช่วยให้ดวงแม่นขึ้น)</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <div className="text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>วันเกิด</div>
+                          <input
+                            type="date"
+                            value={birthInfo.dob}
+                            onChange={e => setBirthInfo(v => ({ ...v, dob: e.target.value }))}
+                            className="w-full text-xs px-2 py-1 rounded-lg border outline-none"
+                            style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                          />
+                        </div>
+                        <div>
+                          <div className="text-[10px] mb-0.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                            เวลาเกิด
+                            <label className="flex items-center gap-0.5 cursor-pointer">
+                              <input type="checkbox" checked={timeUnknown} onChange={e => setTimeUnknown(e.target.checked)} className="w-2.5 h-2.5" />
+                              <span className="text-[9px]">ไม่ทราบ</span>
+                            </label>
+                          </div>
+                          <input
+                            type="time"
+                            value={birthInfo.timeOfBirth}
+                            disabled={timeUnknown}
+                            onChange={e => setBirthInfo(v => ({ ...v, timeOfBirth: e.target.value }))}
+                            className="w-full text-xs px-2 py-1 rounded-lg border outline-none disabled:opacity-40"
+                            style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                          />
+                        </div>
+                        <div>
+                          <div className="text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>จังหวัดที่เกิด</div>
+                          <input
+                            type="text"
+                            placeholder="เช่น กรุงเทพฯ"
+                            value={birthInfo.placeOfBirth}
+                            onChange={e => setBirthInfo(v => ({ ...v, placeOfBirth: e.target.value }))}
+                            className="w-full text-xs px-2 py-1 rounded-lg border outline-none"
+                            style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text)" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* Meeting templates dropdown */}
                   {showTemplates && (
                     <div className="border-b px-3 py-2" style={{ borderColor: "var(--border)" }}>
