@@ -748,7 +748,7 @@ export default function ResearchPage() {
       const body: Record<string, unknown> = {
         question: q,
         agentIds: Array.from(selectedIds),
-        mode: closeMode ? "close" : isQA ? "qa" : "discuss",
+        mode: closeMode ? "close" : isQA ? "qa" : "full",
         sessionId: meetingSessionIdRef.current || undefined,
         conversationHistory: buildHistory(),
         fileContexts: useFileContext ? buildFileContexts() : [],
