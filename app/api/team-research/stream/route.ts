@@ -11,12 +11,14 @@ import {
   AgentPublic,
   updateAgentStats,
   incrementAgentSessionCount,
-  getCompanyInfoContext,
+  getCompanyInfoContextAsync,
   getAgentKnowledgeContent,
   getMemoryContext,
   upsertMemoryFact,
 } from "@/lib/agents-store";
 import { getDomainKnowledge, isDomainQuestion } from "@/lib/domain-knowledge";
+import { getTaxCalendarContext } from "@/lib/tax-calendar";
+import { getTaxCalculatorContext } from "@/lib/tax-calculator";
 import { rateLimit, getClientIp } from "@/lib/rate-limit-redis";
 import crypto from "crypto";
 
@@ -632,6 +634,7 @@ export async function POST(req: NextRequest) {
     sessionId: existingSessionId,
     allRounds,
     clarificationAnswers,
+    clientId,
   } = body as {
     question: string;
     agentIds: string[];
@@ -647,6 +650,7 @@ export async function POST(req: NextRequest) {
     sessionId?: string;
     allRounds?: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }[];
     clarificationAnswers?: { question: string; answer: string }[];
+    clientId?: string;
   };
 
   if (!question || !agentIds?.length) {
@@ -740,10 +744,25 @@ export async function POST(req: NextRequest) {
   const orderedAgents = sortBySeniority(selectedAgents, chairman);
 
   // Company & knowledge context
-  const [companyContext, memoryContext] = await Promise.all([
-    includeCompanyInfo ? getCompanyInfoContext() : Promise.resolve(""),
+  const [companyContextBase, memoryContext] = await Promise.all([
+    includeCompanyInfo ? getCompanyInfoContextAsync() : Promise.resolve(""),
     getMemoryContext(userId),
   ]);
+
+  // Optionally inject client profile context
+  let clientContext = "";
+  if (clientId) {
+    try {
+      const { getClientProfile } = await import("@/lib/client-profiles");
+      const client = getClientProfile(clientId);
+      if (client) {
+        clientContext = `\n\n[ข้อมูลลูกค้าปัจจุบัน]\nชื่อ: ${client.name}${client.taxId ? `\nเลขประจำตัวผู้เสียภาษี: ${client.taxId}` : ""}${client.businessType ? `\nประเภท: ${client.businessType}` : ""}${client.vatRegistered !== undefined ? `\nจด VAT: ${client.vatRegistered ? "ใช่" : "ไม่"}` : ""}${client.fiscalYearEnd ? `\nสิ้นรอบบัญชี: ${client.fiscalYearEnd}` : ""}${client.accountingStandard ? `\nมาตรฐานบัญชี: ${client.accountingStandard}` : ""}${client.notes ? `\nหมายเหตุ: ${client.notes}` : ""}\n`;
+      }
+    } catch {
+      // client-profiles not available, skip
+    }
+  }
+  const companyContext = companyContextBase + clientContext;
 
   // Client disconnect detection — abort LLM calls when client disconnects
   const abortController = new AbortController();
@@ -805,10 +824,10 @@ export async function POST(req: NextRequest) {
       const _ceYear = _now.getFullYear();
       const _beYear = _ceYear + 543;
       const _monthTh = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"][_now.getMonth()];
-      const dateContext = `\n\n📅 วันที่ปัจจุบัน: ${_now.getDate()} ${_monthTh} พ.ศ. ${_beYear} (ค.ศ. ${_ceYear}) — ใช้ปีนี้เป็นฐานในการวิเคราะห์และพยากรณ์ทุกกรณี ห้ามอ้างอิงปีที่ผ่านมาเป็นปัจจุบัน\n`;
+      const dateContext = `\n\n📅 วันที่ปัจจุบัน: ${_now.getDate()} ${_monthTh} พ.ศ. ${_beYear} (ค.ศ. ${_ceYear}) — ใช้ปีนี้เป็นฐานในการวิเคราะห์และพยากรณ์ทุกกรณี ห้ามอ้างอิงปีที่ผ่านมาเป็นปัจจุบัน\n` + getTaxCalendarContext(45);
 
       // Anti-hallucination rules (injected into all prompts)
-      const antiHallucinationRules = `\n\n🚫 กฎเหล็กป้องกันข้อมูลเท็จ (Anti-Hallucination):\n- ห้ามสร้างเลขที่คำวินิจฉัย คำพิพากษา หรือคำสั่งที่ไม่แน่ใจ 100% (เช่น "คำวินิจฉัย กค 0811/xxxx") — ถ้าไม่แน่ใจ ให้เขียนว่า "ตามแนวคำวินิจฉัยของกรมสรรพากร" โดยไม่ระบุเลขที่\n- ห้ามสร้างชื่อ พ.ร.บ. พ.ร.ก. ประกาศ หรือกฎกระทรวง ที่ไม่มีอยู่จริง\n- ถ้าอ้างอิงมาตรากฎหมาย ต้องแน่ใจว่าเลขมาตราถูกต้อง — ถ้าไม่แน่ใจ ให้ระบุเป็นหลักการแทน\n- ถ้าข้อมูลจาก Web Search ขัดกับความรู้เดิม ให้เชื่อ Web Search มากกว่า (เพราะอาจมีการแก้ไขกฎหมาย)\n- แยกชัดเจนระหว่าง "ข้อเท็จจริงที่แน่ชัด" กับ "ความเห็น/การตีความ"\n`;
+      const antiHallucinationRules = `\n\n🚫 กฎเหล็กป้องกันข้อมูลเท็จ (Anti-Hallucination):\n- ห้ามสร้างเลขที่คำวินิจฉัย คำพิพากษา หรือคำสั่งที่ไม่แน่ใจ 100% (เช่น "คำวินิจฉัย กค 0811/xxxx") — ถ้าไม่แน่ใจ ให้เขียนว่า "ตามแนวคำวินิจฉัยของกรมสรรพากร" โดยไม่ระบุเลขที่\n- ห้ามสร้างชื่อ พ.ร.บ. พ.ร.ก. ประกาศ หรือกฎกระทรวง ที่ไม่มีอยู่จริง\n- ถ้าอ้างอิงมาตรากฎหมาย ต้องแน่ใจว่าเลขมาตราถูกต้อง — ถ้าไม่แน่ใจ ให้ระบุเป็นหลักการแทน\n- ถ้าข้อมูลจาก Web Search ขัดกับความรู้เดิม ให้เชื่อ Web Search มากกว่า (เพราะอาจมีการแก้ไขกฎหมาย)\n- แยกชัดเจนระหว่าง "ข้อเท็จจริงที่แน่ชัด" กับ "ความเห็น/การตีความ"\n` + getTaxCalculatorContext();
 
       // Astrology-specific anti-hallucination rules (injected only for astrology sessions)
       const astrologyAntiHallucinationRules = isAstrologySession ? `\n\n🔮 กฎเหล็กเฉพาะโหราศาสตร์:\n- ห้ามระบุ Ascendant/ลัคนา โดยไม่แสดงวิธีคำนวณจากเวลา+สถานที่เกิด — ถ้าไม่มีเวลาเกิดให้ระบุชัดว่า "ไม่สามารถระบุลัคนาได้"\n- ห้ามระบุ Day Master (ธาตุประจำตัว) โดยไม่แสดงตาราง 4 เสาก่อน (ปี เดือน วัน ยาม พร้อม Heavenly Stem + Earthly Branch + ธาตุ)\n- Day Master = Heavenly Stem ของเสาวัน (Day Pillar) เท่านั้น — ไม่ใช่ธาตุรวมหรือธาตุที่มากที่สุดในตาราง\n- ห้ามระบุตำแหน่งดาว (องศา/ราศี) ที่ไม่มีฐานข้อมูลอ้างอิง — ถ้าไม่แน่ใจให้ระบุว่า "ประมาณ ~XX°"\n- ทายทักทุกข้อต้องระบุครบ 5 องค์ประกอบ: ① เรื่องอะไร ② ช่วงเดือน/เวลาไหน ③ กลไก (ดาว/ธาตุ/เลขฐานที่ทำให้เกิด) ④ % ความน่าจะเป็น (ไม่เกิน 75%) ⑤ วิธีรับมือ\n- ถ้าข้อมูลไม่เพียงพอ (เช่น ไม่มีเวลาเกิดสำหรับลัคนา) ห้ามเดา — ระบุชัดว่าต้องการข้อมูลเพิ่ม\n` : "";
@@ -1418,7 +1437,7 @@ export async function POST(req: NextRequest) {
             },
             {
               role: "user",
-              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n${isAstrologySession ? "6. **⚠️ ทายทัก รวมจากทุกศาสตร์** — สรุปคำทำนายเชิง predictive ที่ผู้เชี่ยวชาญระบุไว้ (เฉพาะทายทักที่ระบุครบ 5 องค์ประกอบ: เรื่อง+เดือน+กลไก+%+รับมือ):\n   - **ระยะสั้น (3 เดือนนี้):** ทายทักที่ผู้เชี่ยวชาญ ≥2 คนเห็นตรงกัน ระบุเดือนชัดเจน\n   - **ระยะยาว (1 ปีข้างหน้า):** แนวโน้มสำคัญพร้อมช่วงเวลา\n   - ⚠️ ระบุถ้าผู้เชี่ยวชาญคนใดระบุทายทักไม่ครบ 5 องค์ประกอบ\n7. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน" : "6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน"}\n\n⚠️ ความยาว: สรุปไม่เกิน ${isAstrologySession ? "2000" : "1500"} คำ เน้นความชัดเจนและกระชับ\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"`,
+              content: `${mode === "close" && allRounds && allRounds.length > 1 ? `การประชุมครั้งนี้มี ${allRounds.length} วาระที่อภิปราย:\n\n` : `วาระ: ${question}\n\n`}ความเห็นจากทีมที่ปรึกษา:\n\n${allContext}\n\n---\nกรุณาสรุปเป็นรายงานสรุปมติ เข้าเนื้อหาเลยไม่ต้องมี header วันที่/สถานที่/ผู้เข้าร่วม (นี่คือระบบ AI อัตโนมัติ):\n1. **คำตอบหลัก** — ตอบคำถามของผู้ถามให้ชัดเจนตรงประเด็นก่อนเลย (ใช่/ไม่ใช่/มี/ไม่มี + เหตุผลสั้นๆ)\n2. **ประเด็นที่ที่ประชุมเห็นพ้องกัน** — สิ่งที่ทุกฝ่ายเห็นตรงกัน\n3. **ประเด็นที่ยังมีความเห็นต่าง** — ระบุชัดเจนว่าใครเห็นต่างอย่างไร พร้อมเหตุผลแต่ละฝ่าย\n4. **มติที่ประชุม** — ข้อสรุปที่ดีที่สุดพร้อมเหตุผลที่หนักแน่น\n5. **Action Items** — สิ่งที่ต้องดำเนินการต่อ (ระบุผู้รับผิดชอบตาม role)\n${isAstrologySession ? "6. **⚠️ ทายทัก รวมจากทุกศาสตร์** — สรุปคำทำนายเชิง predictive ที่ผู้เชี่ยวชาญระบุไว้ (เฉพาะทายทักที่ระบุครบ 5 องค์ประกอบ: เรื่อง+เดือน+กลไก+%+รับมือ):\n   - **ระยะสั้น (3 เดือนนี้):** ทายทักที่ผู้เชี่ยวชาญ ≥2 คนเห็นตรงกัน ระบุเดือนชัดเจน\n   - **ระยะยาว (1 ปีข้างหน้า):** แนวโน้มสำคัญพร้อมช่วงเวลา\n   - ⚠️ ระบุถ้าผู้เชี่ยวชาญคนใดระบุทายทักไม่ครบ 5 องค์ประกอบ\n7. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน" : "6. **ข้อจำกัดและสิ่งที่ต้องตรวจสอบเพิ่มเติม** — ข้อมูลที่ยังขาดหรือต้องยืนยัน"}\n\n⚠️ ความยาว: สรุปไม่เกิน ${isAstrologySession ? "2000" : "1500"} คำ เน้นความชัดเจนและกระชับ\n\n⚠️ กฎเหล็กด้านความถูกต้อง:\n- สรุปในบริบทกฎหมายและมาตรฐานของประเทศไทยเป็นหลัก\n- มติต้องตอบเจาะจงกรณีที่ผู้ถามถาม ไม่ใช่หลักการทั่วไป\n- ถ้ามีข้อยกเว้นตามกฎหมายที่เกี่ยวข้อง ต้องระบุชัดเจนในคำตอบหลักว่าเข้าเงื่อนไขยกเว้นหรือไม่\n- ห้ามมีข้อมูลขัดแย้งกันในรายงาน (เช่น เปิดด้วย \"ยกเว้น\" แต่สรุปว่า \"ต้องเสีย\")\n- ข้อมูลตัวเลข มาตรากฎหมาย ต้องถูกต้องตรงกับข้อมูลต้นฉบับ ห้ามปัดเศษหรือประมาณค่า\n- ถ้าผู้เชี่ยวชาญให้ข้อมูลขัดกัน ต้องวิเคราะห์ว่าฝ่ายไหนถูกต้องกว่า พร้อมอ้างอิงมาตราเฉพาะ\n\nจากนั้นให้เพิ่มบรรทัดสุดท้ายเป็น JSON สำหรับ visualization ในรูปแบบ:\n\`\`\`chart\n{"type":"bar|line|pie|none","title":"...","labels":[...],"datasets":[{"label":"...","data":[...]}]}\n\`\`\`\nถ้าไม่มีข้อมูลตัวเลขที่เหมาะกับกราฟ ให้ใส่ type: "none"\n\nจากนั้นเพิ่ม JSON metadata สำหรับ UI แสดง Action Items และ Legal Refs:\n\`\`\`metadata\n{"riskLevel":"low|medium|high","actionItems":["...","..."],"legalRefs":["ม.77/1","ม.86/4"],"deadlines":["..."]}\n\`\`\`\n- riskLevel: ประเมินความเสี่ยงด้านภาษี/กฎหมายโดยรวม (low/medium/high)\n- actionItems: รายการที่ต้องดำเนินการ (สั้นกระชับ ≤15 คำ ต่อข้อ ไม่เกิน 8 ข้อ)\n- legalRefs: มาตรากฎหมาย/มาตรฐาน/ประกาศที่อ้างอิง (ไม่เกิน 8 รายการ)\n- deadlines: กำหนดเวลาสำคัญที่ระบุในมติ (ถ้ามี)`,
             },
           ], clientSignal);
 
@@ -1428,7 +1447,7 @@ export async function POST(req: NextRequest) {
             agentName: chairman.name,
             agentEmoji: chairman.emoji,
             role: "synthesis",
-            content: result.content.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim(),
+            content: result.content.replace(/```(?:chart|json|metadata)\n[\s\S]*?\n```/g, "").trim(),
             tokensUsed: result.inputTokens + result.outputTokens,
             timestamp: new Date().toISOString(),
           };
@@ -1446,8 +1465,17 @@ export async function POST(req: NextRequest) {
             } catch { /* ignore chart parse error */ }
           }
 
-          // Strip chart/json code blocks from final content
-          const cleanContent = result.content.replace(/```(?:chart|json)\n[\s\S]*?\n```/g, "").trim();
+          // Parse metadata block — action items, legal refs, risk level
+          const metaMatch = result.content.match(/```metadata\n([\s\S]*?)\n```/);
+          if (metaMatch) {
+            try {
+              const meta = JSON.parse(metaMatch[1]);
+              send("synthesis_metadata", meta);
+            } catch { /* ignore metadata parse error */ }
+          }
+
+          // Strip chart/json/metadata code blocks from final content
+          const cleanContent = result.content.replace(/```(?:chart|json|metadata)\n[\s\S]*?\n```/g, "").trim();
 
           send("final_answer", { content: cleanContent });
           await completeResearchSession(sessionId, cleanContent, "completed");

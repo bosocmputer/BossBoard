@@ -24,6 +24,7 @@ import {
   LogOut,
   UserCog,
   MessageCircle,
+  Briefcase,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -62,6 +63,7 @@ const NAV_ITEMS: NavGroup[] = [
     group: "จัดการ",
     items: [
       { href: "/chat", icon: MessageCircle, labelKey: "nav.chat" },
+      { href: "/clients", icon: Briefcase, labelKey: "nav.clients" },
       { href: "/agents", icon: Users, labelKey: "nav.teamAgents" },
       { href: "/teams", icon: UsersRound, labelKey: "nav.teams" },
       { href: "/tokens", icon: PieChart, labelKey: "nav.tokens" },

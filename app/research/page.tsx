@@ -14,7 +14,7 @@ import {
   Brain, Paperclip, Lightbulb, Send, Square, SkipForward,
   ChevronDown, ChevronRight, X, Download, Search, Check,
   AlertTriangle, Edit3, Clock, Coins, PlugZap,
-  BarChart3, FileSpreadsheet, File, Trash2, RefreshCw,
+  BarChart3, FileSpreadsheet, File, Trash2, RefreshCw, Printer, Briefcase,
 } from "lucide-react";
 
 interface Agent {
@@ -55,6 +55,13 @@ interface ChartData {
   datasets: { label: string; data: number[] }[];
 }
 
+interface SynthesisMetadata {
+  riskLevel?: "low" | "medium" | "high";
+  actionItems?: string[];
+  legalRefs?: string[];
+  deadlines?: string[];
+}
+
 interface ConversationRound {
   question: string;
   messages: ResearchMessage[];
@@ -62,6 +69,7 @@ interface ConversationRound {
   agentTokens: Record<string, AgentTokenState>;
   suggestions: string[];
   chartData?: ChartData;
+  synthMeta?: SynthesisMetadata;
   chairmanId?: string;
   isSynthesis?: boolean;
   isQA?: boolean;
@@ -397,6 +405,7 @@ export default function ResearchPage() {
   const [currentFinalAnswer, setCurrentFinalAnswer] = useState("");
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [currentChartData, setCurrentChartData] = useState<ChartData | null>(null);
+  const [currentSynthMeta, setCurrentSynthMeta] = useState<SynthesisMetadata | null>(null);
   const [isCurrentQA, setIsCurrentQA] = useState(false);
   const [isCurrentClosing, setIsCurrentClosing] = useState(false);
 
@@ -413,6 +422,11 @@ export default function ResearchPage() {
   const [viewingSession, setViewingSession] = useState<ServerSession | null>(null);
   const [historyTab, setHistoryTab] = useState<"current" | "history">("current");
   const [companyName, setCompanyName] = useState("");
+  const [sessionSearch, setSessionSearch] = useState("");
+  const [sessionStatusFilter, setSessionStatusFilter] = useState<"all" | "completed" | "error" | "running">("all");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [clientProfiles, setClientProfiles] = useState<{ id: string; name: string }[]>([]);
 
   const [autoScroll, setAutoScroll] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -424,6 +438,7 @@ export default function ResearchPage() {
   const currentMessagesRef = useRef<ResearchMessage[]>([]);
   const currentSuggestionsRef = useRef<string[]>([]);
   const currentChartDataRef = useRef<ChartData | null>(null);
+  const currentSynthMetaRef = useRef<SynthesisMetadata | null>(null);
   const chairmanIdRef = useRef<string | null>(null);
   const meetingSessionIdRef = useRef<string | null>(null);
 
@@ -437,6 +452,7 @@ export default function ResearchPage() {
   useEffect(() => { currentMessagesRef.current = currentMessages; }, [currentMessages]);
   useEffect(() => { currentSuggestionsRef.current = currentSuggestions; }, [currentSuggestions]);
   useEffect(() => { currentChartDataRef.current = currentChartData; }, [currentChartData]);
+  useEffect(() => { currentSynthMetaRef.current = currentSynthMeta; }, [currentSynthMeta]);
   useEffect(() => { chairmanIdRef.current = chairmanId; }, [chairmanId]);
   useEffect(() => { meetingSessionIdRef.current = meetingSessionId; }, [meetingSessionId]);
   useEffect(() => { currentWebSourcesRef.current = currentWebSources; }, [currentWebSources]);
@@ -479,7 +495,8 @@ export default function ResearchPage() {
       const res = await fetch("/api/team-research");
       const data = await res.json();
       const filtered = (data.sessions ?? []).filter((s: ServerSession) =>
-        !s.agentIds?.some((id: string) => id.startsWith("system-"))
+        !s.agentIds?.some((id: string) => id.startsWith("system-")) &&
+        (s.totalTokens > 0 || s.messages?.length > 0)
       );
       setTotalSessionCount(filtered.length);
       setServerSessions(filtered.slice(0, 20));
@@ -491,6 +508,7 @@ export default function ResearchPage() {
     fetchServerHistory();
     fetch("/api/team-settings").then(r => r.json()).then(d => { if (d.settings?.companyInfo?.name) setCompanyName(d.settings.companyInfo.name); }).catch(() => {});
     fetch("/api/auth/me").then(r => r.json()).then(d => { if (d.id) setCurrentUserId(d.id); }).catch(() => {});
+    fetch("/api/client-profiles").then(r => r.json()).then((d: { id: string; name: string }[]) => { if (Array.isArray(d)) setClientProfiles(d); }).catch(() => {});
   }, [fetchAgents, fetchServerHistory]);
 
   // Handle ?q=, ?teamId=, ?sessionId= from dashboard/teams page
@@ -724,6 +742,7 @@ export default function ResearchPage() {
         disableMcp: !useMcpContext,
         includeCompanyInfo,
         clarificationAnswers: withClarificationAnswers || undefined,
+        clientId: selectedClientId || undefined,
       };
 
       if (closeMode) {
@@ -822,6 +841,8 @@ export default function ResearchPage() {
               setCurrentSuggestions(payload.suggestions);
             } else if (currentEvent === "chart_data") {
               setCurrentChartData(payload);
+            } else if (currentEvent === "synthesis_metadata") {
+              setCurrentSynthMeta(payload as SynthesisMetadata);
             } else if (currentEvent === "error") {
               setStatus(`⚠️ ${payload.message || "เกิดข้อผิดพลาด"}`);
             } else if (currentEvent === "clarification_needed") {
@@ -897,6 +918,7 @@ export default function ResearchPage() {
             agentTokens: roundTokens,
             suggestions: currentSuggestionsRef.current,
             chartData: currentChartDataRef.current ?? undefined,
+            synthMeta: currentSynthMetaRef.current ?? undefined,
             chairmanId: chairmanIdRef.current ?? undefined,
             isSynthesis: closeMode,
             isQA,
@@ -922,6 +944,7 @@ export default function ResearchPage() {
       if (streamFlushRef.current) { clearTimeout(streamFlushRef.current); streamFlushRef.current = null; }
       setCurrentSuggestions([]);
       setCurrentChartData(null);
+      setCurrentSynthMeta(null);
       setCurrentWebSources([]);
       currentWebSourcesRef.current = [];
       setChairmanId(null);
@@ -1188,6 +1211,25 @@ export default function ResearchPage() {
               <span className="absolute top-0.5 transition-all duration-200 w-3 h-3 rounded-full bg-white shadow" style={{ left: includeCompanyInfo ? "17px" : "2px" }} />
             </div>
           </label>
+          {/* Client profile selector */}
+          {clientProfiles.length > 0 && (
+            <div className="px-2 py-1.5 rounded-lg border" style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
+              <div className="text-xs mb-1 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                <Briefcase size={11} /> ลูกค้า (context injection)
+              </div>
+              <select
+                className="w-full text-xs outline-none bg-transparent"
+                style={{ color: "var(--text)" }}
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(e.target.value)}
+              >
+                <option value="">-- ไม่เลือก --</option>
+                {clientProfiles.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
       )}
@@ -1336,15 +1378,58 @@ export default function ResearchPage() {
             )}
           </div>
         ) : (
-          <div className="p-3 flex-1 overflow-y-auto">
-            {serverSessions.length === 0 ? (
-              <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ไม่มีประวัติ</div>
+          <div className="p-3 flex-1 overflow-y-auto flex flex-col gap-2">
+            {/* Search + filter */}
+            <input
+              type="text"
+              value={sessionSearch}
+              onChange={(e) => setSessionSearch(e.target.value)}
+              placeholder="ค้นหาประวัติ..."
+              className="w-full text-xs px-2 py-1.5 rounded-lg border outline-none"
+              style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text)" }}
+            />
+            <div className="flex gap-1 flex-wrap">
+              {(["all", "completed", "error", "running"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setSessionStatusFilter(f)}
+                  className="text-[11px] px-2 py-0.5 rounded-full border transition-all"
+                  style={{
+                    borderColor: sessionStatusFilter === f ? "var(--accent)" : "var(--border)",
+                    background: sessionStatusFilter === f ? "var(--accent-8)" : "transparent",
+                    color: sessionStatusFilter === f ? "var(--accent)" : "var(--text-muted)",
+                  }}
+                >
+                  {f === "all" ? "ทั้งหมด" : f === "completed" ? "สำเร็จ" : f === "error" ? "ข้อผิดพลาด" : "กำลังประชุม"}
+                </button>
+              ))}
+            </div>
+            {serverSessions.filter((s) => {
+              const matchSearch = sessionSearch === "" || (s.question ?? "").toLowerCase().includes(sessionSearch.toLowerCase());
+              const isRunning = s.status !== "completed" && s.status !== "error";
+              const matchStatus =
+                sessionStatusFilter === "all" ||
+                (sessionStatusFilter === "completed" && s.status === "completed") ||
+                (sessionStatusFilter === "error" && s.status === "error") ||
+                (sessionStatusFilter === "running" && isRunning);
+              return matchSearch && matchStatus;
+            }).length === 0 ? (
+              <div className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>ไม่พบประวัติ</div>
             ) : (
               <div className="space-y-2">
-                {totalSessionCount > 20 && (
+                {totalSessionCount > 20 && sessionSearch === "" && sessionStatusFilter === "all" && (
                   <div className="text-[11px] text-center py-1 rounded-lg" style={{ color: "var(--text-muted)", background: "var(--accent-8)" }}>แสดง 20 ล่าสุด จากทั้งหมด {totalSessionCount} รายการ</div>
                 )}
-                {serverSessions.map((s) => (
+                {serverSessions.filter((s) => {
+                  const matchSearch = sessionSearch === "" || (s.question ?? "").toLowerCase().includes(sessionSearch.toLowerCase());
+                  const isRunning = s.status !== "completed" && s.status !== "error";
+                  const matchStatus =
+                    sessionStatusFilter === "all" ||
+                    (sessionStatusFilter === "completed" && s.status === "completed") ||
+                    (sessionStatusFilter === "error" && s.status === "error") ||
+                    (sessionStatusFilter === "running" && isRunning);
+                  return matchSearch && matchStatus;
+                }).map((s) => (
                   <button
                     key={s.id}
                     onClick={() => { loadServerSession(s); onNavigate?.(); }}
@@ -1399,9 +1484,14 @@ export default function ResearchPage() {
               <Settings size={14} /> ตั้งค่า ({selectedIds.size})
             </button>
             {(rounds.length > 0 || viewingSession) && (
-              <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
-                <Download size={14} /> Export
-              </button>
+              <>
+                <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
+                  <Download size={14} /> Export
+                </button>
+                <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="พิมพ์ / บันทึก PDF">
+                  <Printer size={14} /> PDF
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -1915,6 +2005,53 @@ export default function ResearchPage() {
                       <MessageContent content={round.finalAnswer} />
                       {round.chartData && <SimpleBarChart data={round.chartData} />}
 
+                      {/* Synthesis Metadata — risk level, action items, legal refs */}
+                      {round.synthMeta && (round.synthMeta.riskLevel || (round.synthMeta.actionItems?.length ?? 0) > 0 || (round.synthMeta.legalRefs?.length ?? 0) > 0) && (
+                        <div className="mt-4 pt-3 border-t space-y-3" style={{ borderColor: "var(--accent-20)" }}>
+                          {round.synthMeta.riskLevel && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>ความเสี่ยง:</span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${round.synthMeta.riskLevel === "high" ? "bg-red-100 text-red-700" : round.synthMeta.riskLevel === "medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+                                {round.synthMeta.riskLevel === "high" ? "🔴 สูง" : round.synthMeta.riskLevel === "medium" ? "🟡 ปานกลาง" : "🟢 ต่ำ"}
+                              </span>
+                            </div>
+                          )}
+                          {(round.synthMeta.actionItems?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Check size={11} /> Action Items</div>
+                              <ul className="space-y-1">
+                                {round.synthMeta.actionItems!.map((item, i) => (
+                                  <li key={i} className="text-xs flex items-start gap-1.5" style={{ color: "var(--text)" }}>
+                                    <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold" style={{ background: "var(--accent)", color: "#000" }}>{i + 1}</span>
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {(round.synthMeta.legalRefs?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><FileText size={11} /> อ้างอิงกฎหมาย</div>
+                              <div className="flex flex-wrap gap-1">
+                                {round.synthMeta.legalRefs!.map((ref, i) => (
+                                  <span key={i} className="text-[11px] px-2 py-0.5 rounded-full border font-mono" style={{ borderColor: "var(--accent-30)", color: "var(--accent)", background: "var(--accent-5)" }}>{ref}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(round.synthMeta.deadlines?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Clock size={11} /> กำหนดเวลา</div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {round.synthMeta.deadlines!.map((d, i) => (
+                                  <span key={i} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>📅 {d}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Web Sources */}
                       {round.webSources && round.webSources.length > 0 && (
                         <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--accent-20)" }}>
@@ -2069,6 +2206,42 @@ export default function ResearchPage() {
                       <div className="font-bold text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--accent)" }}>{isCurrentQA ? <MessageSquare size={16} /> : <Building2 size={16} />} {isCurrentQA ? "คำตอบ" : "มติที่ประชุม"}</div>
                       <MessageContent content={currentFinalAnswer} />
                       {currentChartData && <SimpleBarChart data={currentChartData} />}
+                      {/* Live synthesis metadata */}
+                      {currentSynthMeta && (currentSynthMeta.riskLevel || (currentSynthMeta.actionItems?.length ?? 0) > 0 || (currentSynthMeta.legalRefs?.length ?? 0) > 0) && (
+                        <div className="mt-4 pt-3 border-t space-y-3" style={{ borderColor: "var(--accent-20)" }}>
+                          {currentSynthMeta.riskLevel && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>ความเสี่ยง:</span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${currentSynthMeta.riskLevel === "high" ? "bg-red-100 text-red-700" : currentSynthMeta.riskLevel === "medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+                                {currentSynthMeta.riskLevel === "high" ? "🔴 สูง" : currentSynthMeta.riskLevel === "medium" ? "🟡 ปานกลาง" : "🟢 ต่ำ"}
+                              </span>
+                            </div>
+                          )}
+                          {(currentSynthMeta.actionItems?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Check size={11} /> Action Items</div>
+                              <ul className="space-y-1">
+                                {currentSynthMeta.actionItems!.map((item, i) => (
+                                  <li key={i} className="text-xs flex items-start gap-1.5" style={{ color: "var(--text)" }}>
+                                    <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold" style={{ background: "var(--accent)", color: "#000" }}>{i + 1}</span>
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {(currentSynthMeta.legalRefs?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><FileText size={11} /> อ้างอิงกฎหมาย</div>
+                              <div className="flex flex-wrap gap-1">
+                                {currentSynthMeta.legalRefs!.map((ref, i) => (
+                                  <span key={i} className="text-[11px] px-2 py-0.5 rounded-full border font-mono" style={{ borderColor: "var(--accent-30)", color: "var(--accent)", background: "var(--accent-5)" }}>{ref}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Web Sources for current round */}
                       {currentWebSources.length > 0 && (
@@ -2120,6 +2293,30 @@ export default function ResearchPage() {
                   className="border rounded-xl overflow-hidden transition-colors"
                   style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
                 >
+                  {/* Meeting templates dropdown */}
+                  {showTemplates && (
+                    <div className="border-b px-3 py-2" style={{ borderColor: "var(--border)" }}>
+                      <div className="text-[11px] font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}><Lightbulb size={11} /> แม่แบบคำถาม</div>
+                      <div className="space-y-1">
+                        {[
+                          "ธุรกิจของฉันควรจด VAT ไหม? ขอเกณฑ์และขั้นตอน",
+                          "วางแผนภาษีนิติบุคคลสิ้นปีอย่างไรดี? ประเด็นที่ต้องเตรียม",
+                          "การจ่ายค่าบริการให้บุคคลธรรมดาต้องหัก ณ ที่จ่ายอย่างไร?",
+                          "ประเด็นที่ต้องระวังในการตรวจสอบงบการเงินประจำปี",
+                          "ขั้นตอนการย้ายที่อยู่จด VAT และแจ้งกรมสรรพากร",
+                        ].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => { setQuestion(t); setShowTemplates(false); textareaRef.current?.focus(); }}
+                            className="w-full text-left text-xs px-2 py-1.5 rounded-lg transition-all hover:bg-[var(--bg)]"
+                            style={{ color: "var(--text)" }}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <textarea
                     ref={textareaRef}
                     value={question}
@@ -2145,6 +2342,14 @@ export default function ResearchPage() {
                         title="ตั้งค่าขั้นสูง"gap-1 
                       >
                         <Settings size={14} />
+                      </button>
+                      <button
+                        onClick={() => setShowTemplates(v => !v)}
+                        className="text-xs px-2 py-1 rounded-lg transition-all hover:bg-[var(--bg)]"
+                        style={{ color: showTemplates ? "var(--accent)" : "var(--text-muted)" }}
+                        title="แม่แบบคำถาม"
+                      >
+                        <Lightbulb size={14} />
                       </button>
                       <button
                         onClick={() => setForceMode(prev => prev === "auto" ? (effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
