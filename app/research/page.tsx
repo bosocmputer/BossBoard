@@ -1495,30 +1495,6 @@ export default function ResearchPage() {
                 </div>
               )}
 
-              {/* Persistent meeting state badge — always visible when session active or completed */}
-              {!running && (rounds.length > 0 || meetingSessionId) && (
-                <div className="sticky top-0 z-10 mx-1">
-                  <div className="rounded-lg px-3 py-2 border flex items-center gap-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-                    {meetingSessionId && !rounds.some(r => r.isSynthesis) ? (
-                      <>
-                        <span className="inline-block w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
-                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>รอวาระถัดไป — พิมพ์วาระใหม่หรือกด <strong style={{ color: "var(--accent)" }}>สรุปมติ</strong> เมื่อพร้อมปิดประชุม</span>
-                      </>
-                    ) : rounds.some(r => r.isSynthesis) ? (
-                      <>
-                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
-                        <span className="text-xs font-medium" style={{ color: "var(--green)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--text-muted)" }} />
-                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>มีข้อมูลการประชุม {rounds.filter(r => !r.isSynthesis).length} วาระ</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Sticky status bar — minimal progress indicator */}
               {running && status && (
                 <div className="sticky top-0 z-10 mx-1">
