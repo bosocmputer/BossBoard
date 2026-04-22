@@ -69,7 +69,7 @@ export default function ClientsPage() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) { showToast("กรุณาใส่ชื่อลูกค้า", "error"); return; }
+    if (!form.name.trim()) { showToast("error", "กรุณาใส่ชื่อลูกค้า"); return; }
     setSaving(true);
     try {
       const method = editingId ? "PUT" : "POST";
@@ -80,11 +80,11 @@ export default function ClientsPage() {
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error(await res.text());
-      showToast(editingId ? "บันทึกแล้ว" : "เพิ่มลูกค้าแล้ว", "success");
+      showToast("success", editingId ? "บันทึกแล้ว" : "เพิ่มลูกค้าแล้ว");
       setShowForm(false);
       fetchProfiles();
     } catch (err) {
-      showToast(String(err), "error");
+      showToast("error", String(err));
     } finally {
       setSaving(false);
     }
@@ -94,11 +94,11 @@ export default function ClientsPage() {
     try {
       const res = await fetch(`/api/client-profiles/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await res.text());
-      showToast("ลบแล้ว", "success");
+      showToast("success", "ลบแล้ว");
       setDeleteConfirm(null);
       fetchProfiles();
     } catch (err) {
-      showToast(String(err), "error");
+      showToast("error", String(err));
     }
   }
 
