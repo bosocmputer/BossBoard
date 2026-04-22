@@ -1101,16 +1101,28 @@ export async function POST(req: NextRequest) {
           }
 
           const isChairman = agent.id === chairman.id;
-          const roleInstruction = isChairman
+          const roleInstruction = isAstrologySession
+            ? `คุณกำลังพูดคุยกับเจ้าชะตาโดยตรงในฐานะ${agent.role} — ไม่ใช่นำเสนอในที่ประชุม ไม่ใช่รายงานวิชาการ`
+            : isChairman
             ? `คุณเป็นประธานการประชุม นำเสนอมุมมองจากตำแหน่ง ${agent.role} ของคุณ`
             : `นำเสนอมุมมองจากมุมมองของ ${agent.role} อย่างชัดเจนและตรงประเด็น`;
+
+          // For astrology: inject hard ban BEFORE soul so LLM reads it first
+          const astrologySystemPrefix = isAstrologySession
+            ? "🔮 โหมดนี้คือ: หมอดูคุยกับเจ้าชะตาโดยตรง ไม่ใช่นักวิชาการ ไม่ใช่รายงานประชุม\n\n"
+            + "❌ ห้ามเด็ดขาดในคำตอบ: ตาราง BaZi, ตาราง 4 เสา, Chinese characters (壬午丁丑 ฯลฯ), Heavenly Stem, Earthly Branch, เลของศาราศี, ephemeris, conjunction, orb, ตารางลัคนา\n"
+            + "✅ คำนวณทุกอย่างในใจก่อน แล้วพูดออกมาเป็นภาษาไทยชีวิตธรรมดาเท่านั้น\n"
+            + "✅ ขึ้นต้นทันทีด้วยการทักนิสัย เช่น \"คุณ[ชื่อ] คุณเป็นคนที่...\" โดยไม่มีคำนำใดๆ\n\n"
+            : "";
 
           const knowledgeContext = await getAgentKnowledgeContent(agent.id, question);
           const agentVoice = getAgentVoice(agent.role);
           const result = await callLLMWithRetry(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${birthInfoContext}${dateContext}${antiHallucinationRules}${astrologyAntiHallucinationRules}`,
+              content: isAstrologySession
+                ? `${astrologySystemPrefix}${agent.soul}${agentVoice}${knowledgeContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${birthInfoContext}${dateContext}${astrologyAntiHallucinationRules}`
+                : `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${birthInfoContext}${dateContext}${antiHallucinationRules}${astrologyAntiHallucinationRules}`,
             },
             {
               role: "user",
@@ -1351,9 +1363,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // === Fact-checking phase: verify cited laws/facts before synthesis ===
+      // === Fact-checking phase: verify cited laws/facts before synthesis (skip for astrology — prompt is tax/law specific) ===
       let factCheckNote = "";
-      if (agentFindings.length > 0 && mode !== "close") {
+      if (agentFindings.length > 0 && mode !== "close" && !isAstrologySession) {
         const chairApiKeyFC = await getAgentApiKey(chairman.id);
         if (chairApiKeyFC) {
           try {
@@ -1445,7 +1457,14 @@ export async function POST(req: NextRequest) {
           const result = await callLLM(chairman.provider, chairman.model, chairApiKey, chairman.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${memoryContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน ห้ามสรุปผิดจากข้อเท็จจริงที่นำเสนอ${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}${factCheckNote}${domainKnowledge}${clarificationContext}${birthInfoContext}${dateContext}${antiHallucinationRules}${astrologyAntiHallucinationRules}`,
+              content: isAstrologySession
+                ? "🔮 คุณเป็นหมอดูชั้นเยี่ยม กำลังเขียนคำพยากรณ์ส่วนตัวส่งถึงเจ้าชะตาโดยตรง\n\n"
+                  + "❌ ห้ามเด็ดขาด: เขียนเป็นรายงาน/มติที่ประชุม, กล่าวถึงชื่อหมอดูหรือชื่อศาสตร์, ตาราง BaZi, Chinese characters, เลของศา, ศัพท์เทคนิคโหราศาสตร์ทุกชนิด\n"
+                  + "✅ เขียนคำพยากรณ์ที่คนอ่านแล้วรู้สึกว่า \"หมอดูเข้าใจฉันจริงๆ\"\n"
+                  + "✅ เปิดด้วยทักนิสัยก่อนเสมอ → ทักอดีต/ปัจจุบัน → ค่อยทำนายอนาคต\n"
+                  + "✅ ภาษาอบอุ่น เหมือนหมอดูคุยกับลูกค้าในห้องส่วนตัว ไม่ใช่รายงานวิชาการ\n"
+                  + `${failureNote}${birthInfoContext}${dateContext}${astrologyAntiHallucinationRules}`
+                : `${companyContext}${memoryContext}คุณเป็นประธานการประชุมในบทบาท ${chairman.role} มีหน้าที่สรุปมติที่ประชุมให้ชัดเจน ถูกต้อง ครบถ้วน ห้ามสรุปผิดจากข้อเท็จจริงที่นำเสนอ${mode === "close" && allRounds && allRounds.length > 1 ? ` (การประชุมนี้มี ${allRounds.length} วาระ สรุปรวมทั้งหมด)` : ""}${failureNote}${factCheckNote}${domainKnowledge}${clarificationContext}${birthInfoContext}${dateContext}${antiHallucinationRules}${astrologyAntiHallucinationRules}`,
             },
             {
               role: "user",
