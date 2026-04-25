@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { Settings, Lightbulb, MessageSquare, Building2, Send, Square, SkipForward, Paperclip, Coins } from "lucide-react";
+import { Settings, Lightbulb, MessageSquare, Building2, Send, Square, SkipForward, Paperclip } from "lucide-react";
 import { MEETING_TEMPLATES } from "../types";
 import type { ConversationRound } from "../types";
+import { tokensToTHB, formatTHB } from "@/lib/pricing";
 
 interface Props {
   question: string;
@@ -39,8 +40,9 @@ export default function MeetingInputBar({
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const totalTokens = rounds.reduce((s, r) => s + Object.values(r.agentTokens).reduce((a, t) => a + t.totalTokens, 0), 0);
-  const costEst = totalTokens * 0.000003;
+  const totalInputTokens = rounds.reduce((s, r) => s + Object.values(r.agentTokens).reduce((a, t) => a + t.inputTokens, 0), 0);
+  const totalOutputTokens = rounds.reduce((s, r) => s + Object.values(r.agentTokens).reduce((a, t) => a + t.outputTokens, 0), 0);
+  const totalTokens = totalInputTokens + totalOutputTokens;
 
   return (
     <div className="sticky bottom-0 flex-shrink-0 pt-2" style={{ background: "var(--bg)" }}>
@@ -139,9 +141,11 @@ export default function MeetingInputBar({
               {attachedFilesCount > 0 && (
                 <span className="inline-flex items-center gap-0.5"> · <Paperclip size={10} /> {attachedFilesCount}</span>
               )}
-              {totalTokens > 0 && costEst > 0.001 && (
-                <span className="inline-flex items-center gap-0.5"> · <Coins size={10} /> {totalTokens > 1000 ? (totalTokens / 1000).toFixed(1) + "K" : totalTokens} tk</span>
-              )}
+              {totalTokens > 0 && (() => {
+                const thb = tokensToTHB(totalInputTokens, totalOutputTokens);
+                if (!thb || thb < 0.01) return null;
+                return <span className="inline-flex items-center gap-0.5"> · {formatTHB(thb)}</span>;
+              })()}
             </div>
           </div>
 
