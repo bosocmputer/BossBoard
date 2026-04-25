@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import type {
   ResearchMessage, AgentTokenState, ChartData, SynthesisMetadata,
-  ConversationRound, ClarificationQuestion, WebSource, ConversationTurn,
+  ConversationRound, ClarificationQuestion, WebSource, ConversationTurn, MidMeetingQuestion,
 } from "../types";
 import { STORAGE_KEY_PREFIX } from "../types";
 import { showToast } from "../../components/Toast";
@@ -15,11 +15,11 @@ interface RunOptions {
   historyMode: string;
   useFileContext: boolean;
   useMcpContext: boolean;
-  includeCompanyInfo: boolean;
   selectedClientId: string;
   buildFileContexts: () => { filename: string; meta: string; context: string; sheets?: string[] }[] | undefined;
   validateBeforeRun: (closeMode: boolean) => boolean;
   clearQuestion: () => void;
+  midMeetingAnswers?: { questionId: string; answer: string }[];
 }
 
 export function useMeetingSession(currentUserId: string | null) {
@@ -36,6 +36,9 @@ export function useMeetingSession(currentUserId: string | null) {
   const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
   const [pendingClarification, setPendingClarification] = useState(false);
+
+  const [midMeetingQuestion, setMidMeetingQuestion] = useState<MidMeetingQuestion | null>(null);
+  const [midMeetingAnswers, setMidMeetingAnswers] = useState<{ questionId: string; answer: string }[]>([]);
 
   const [currentWebSources, setCurrentWebSources] = useState<WebSource[]>([]);
   const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
@@ -187,9 +190,9 @@ export function useMeetingSession(currentUserId: string | null) {
         fileContexts: opts.useFileContext ? opts.buildFileContexts() : [],
         historyMode: opts.historyMode,
         disableMcp: !opts.useMcpContext,
-        includeCompanyInfo: opts.includeCompanyInfo,
         clarificationAnswers: withClarificationAnswers || undefined,
         clientId: opts.selectedClientId || undefined,
+        midMeetingAnswers: opts.midMeetingAnswers?.length ? opts.midMeetingAnswers : undefined,
       };
 
       if (closeMode) {
@@ -300,6 +303,8 @@ export function useMeetingSession(currentUserId: string | null) {
               setClarificationQuestions(payload.questions ?? []);
               setClarificationAnswers({});
               setPendingClarification(true);
+            } else if (currentEvent === "mid_meeting_question") {
+              setMidMeetingQuestion(payload as MidMeetingQuestion);
             } else if (currentEvent === "web_sources") {
               const newSources: WebSource[] = payload.sources ?? [];
               setCurrentWebSources((prev) => {
@@ -411,6 +416,20 @@ export function useMeetingSession(currentUserId: string | null) {
     handleRun(opts, pendingClarificationQuestionRef.current || undefined, false, []);
   }, [handleRun]);
 
+  const handleMidMeetingAnswer = useCallback((opts: RunOptions, questionId: string, answer: string) => {
+    const newAnswers = [...midMeetingAnswers, { questionId, answer }];
+    setMidMeetingAnswers(newAnswers);
+    setMidMeetingQuestion(null);
+    handleRun({ ...opts, midMeetingAnswers: newAnswers }, pendingClarificationQuestionRef.current || undefined, false);
+  }, [midMeetingAnswers, handleRun]);
+
+  const handleSkipMidMeetingQuestion = useCallback((opts: RunOptions, questionId: string) => {
+    const skipped = [...midMeetingAnswers, { questionId, answer: "(ข้ามคำถาม)" }];
+    setMidMeetingAnswers(skipped);
+    setMidMeetingQuestion(null);
+    handleRun({ ...opts, midMeetingAnswers: skipped }, pendingClarificationQuestionRef.current || undefined, false);
+  }, [midMeetingAnswers, handleRun]);
+
   const handleCloseMeeting = useCallback((opts: RunOptions) => {
     handleRun(opts, undefined, true);
   }, [handleRun]);
@@ -474,6 +493,8 @@ export function useMeetingSession(currentUserId: string | null) {
     clarificationQuestions,
     clarificationAnswers,
     pendingClarification,
+    midMeetingQuestion,
+    midMeetingAnswers,
     currentWebSources,
     meetingStartTime,
     elapsedTime,
@@ -494,6 +515,8 @@ export function useMeetingSession(currentUserId: string | null) {
     handleRun,
     handleClarificationSubmit,
     handleSkipClarification,
+    handleMidMeetingAnswer,
+    handleSkipMidMeetingQuestion,
     handleCloseMeeting,
     handleSkipToSummary,
     handleStop,

@@ -631,12 +631,12 @@ export async function POST(req: NextRequest) {
     fileContexts,
     historyMode = "full", // "full" | "summary" | "last3" | "none"
     disableMcp = false,
-    includeCompanyInfo = true,
     mode = "full", // "full" | "discuss" | "close" | "qa"
     sessionId: existingSessionId,
     allRounds,
     clarificationAnswers,
     clientId,
+    midMeetingAnswers,
   } = body as {
     question: string;
     agentIds: string[];
@@ -647,12 +647,12 @@ export async function POST(req: NextRequest) {
     fileContexts?: { filename: string; meta: string; context: string; sheets?: string[] }[];
     historyMode?: "full" | "summary" | "last3" | "none";
     disableMcp?: boolean;
-    includeCompanyInfo?: boolean;
     mode?: "full" | "discuss" | "close" | "qa";
     sessionId?: string;
     allRounds?: { question: string; messages: { agentEmoji: string; agentName: string; role: string; content: string }[] }[];
     clarificationAnswers?: { question: string; answer: string }[];
     clientId?: string;
+    midMeetingAnswers?: { questionId: string; answer: string }[];
   };
 
   if (!question || !agentIds?.length) {
@@ -747,7 +747,7 @@ export async function POST(req: NextRequest) {
 
   // Company & knowledge context
   const [companyContextBase, memoryContext] = await Promise.all([
-    includeCompanyInfo ? getCompanyInfoContextAsync() : Promise.resolve(""),
+    getCompanyInfoContextAsync(),
     getMemoryContext(userId),
   ]);
 
@@ -764,7 +764,10 @@ export async function POST(req: NextRequest) {
       // client-profiles not available, skip
     }
   }
-  const companyContext = companyContextBase + clientContext;
+  const midMeetingContext = midMeetingAnswers?.length
+    ? `\n\n📋 คำตอบระหว่างประชุม:\n${midMeetingAnswers.map(a => `ถาม: ${a.questionId}\nตอบ: ${a.answer}`).join("\n\n")}`
+    : "";
+  const companyContext = companyContextBase + clientContext + midMeetingContext;
 
   // Client disconnect detection — abort LLM calls when client disconnects
   const abortController = new AbortController();
@@ -811,6 +814,9 @@ export async function POST(req: NextRequest) {
       if (clarificationAnswers && clarificationAnswers.length > 0) {
         clarificationContext = `\n\n---\n📋 ข้อมูลเพิ่มเติมจากผู้ถาม (ตอบก่อนเริ่มประชุม):\n${clarificationAnswers.map((a) => `ถาม: ${a.question}\nตอบ: ${a.answer}`).join("\n\n")}\n---\n⚠️ ใช้ข้อมูลเหล่านี้ประกอบการวิเคราะห์ ตอบให้ตรงกับสถานการณ์จริงของผู้ถาม\n`;
       }
+
+      // Mid-meeting question instruction: allow agents to pause and ask the user for clarification
+      const midMeetingInstruction = `\n\n---\n🔔 ถ้าคุณต้องการข้อมูลเพิ่มเติมจากผู้ถามเพื่อให้วิเคราะห์ได้แม่นยำขึ้น ให้ส่ง JSON ต่อไปนี้เป็นคำตอบทั้งหมด (ห้ามมีข้อความอื่น):\n{"__mid_meeting_question":true,"question":"คำถามที่ต้องการถาม","context":"เหตุผลสั้นๆ ว่าทำไมถึงต้องถาม"}\nใช้เฉพาะเมื่อขาดข้อมูลจำเป็นจริงๆ เช่น ไม่รู้ประเภทธุรกิจ รอบบัญชี หรือข้อมูลเฉพาะที่กระทบผลการวิเคราะห์อย่างมีนัยสำคัญ\n---\n`;
 
       // Current date context — inject so LLM knows the actual date (avoids wrong year like 2567)
       const _now = new Date();
@@ -1093,7 +1099,7 @@ export async function POST(req: NextRequest) {
           const result = await callLLMWithRetry(agent.provider, agent.model, apiKey, agent.baseUrl, [
             {
               role: "system",
-              content: `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${dateContext}${antiHallucinationRules}`,
+              content: `${companyContext}${memoryContext}${agent.soul}${agentVoice}${knowledgeContext}${domainKnowledge}${dataSourceContext}${historyContext}${fileContext}${mcpContext}${searchContext}${clarificationContext}${midMeetingInstruction}${dateContext}${antiHallucinationRules}`,
             },
             {
               role: "user",
@@ -1147,6 +1153,26 @@ export async function POST(req: NextRequest) {
           input: prevTokens.input + result.inputTokens,
           output: prevTokens.output + result.outputTokens,
         };
+
+        // Detect mid-meeting question JSON from agent
+        const trimmedContent = result.content.trim();
+        if (trimmedContent.startsWith("{") && trimmedContent.includes("__mid_meeting_question")) {
+          try {
+            const parsed = JSON.parse(trimmedContent);
+            if (parsed.__mid_meeting_question === true && parsed.question) {
+              send("mid_meeting_question", {
+                agentId: agent.id,
+                agentName: agent.name,
+                agentEmoji: agent.emoji,
+                questionId: `${agent.id}-${Date.now()}`,
+                question: parsed.question,
+                context: parsed.context || "",
+              });
+              send("done", { sessionId, clarificationPending: false });
+              return;
+            }
+          } catch { /* not valid JSON, continue */ }
+        }
 
         const findingMsg: ResearchMessage = {
           id: crypto.randomUUID(),

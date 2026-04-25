@@ -14,7 +14,6 @@ export function useMeetingSetup() {
   const [useFileContext, setUseFileContext] = useState(true);
   const [useMcpContext, setUseMcpContext] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [includeCompanyInfo, setIncludeCompanyInfo] = useState(true);
   const [forceMode, setForceMode] = useState<"auto" | "meeting" | "qa">("auto");
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [clientProfiles, setClientProfiles] = useState<{ id: string; name: string }[]>([]);
@@ -168,7 +167,6 @@ export function useMeetingSetup() {
     useFileContext,
     useMcpContext,
     showAdvanced,
-    includeCompanyInfo,
     forceMode,
     effectiveMode,
     selectedClientId,
@@ -187,7 +185,6 @@ export function useMeetingSetup() {
     setUseFileContext,
     setUseMcpContext,
     setShowAdvanced,
-    setIncludeCompanyInfo,
     setForceMode,
     setSelectedClientId,
     setShowTemplates,

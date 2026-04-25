@@ -27,6 +27,7 @@ import PhaseSeparator from "./components/PhaseSeparator";
 import ThinkingRow from "./components/ThinkingRow";
 import MeetingInputBar from "./components/MeetingInputBar";
 import ClarificationCard from "./components/ClarificationCard";
+import MidMeetingQuestionCard from "./components/MidMeetingQuestionCard";
 import MeetingResolution from "./components/MeetingResolution";
 import HistoryPanel from "./components/HistoryPanel";
 
@@ -101,7 +102,6 @@ export default function ResearchPage() {
     historyMode: setup.historyMode,
     useFileContext: setup.useFileContext,
     useMcpContext: setup.useMcpContext,
-    includeCompanyInfo: setup.includeCompanyInfo,
     selectedClientId: setup.selectedClientId,
     buildFileContexts: setup.buildFileContexts,
     validateBeforeRun: setup.validateBeforeRun,
@@ -167,11 +167,6 @@ export default function ResearchPage() {
     onToggleFileContext: () => setup.setUseFileContext(v => !v),
     useMcpContext: setup.useMcpContext,
     onToggleMcpContext: () => setup.setUseMcpContext(v => !v),
-    includeCompanyInfo: setup.includeCompanyInfo,
-    onToggleCompanyInfo: () => setup.setIncludeCompanyInfo(v => !v),
-    selectedClientId: setup.selectedClientId,
-    onClientChange: (id: string) => setup.setSelectedClientId(id),
-    clientProfiles: setup.clientProfiles,
     attachedFiles: setup.attachedFiles,
     uploadingFile: setup.uploadingFile,
     uploadError: setup.uploadError,
@@ -184,6 +179,12 @@ export default function ResearchPage() {
     onRemoveFile: setup.removeFile,
     onClearFiles: setup.clearFiles,
     onToggleSheet: setup.toggleSheet,
+  };
+
+  const clientProps = {
+    selectedClientId: setup.selectedClientId,
+    onClientChange: (id: string) => setup.setSelectedClientId(id),
+    clientProfiles: setup.clientProfiles,
   };
 
   // ── Sidebar content ────────────────────────────────────────────────────────
@@ -213,6 +214,7 @@ export default function ResearchPage() {
       </button>
 
       {setup.showAdvanced && <AdvancedSettingsSheet {...advancedProps} />}
+
 
       <HistoryPanel
         serverSessions={history.serverSessions}
@@ -315,6 +317,7 @@ export default function ResearchPage() {
                 onRun={(q) => handleRun(q)}
                 showAdvanced={setup.showAdvanced}
                 onToggleAdvanced={() => setup.setShowAdvanced(v => !v)}
+                {...clientProps}
                 {...advancedProps}
               />
             )}
@@ -387,6 +390,15 @@ export default function ResearchPage() {
                     />
                   )}
 
+                  {/* Mid-meeting question card */}
+                  {session.midMeetingQuestion && (
+                    <MidMeetingQuestionCard
+                      question={session.midMeetingQuestion}
+                      onAnswer={(qid, ans) => session.handleMidMeetingAnswer(runOpts(), qid, ans)}
+                      onSkip={(qid) => session.handleSkipMidMeetingQuestion(runOpts(), qid)}
+                    />
+                  )}
+
                   {/* Viewing server session */}
                   {history.viewingSession && (
                     <div className="space-y-3">
@@ -405,6 +417,7 @@ export default function ResearchPage() {
                           roleColorClass={ROLE_COLOR[msg.role] ?? ""}
                           content={msg.content}
                           isChairman={false}
+                          agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
                         />
                       ))}
                       {history.viewingSession.status === "running" && !history.viewingSession.finalAnswer && (
@@ -529,6 +542,7 @@ export default function ResearchPage() {
                                 roleColorClass={ROLE_COLOR[msg.role] ?? ""}
                                 content={msg.content}
                                 isChairman={round.chairmanId === msg.agentId}
+                                agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
                               />
                             );
                             return elements;
@@ -623,6 +637,7 @@ export default function ResearchPage() {
                                 content={msg.content}
                                 isChairman={session.chairmanId === msg.agentId}
                                 isLive
+                                agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
                               />
                             );
                           }

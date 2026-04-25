@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Building2, Lightbulb, Paperclip, Settings, ChevronDown, ChevronUp, Send, AlertTriangle } from "lucide-react";
+import { Building2, Lightbulb, Paperclip, Settings, ChevronDown, ChevronUp, Send, AlertTriangle, Users } from "lucide-react";
 import type { Agent, AttachedFile } from "../types";
 import { MEETING_TEMPLATES } from "../types";
 import AgentSetupPanel from "./AgentSetupPanel";
@@ -19,6 +19,10 @@ interface Props {
   onRun: (q?: string) => void;
   showAdvanced: boolean;
   onToggleAdvanced: () => void;
+  // client selector (prominent)
+  selectedClientId: string;
+  onClientChange: (id: string) => void;
+  clientProfiles: { id: string; name: string }[];
   // advanced settings
   historyMode: "full" | "last3" | "summary" | "none";
   onHistoryModeChange: (v: "full" | "last3" | "summary" | "none") => void;
@@ -26,11 +30,6 @@ interface Props {
   onToggleFileContext: () => void;
   useMcpContext: boolean;
   onToggleMcpContext: () => void;
-  includeCompanyInfo: boolean;
-  onToggleCompanyInfo: () => void;
-  selectedClientId: string;
-  onClientChange: (id: string) => void;
-  clientProfiles: { id: string; name: string }[];
   attachedFiles: AttachedFile[];
   uploadingFile: boolean;
   uploadError: string;
@@ -49,11 +48,10 @@ export default function MeetingStartCard({
   companyName, agents, selectedIds, onToggleAgent, onSelectAll, onDeselectAll,
   question, onQuestionChange, onRun,
   showAdvanced, onToggleAdvanced,
+  selectedClientId, onClientChange, clientProfiles,
   historyMode, onHistoryModeChange,
   useFileContext, onToggleFileContext,
   useMcpContext, onToggleMcpContext,
-  includeCompanyInfo, onToggleCompanyInfo,
-  selectedClientId, onClientChange, clientProfiles,
   attachedFiles, uploadingFile, uploadError, isDragOver,
   fileInputRef, onFileInput, onDrop, onDragOver, onDragLeave,
   onRemoveFile, onClearFiles, onToggleSheet,
@@ -96,6 +94,33 @@ export default function MeetingStartCard({
         {agents.length > 0 && selectedIds.size === 0 && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs" style={{ borderColor: "var(--danger-40)", background: "var(--danger-8)", color: "var(--danger)" }}>
             <AlertTriangle size={13} /> เลือกสมาชิกอย่างน้อย 1 คนก่อนเริ่มประชุม
+          </div>
+        )}
+
+        {/* Client selector */}
+        {clientProfiles.length > 0 && (
+          <div className="border rounded-xl p-3" style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}>
+            <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+              <Users size={11} /> สำหรับลูกค้า
+              <span className="font-normal ml-1" style={{ color: "var(--text-muted)" }}>— ไม่บังคับ</span>
+            </div>
+            <select
+              value={selectedClientId}
+              onChange={(e) => onClientChange(e.target.value)}
+              title="เลือกลูกค้า"
+              className="w-full text-xs px-2 py-1.5 rounded-lg border outline-none"
+              style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--bg)", color: "var(--text)" }}
+            >
+              <option value="">ถามทั่วไป (ไม่เลือกลูกค้า)</option>
+              {clientProfiles.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {selectedClientId && (
+              <div className="mt-1.5 text-[11px] flex items-center gap-1" style={{ color: "var(--accent)" }}>
+                ✓ ใช้ข้อมูล {clientProfiles.find(c => c.id === selectedClientId)?.name} เป็น context
+              </div>
+            )}
           </div>
         )}
 
@@ -186,11 +211,6 @@ export default function MeetingStartCard({
             onToggleFileContext={onToggleFileContext}
             useMcpContext={useMcpContext}
             onToggleMcpContext={onToggleMcpContext}
-            includeCompanyInfo={includeCompanyInfo}
-            onToggleCompanyInfo={onToggleCompanyInfo}
-            selectedClientId={selectedClientId}
-            onClientChange={onClientChange}
-            clientProfiles={clientProfiles}
             attachedFiles={attachedFiles}
             uploadingFile={uploadingFile}
             uploadError={uploadError}

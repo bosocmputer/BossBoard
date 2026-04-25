@@ -70,6 +70,15 @@ export interface ClarificationQuestion {
   options?: string[];
 }
 
+export interface MidMeetingQuestion {
+  agentId: string;
+  agentName: string;
+  agentEmoji: string;
+  questionId: string;
+  question: string;
+  context: string;
+}
+
 export interface WebSource {
   title: string;
   url: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, PlugZap, Building2, Briefcase, Paperclip } from "lucide-react";
+import { Brain, PlugZap, Paperclip } from "lucide-react";
 import Tooltip from "../../components/Tooltip";
 import { GLOSSARY } from "@/lib/glossary";
 import { HISTORY_MODES } from "../types";
@@ -14,11 +14,6 @@ interface Props {
   onToggleFileContext: () => void;
   useMcpContext: boolean;
   onToggleMcpContext: () => void;
-  includeCompanyInfo: boolean;
-  onToggleCompanyInfo: () => void;
-  selectedClientId: string;
-  onClientChange: (id: string) => void;
-  clientProfiles: { id: string; name: string }[];
   // file attach props
   attachedFiles: AttachedFile[];
   uploadingFile: boolean;
@@ -46,8 +41,6 @@ export default function AdvancedSettingsSheet({
   historyMode, onHistoryModeChange,
   useFileContext, onToggleFileContext,
   useMcpContext, onToggleMcpContext,
-  includeCompanyInfo, onToggleCompanyInfo,
-  selectedClientId, onClientChange, clientProfiles,
   attachedFiles, uploadingFile, uploadError, isDragOver,
   fileInputRef, onFileInput, onDrop, onDragOver, onDragLeave,
   onRemoveFile, onClearFiles, onToggleSheet,
@@ -84,33 +77,6 @@ export default function AdvancedSettingsSheet({
             <span className="text-xs flex items-center gap-1" style={{ color: useMcpContext ? "var(--text)" : "var(--text-muted)" }}><PlugZap size={12} /> เชื่อมต่อระบบ ERP</span>
             <Toggle on={useMcpContext} onToggle={onToggleMcpContext} />
           </label>
-          <label className="flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer select-none" style={{ borderColor: includeCompanyInfo ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-            <span className="text-xs flex items-center gap-1.5" style={{ color: includeCompanyInfo ? "var(--text)" : "var(--text-muted)" }}>
-              <Building2 size={11} /> ข้อมูลบริษัทจาก Settings
-              <Tooltip content="ปิดเมื่อถามเรื่องที่ไม่เกี่ยวกับธุรกิจ เช่น ดูดวง หรือเรื่องส่วนตัว">
-                <span className="text-[10px] px-1 rounded border cursor-help" style={{ borderColor: "var(--border)" }}>?</span>
-              </Tooltip>
-            </span>
-            <Toggle on={includeCompanyInfo} onToggle={onToggleCompanyInfo} />
-          </label>
-          {clientProfiles.length > 0 && (
-            <div className="px-2 py-1.5 rounded-lg border" style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--bg)" }}>
-              <div className="text-xs mb-1 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-                <Briefcase size={11} /> ลูกค้า (context injection)
-              </div>
-              <select
-                className="w-full text-xs outline-none bg-transparent"
-                style={{ color: "var(--text)" }}
-                value={selectedClientId}
-                onChange={(e) => onClientChange(e.target.value)}
-              >
-                <option value="">-- ไม่เลือก --</option>
-                {clientProfiles.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       </div>
 
