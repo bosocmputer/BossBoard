@@ -45,7 +45,7 @@ export default function MeetingInputBar({
   const totalTokens = totalInputTokens + totalOutputTokens;
 
   return (
-    <div className="sticky bottom-0 flex-shrink-0 pt-2" style={{ background: "var(--bg)" }}>
+    <div className="flex-shrink-0 pt-2" style={{ background: "var(--bg)" }}>
       <div
         className="border rounded-xl overflow-hidden transition-colors"
         style={{ borderColor: running ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}

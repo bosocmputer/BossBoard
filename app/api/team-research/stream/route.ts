@@ -816,8 +816,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Mid-meeting question instruction: allow agents to pause and ask the user for clarification
-      // Only inject if midMeetingAnswers is empty (no answers yet) — once answered, no need to ask again
-      const midMeetingInstruction = midMeetingAnswers?.length ? "" : `\n\n---\n⚠️ กฎเหล็กสำคัญ: ถ้าคำถามไม่ระบุข้อมูลสำคัญที่กระทบคำตอบอย่างมาก (เช่น ไม่รู้ว่าบริษัทหรือบุคคลธรรมดา, ไม่รู้ขนาดธุรกิจ/รายได้, ไม่รู้ว่าจด VAT หรือไม่, ไม่รู้รอบบัญชี) — ให้ส่ง JSON นี้เป็นคำตอบทั้งหมด แล้วหยุดรอ (ห้ามมีข้อความอื่นนอกจาก JSON):\n{"__mid_meeting_question":true,"question":"คำถามที่อยากถามผู้ใช้ (1 คำถาม ชัดเจน ตรงประเด็น)","context":"เหตุผลสั้นๆ ว่าทำไมข้อมูลนี้จำเป็นต่อการวิเคราะห์"}\n\nตัวอย่างที่ควรถาม:\n- "บริษัทของคุณจด VAT แล้วหรือยัง และรายได้ต่อปีประมาณเท่าไหร่?" (กระทบ threshold และอัตราภาษี)\n- "กิจการนี้เป็นนิติบุคคล (บริษัท/ห้างหุ้นส่วน) หรือบุคคลธรรมดา?" (กระทบทั้งประเภทภาษีและอัตรา)\n- "สินค้า/บริการที่ขายคืออะไร ขายให้ลูกค้าประเภทไหน?" (กระทบ VAT ยกเว้น/ลด)\n\nตัวอย่างที่ไม่ต้องถาม (วิเคราะห์ด้วยสมมติฐานทั่วไปได้):\n- รายละเอียดปลีกย่อยที่ไม่กระทบข้อสรุปหลัก\n- ข้อมูลที่สามารถอธิบายครอบทุกกรณีได้โดยไม่ต้องรู้\n---\n`;
+      // Only inject when no answers yet — suppressed once user has already answered
+      const midMeetingInstruction = midMeetingAnswers?.length ? "" : `\n\n---\n⚠️ กฎสำคัญ: ถ้าคำถามขาดข้อมูลที่จำเป็นต่อการตอบอย่างแม่นยำ และข้อมูลนั้นจะทำให้คำตอบเปลี่ยนแปลงอย่างมีนัยสำคัญ — ให้ส่ง JSON นี้เป็นคำตอบทั้งหมด (ห้ามมีข้อความอื่น):\n{"__mid_meeting_question":true,"question":"คำถามที่ต้องการถามผู้ใช้ (1 ข้อ ชัดเจน)","context":"เหตุผลว่าทำไมข้อมูลนี้จึงกระทบคำตอบ"}\n\nใช้เมื่อ: ขาดข้อมูลที่ทำให้คำตอบเปลี่ยนแปลงอย่างมีนัยสำคัญ\nไม่ต้องใช้เมื่อ: สามารถตอบแบบครอบคลุมหลายกรณีได้ หรือรายละเอียดนั้นไม่กระทบข้อสรุปหลัก\n---\n`;
 
       // Current date context — inject so LLM knows the actual date (avoids wrong year like 2567)
       const _now = new Date();

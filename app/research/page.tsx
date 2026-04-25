@@ -34,13 +34,10 @@ import HistoryPanel from "./components/HistoryPanel";
 export default function ResearchPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
   const [pinnedRoundIdx, setPinnedRoundIdx] = useState<number | null>(null);
-  // Sidebar collapsed (during active meeting)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  // History overlay panel
   const [historyOpen, setHistoryOpen] = useState(false);
-  // Mobile settings overlay
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -50,7 +47,6 @@ export default function ResearchPage() {
   const session = useMeetingSession(currentUserId);
   const history = useServerHistory();
 
-  // Fetch on mount
   useEffect(() => {
     fetch("/api/auth/me").then(r => r.json()).then(d => { if (d.id) setCurrentUserId(d.id); }).catch(() => {});
     setup.fetchAgents();
@@ -61,9 +57,7 @@ export default function ResearchPage() {
 
   // Auto-collapse sidebar when meeting starts
   useEffect(() => {
-    if (session.running || session.rounds.length > 0) {
-      setSidebarCollapsed(true);
-    }
+    if (session.running || session.rounds.length > 0) setSidebarCollapsed(true);
   }, [session.running, session.rounds.length]);
 
   // Handle URL params
@@ -71,31 +65,26 @@ export default function ResearchPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
     if (q) setup.setQuestion(q);
-
     const teamId = params.get("teamId");
     if (teamId) {
-      fetch(`/api/teams/${teamId}`)
-        .then(r => r.json())
+      fetch(`/api/teams/${teamId}`).then(r => r.json())
         .then(data => { if (data.team?.agentIds?.length) setup.setSelectedIds(new Set(data.team.agentIds)); })
         .catch(() => {});
     }
-
     const sessionId = params.get("sessionId");
     if (sessionId) {
-      fetch(`/api/team-research/${sessionId}`)
-        .then(r => r.json())
+      fetch(`/api/team-research/${sessionId}`).then(r => r.json())
         .then(data => {
           if (data.session) {
             history.setViewingSession(data.session);
             if (data.session.agentIds?.length) setup.setSelectedIds(new Set(data.session.agentIds));
           }
-        })
-        .catch(() => {});
+        }).catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-scroll
+  // Auto-scroll to bottom
   useEffect(() => {
     if (autoScroll) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [session.currentMessages, session.rounds, autoScroll]);
@@ -170,7 +159,8 @@ export default function ResearchPage() {
   };
 
   const displayRounds = session.rounds;
-  const isEmptyState = !history.viewingSession && displayRounds.length === 0 && session.currentMessages.length === 0 && !session.running && !session.pendingClarification;
+  const isEmptyState = !history.viewingSession && displayRounds.length === 0
+    && session.currentMessages.length === 0 && !session.running && !session.pendingClarification;
 
   const advancedProps = {
     historyMode: setup.historyMode,
@@ -199,9 +189,9 @@ export default function ResearchPage() {
     clientProfiles: setup.clientProfiles,
   };
 
-  // ── Sidebar content (desktop) ─────────────────────────────────────────────
+  // ── Sidebar full content ──────────────────────────────────────────────────
   const renderSidebarContent = () => (
-    <div className="flex flex-col gap-3 h-full">
+    <div className="flex flex-col gap-3 h-full overflow-y-auto py-3 px-2">
       <AgentSetupPanel
         agents={setup.agents}
         selectedIds={setup.selectedIds}
@@ -216,39 +206,33 @@ export default function ResearchPage() {
         currentPhase={session.currentPhase}
         agentTokens={session.agentTokens}
       />
-
       <button
         onClick={() => setup.setShowAdvanced(v => !v)}
-        className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all flex items-center gap-1"
+        className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all flex items-center gap-1 flex-shrink-0"
         style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
       >
         <Settings size={11} /> ตั้งค่าขั้นสูง {setup.showAdvanced ? "▲" : "▼"}
       </button>
-
       {setup.showAdvanced && <AdvancedSettingsSheet {...advancedProps} />}
-
-      {/* Spacer */}
       <div className="flex-1" />
-
-      {/* History button at bottom of sidebar */}
       <button
         onClick={() => setHistoryOpen(true)}
-        className="w-full text-xs px-3 py-2.5 rounded-lg border transition-all flex items-center justify-between"
+        className="w-full text-xs px-3 py-2.5 rounded-lg border transition-all flex items-center justify-between flex-shrink-0"
         style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
       >
-        <span className="flex items-center gap-1.5">
-          <History size={12} /> ประวัติการประชุม
-        </span>
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
-          {history.totalSessionCount}
-        </span>
+        <span className="flex items-center gap-1.5"><History size={12} /> ประวัติการประชุม</span>
+        {history.totalSessionCount > 0 && (
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+            {history.totalSessionCount}
+          </span>
+        )}
       </button>
     </div>
   );
 
-  // ── Collapsed sidebar (mini strip during meeting) ─────────────────────────
+  // ── Collapsed sidebar strip ───────────────────────────────────────────────
   const renderCollapsedSidebar = () => (
-    <div className="flex flex-col items-center gap-2 py-2">
+    <div className="flex flex-col items-center gap-2 py-3">
       <button
         onClick={() => setSidebarCollapsed(false)}
         className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80"
@@ -257,15 +241,13 @@ export default function ResearchPage() {
       >
         <ChevronLeft size={14} style={{ transform: "rotate(180deg)" }} />
       </button>
-
-      {/* Active agent indicators */}
       {setup.agents.filter(a => setup.selectedIds.has(a.id)).map(agent => {
         const isActive = session.activeAgentIds.has(agent.id);
         const isDone = session.phase1DoneCount.has(agent.id);
         return (
           <div
             key={agent.id}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-sm relative"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm relative flex-shrink-0"
             style={{
               background: isDone ? "var(--accent-8)" : isActive ? "var(--accent-15)" : "var(--surface)",
               border: `1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
@@ -274,15 +256,11 @@ export default function ResearchPage() {
             title={agent.name}
           >
             {agent.emoji}
-            {isDone && (
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500" />
-            )}
+            {isDone && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500" />}
           </div>
         );
       })}
-
       <div className="flex-1" />
-
       <button
         onClick={() => setHistoryOpen(true)}
         className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80"
@@ -294,107 +272,393 @@ export default function ResearchPage() {
     </div>
   );
 
-  return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
-      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col p-3 sm:p-6 gap-3 sm:gap-4">
+  // ── Message list content ──────────────────────────────────────────────────
+  const renderMessages = () => (
+    <>
+      {/* Viewing session banner */}
+      {history.viewingSession && (
+        <div className="flex items-center gap-2 px-2 py-2 rounded-xl border text-xs mb-2" style={{ borderColor: "var(--accent-35)", background: "var(--accent-7)", color: "var(--text-muted)" }}>
+          <span className="flex items-center gap-1 flex-shrink-0" style={{ color: "var(--accent)" }}><History size={12} /> ดูประวัติ</span>
+          <span className="flex-1 truncate">{history.viewingSession.question}</span>
+          <button onClick={() => history.clearViewingSession()} className="px-2 py-0.5 rounded border opacity-60 hover:opacity-100 flex items-center gap-1 flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+            <X size={12} /> ปิด
+          </button>
+        </div>
+      )}
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex items-center gap-2">
-            {/* Sidebar expand button (when collapsed on desktop) */}
-            {sidebarCollapsed && (
-              <button
-                onClick={() => setSidebarCollapsed(false)}
-                className="hidden md:flex w-8 h-8 rounded-lg border items-center justify-center transition-all hover:opacity-80 flex-shrink-0"
-                style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
-                title="แสดงแผง"
-              >
-                <Settings size={14} />
-              </button>
-            )}
-            <div>
-              <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2" style={{ color: "var(--text)" }}>
-                <Building2 size={20} style={{ color: "var(--accent)" }} />
-                <span>ห้องประชุม{setup.companyName ? ` — ${setup.companyName}` : ""}</span>
-              </h1>
-              <p className="text-xs mt-0.5 hidden sm:block" style={{ color: "var(--text-muted)" }}>
-                ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-shrink-0 items-center">
-            {/* Mobile settings button */}
-            <button onClick={() => setMobileSettingsOpen(true)} className="md:hidden px-3 py-2 rounded-lg text-xs border flex items-center gap-1.5" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}>
-              <Settings size={14} /> ({setup.selectedIds.size})
-            </button>
-            {/* History button (header) */}
-            <button
-              onClick={() => setHistoryOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1.5 transition-all hover:opacity-80"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
-            >
-              <History size={13} />
-              <span className="hidden sm:inline">ประวัติ</span>
-              {history.totalSessionCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
-                  {history.totalSessionCount}
-                </span>
-              )}
-            </button>
-            {(session.rounds.length > 0 || history.viewingSession) && (
-              <>
-                <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
-                  <Download size={14} /> <span className="hidden sm:inline">Export</span>
-                </button>
-                <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="พิมพ์ / บันทึก PDF">
-                  <Printer size={14} /> <span className="hidden sm:inline">PDF</span>
-                </button>
-              </>
-            )}
+      {/* Meeting state badge */}
+      {!session.running && (session.rounds.length > 0 || session.meetingSessionId) && !history.viewingSession && (
+        <div className="rounded-lg px-3 py-2 border flex items-center gap-2 mb-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          {session.meetingSessionId && !session.rounds.some(r => r.isSynthesis) ? (
+            <>
+              <span className="inline-block w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>รอวาระถัดไป — หรือกด <strong style={{ color: "var(--accent)" }}>สรุปมติ</strong> เมื่อพร้อมปิดประชุม</span>
+            </>
+          ) : session.rounds.some(r => r.isSynthesis) ? (
+            <>
+              <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
+              <span className="text-xs font-medium" style={{ color: "var(--green)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* Synthesis loading */}
+      {session.isSynthesizing && !session.currentFinalAnswer && (
+        <div className="rounded-xl border-2 p-4 flex items-center gap-3 mb-2" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
+          <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
+          <div>
+            <div className="text-sm font-bold" style={{ color: "var(--accent)" }}>🏛️ ประธานกำลังสรุปมติ...</div>
+            <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>กรุณารอสักครู่ ประมาณ 15–30 วินาที</div>
           </div>
         </div>
+      )}
 
-        <div className="flex gap-3 flex-1 min-h-0">
+      {/* Clarification card */}
+      {session.pendingClarification && session.clarificationQuestions.length > 0 && (
+        <ClarificationCard
+          questions={session.clarificationQuestions}
+          answers={session.clarificationAnswers}
+          onAnswerChange={(id, val) => session.setClarificationAnswers(prev => ({ ...prev, [id]: val }))}
+          onSubmit={handleClarificationSubmit}
+          onSkip={handleSkipClarification}
+        />
+      )}
 
-          {/* ── Left sidebar (desktop) ──────────────────────────────────── */}
-          {/* Full sidebar */}
-          {!sidebarCollapsed && (
-            <aside className="hidden md:flex flex-col w-56 flex-shrink-0 relative">
-              <button
-                onClick={() => setSidebarCollapsed(true)}
-                className="absolute -right-2.5 top-3 z-10 w-5 h-5 rounded-full border flex items-center justify-center transition-all hover:opacity-80"
-                style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
-                title="ย่อแผง"
-              >
-                <ChevronLeft size={12} />
-              </button>
-              {renderSidebarContent()}
-            </aside>
+      {/* Mid-meeting question card */}
+      {session.midMeetingQuestion && (
+        <MidMeetingQuestionCard
+          question={session.midMeetingQuestion}
+          onAnswer={(qid, ans) => session.handleMidMeetingAnswer(runOpts(), qid, ans)}
+          onSkip={(qid) => session.handleSkipMidMeetingQuestion(runOpts(), qid)}
+        />
+      )}
+
+      {/* Viewing server session messages */}
+      {history.viewingSession && (
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm" style={{ background: "var(--accent)", color: "#000" }}>
+              {history.viewingSession.question}
+            </div>
+          </div>
+          {history.viewingSession.messages.filter(msg => msg.role !== "thinking").map(msg => (
+            <AgentMessageCard
+              key={msg.id} emoji={msg.agentEmoji} name={msg.agentName}
+              role={msg.role} roleLabel={ROLE_LABEL[msg.role] ?? msg.role}
+              roleColorClass={ROLE_COLOR[msg.role] ?? ""} content={msg.content}
+              isChairman={false} agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
+            />
+          ))}
+          {history.viewingSession.status === "running" && !history.viewingSession.finalAnswer && (
+            <div className="border-2 border-dashed rounded-xl p-4 text-center space-y-3" style={{ borderColor: "var(--warning, #f59e0b)", background: "var(--surface)" }}>
+              <div className="flex items-center justify-center gap-2 text-sm font-bold" style={{ color: "var(--warning, #f59e0b)" }}>
+                <AlertTriangle size={16} /> ประชุมค้าง — ไม่ได้ปิดประชุม
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>เซสชันนี้ยังค้างสถานะ &quot;กำลังประชุม&quot; — เลือกดำเนินการ</p>
+              <div className="flex gap-2 justify-center flex-wrap">
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/team-research/${history.viewingSession!.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "force-complete", reason: "🔒 ปิดประชุมโดยผู้ใช้" }) });
+                    history.setViewingSession({ ...history.viewingSession!, status: "completed", finalAnswer: "🔒 ปิดประชุมโดยผู้ใช้" });
+                    history.fetchServerHistory();
+                  }}
+                  className="text-xs px-4 py-2 rounded-lg border font-bold"
+                  style={{ borderColor: "var(--error, #ef4444)", color: "var(--error, #ef4444)" }}
+                ><X size={12} className="inline mr-1" />ปิดประชุม</button>
+                <button
+                  onClick={() => {
+                    if (history.viewingSession?.agentIds) setup.setSelectedIds(new Set(history.viewingSession.agentIds));
+                    const priorRound: ConversationRound = {
+                      question: history.viewingSession!.question,
+                      messages: history.viewingSession!.messages.map((m: ServerSession["messages"][0]) => ({ id: m.id, agentId: m.agentId, agentName: m.agentName, agentEmoji: m.agentEmoji, role: m.role, content: m.content, tokensUsed: m.tokensUsed, timestamp: m.timestamp || new Date().toISOString() })),
+                      finalAnswer: "", agentTokens: {}, suggestions: [],
+                    };
+                    fetch(`/api/team-research/${history.viewingSession!.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "force-complete", reason: "🔄 ย้ายไปเซสชันใหม่" }) }).catch(() => {});
+                    session.clearSession(); session.setRounds([priorRound]); session.setMeetingSessionId(null); session.meetingSessionIdRef.current = null;
+                    setup.setQuestion(""); history.clearViewingSession(); history.fetchServerHistory();
+                  }}
+                  className="text-xs px-4 py-2 rounded-lg border font-bold"
+                  style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+                ><RefreshCw size={12} className="inline mr-1" />ถามต่อในเซสชันใหม่</button>
+              </div>
+            </div>
           )}
-
-          {/* Collapsed sidebar strip */}
-          {sidebarCollapsed && (
-            <aside className="hidden md:flex flex-col w-10 flex-shrink-0">
-              {renderCollapsedSidebar()}
-            </aside>
+          {history.viewingSession.finalAnswer && (
+            <MeetingResolution round={{ finalAnswer: history.viewingSession.finalAnswer, isQA: (history.viewingSession.agentIds?.length ?? 0) <= 1, chartData: undefined, synthMeta: undefined, webSources: undefined }} />
           )}
+          {history.viewingSession.finalAnswer && (
+            <button
+              onClick={() => {
+                if (history.viewingSession?.agentIds) setup.setSelectedIds(new Set(history.viewingSession.agentIds));
+                const priorRound: ConversationRound = {
+                  question: history.viewingSession!.question,
+                  messages: history.viewingSession!.messages.map((m: ServerSession["messages"][0]) => ({ id: m.id, agentId: m.agentId, agentName: m.agentName, agentEmoji: m.agentEmoji, role: m.role, content: m.content, tokensUsed: m.tokensUsed, timestamp: m.timestamp || new Date().toISOString() })),
+                  finalAnswer: history.viewingSession!.finalAnswer || "", agentTokens: {}, suggestions: [],
+                };
+                session.clearSession(); session.setRounds([priorRound]); session.setMeetingSessionId(null); session.meetingSessionIdRef.current = null;
+                setup.setQuestion(""); history.clearViewingSession();
+                const clarAnswers = history.viewingSession!.messages
+                  .filter((m: ServerSession["messages"][0]) => m.role === "clarification" as unknown as ResearchMessage["role"])
+                  .map((m: ServerSession["messages"][0]) => ({ question: m.agentName || "", answer: m.content || "" }))
+                  .filter((qa: { question: string; answer: string }) => qa.question && qa.answer);
+                if (clarAnswers.length > 0) session.lastClarificationAnswersRef.current = clarAnswers;
+              }}
+              className="text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1"
+              style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+            ><RefreshCw size={12} />นำวาระนี้กลับมาประชุมอีกครั้ง</button>
+          )}
+        </div>
+      )}
 
-          {/* ── Main panel ─────────────────────────────────────────────── */}
-          <div className="flex-1 flex flex-col gap-2 sm:gap-3 min-w-0">
-
-            {/* Viewing server session banner */}
-            {history.viewingSession && (
-              <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs" style={{ borderColor: "var(--accent-35)", background: "var(--accent-7)", color: "var(--text-muted)" }}>
-                <span className="flex items-center gap-1" style={{ color: "var(--accent)" }}><History size={12} /> ดูประวัติ</span>
-                <span className="flex-1 truncate">{history.viewingSession.question}</span>
-                <button onClick={() => history.clearViewingSession()} className="ml-2 px-2 py-0.5 rounded border opacity-60 hover:opacity-100 flex items-center gap-1" style={{ borderColor: "var(--border)" }}>
-                  <X size={12} /> ปิด
-                </button>
+      {/* Current session rounds */}
+      {!history.viewingSession && displayRounds.map((round, roundIndex) => {
+        const isResolution = !!round.finalAnswer;
+        const chairmanAgent = round.chairmanId ? setup.agents.find(a => a.id === round.chairmanId) : undefined;
+        return (
+          <div key={roundIndex} className="space-y-3">
+            {(round.isSynthesis || displayRounds.filter(r => !r.isSynthesis).length > 1) && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
+                <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: round.isSynthesis ? "#000" : "var(--accent)", background: round.isSynthesis ? "var(--accent)" : "var(--accent-8)", fontWeight: round.isSynthesis ? 700 : 400 }}>
+                  {round.isSynthesis ? "สรุปมติที่ประชุม" : round.isQA ? `คำถามที่ ${roundIndex + 1}` : `วาระที่ ${roundIndex + 1}`}
+                </div>
+                <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
               </div>
             )}
+            {!round.isSynthesis && (
+              <div className="flex justify-end">
+                <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm" style={{ background: "var(--accent)", color: "#000" }}>
+                  {round.question}
+                </div>
+              </div>
+            )}
+            {(() => {
+              let lastPhaseRole = "";
+              return round.messages.filter(msg => msg.role !== "thinking").map(msg => {
+                const elements: React.ReactNode[] = [];
+                if (msg.role !== lastPhaseRole && lastPhaseRole !== "") {
+                  if (msg.role === "chat") elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="💬" label="เริ่มการถกเถียง" color="var(--orange)" />);
+                  else if (msg.role === "synthesis") elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="🏛️" label="ประธานสรุปมติ" color="var(--accent)" />);
+                }
+                lastPhaseRole = msg.role;
+                elements.push(
+                  <AgentMessageCard key={msg.id} emoji={msg.agentEmoji} name={msg.agentName}
+                    role={msg.role} roleLabel={ROLE_LABEL[msg.role] ?? msg.role}
+                    roleColorClass={ROLE_COLOR[msg.role] ?? ""} content={msg.content}
+                    isChairman={round.chairmanId === msg.agentId}
+                    agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
+                  />
+                );
+                return elements;
+              });
+            })()}
+            {isResolution && (
+              <MeetingResolution round={round} chairmanEmoji={chairmanAgent?.emoji} chairmanName={chairmanAgent?.name}
+                onPin={() => setPinnedRoundIdx(prev => prev === roundIndex ? null : roundIndex)}
+                isPinned={pinnedRoundIdx === roundIndex}
+              />
+            )}
+            {roundIndex === displayRounds.length - 1 && round.suggestions.length > 0 && !session.running && session.currentMessages.length === 0 && (
+              <div className="space-y-2">
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>วาระต่อเนื่องที่แนะนำ:</div>
+                <div className="flex flex-col gap-1.5">
+                  {round.suggestions.map((s, i) => (
+                    <button key={i} onClick={() => handleRun(s)} disabled={session.running}
+                      className="text-left px-3 py-2 rounded-lg border text-xs transition-all hover:opacity-80 disabled:opacity-40"
+                      style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}
+                    >→ {s}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
-            {/* Empty state — MeetingStartCard */}
-            {isEmptyState && (
+      {/* Current round in progress */}
+      {!history.viewingSession && (session.currentMessages.length > 0 || session.running) && (
+        <div className="space-y-3">
+          {(session.isCurrentClosing || displayRounds.filter(r => !r.isSynthesis).length > 0) && (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 border-t" style={{ borderColor: session.isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
+              <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: session.isCurrentClosing ? "#000" : "var(--accent)", background: session.isCurrentClosing ? "var(--accent)" : "var(--accent-8)", fontWeight: session.isCurrentClosing ? 700 : 400 }}>
+                {session.isCurrentClosing ? "สรุปมติที่ประชุม" : `วาระที่ ${displayRounds.filter(r => !r.isSynthesis).length + 1}`}
+              </div>
+              <div className="flex-1 border-t" style={{ borderColor: session.isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
+            </div>
+          )}
+          {(() => {
+            let lastPhaseRole = "";
+            let thinkingIdx = 0;
+            const thinkingAgents = session.currentMessages.filter(m => m.role === "thinking");
+            return session.currentMessages.map(msg => {
+              const elements: React.ReactNode[] = [];
+              if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
+                if (msg.role === "chat" && lastPhaseRole === "finding") {
+                  const findingCount = session.currentMessages.filter(m => m.role === "finding").length;
+                  elements.push(
+                    <div key={`phase1-done-${msg.id}`} className="flex items-center justify-center py-1.5 animate-phase-reveal">
+                      <span className="text-[11px] px-3 py-1 rounded-full font-medium" style={{ color: "var(--accent)", background: "var(--accent-8)" }}>
+                        ✓ รับฟังความเห็นครบแล้ว — {findingCount} คน
+                      </span>
+                    </div>
+                  );
+                }
+                if (msg.role === "chat") elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="💬" label="เริ่มการถกเถียง" color="var(--orange)" isLive />);
+                else if (msg.role === "synthesis") elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="🏛️" label="ประธานสรุปมติ" color="var(--accent)" isLive />);
+              }
+              if (msg.role !== "thinking") lastPhaseRole = msg.role;
+              if (msg.role === "thinking") {
+                if (thinkingIdx === 0) elements.push(<ThinkingRow key="thinking-group" agents={thinkingAgents.map(t => ({ id: t.id, emoji: t.agentEmoji, name: t.agentName }))} />);
+                thinkingIdx++;
+              } else {
+                elements.push(
+                  <AgentMessageCard key={msg.id} emoji={msg.agentEmoji} name={msg.agentName}
+                    role={msg.role} roleLabel={ROLE_LABEL[msg.role] ?? msg.role}
+                    roleColorClass={ROLE_COLOR[msg.role] ?? ""} content={msg.content}
+                    isChairman={session.chairmanId === msg.agentId} isLive
+                    agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
+                  />
+                );
+              }
+              return elements;
+            });
+          })()}
+          {session.currentFinalAnswer && (() => {
+            const chairmanAgent = session.chairmanId ? setup.agents.find(a => a.id === session.chairmanId) : undefined;
+            return (
+              <MeetingResolution
+                round={{ finalAnswer: session.currentFinalAnswer, isQA: session.isCurrentQA, chartData: session.currentChartData ?? undefined, synthMeta: session.currentSynthMeta ?? undefined, webSources: session.currentWebSources ?? undefined }}
+                chairmanEmoji={chairmanAgent?.emoji} chairmanName={chairmanAgent?.name} isLive
+              />
+            );
+          })()}
+        </div>
+      )}
+    </>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    // Root: fixed viewport — nothing outside scrolls
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "var(--bg)" }}>
+
+      {/* ── HEADER — fixed height, never scrolls ─────────────────────────── */}
+      <header
+        className="flex-shrink-0 flex items-center justify-between px-4 h-13 border-b gap-3"
+        style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {sidebarCollapsed && (
+            <button
+              onClick={() => setSidebarCollapsed(false)}
+              className="hidden md:flex w-8 h-8 rounded-lg border items-center justify-center transition-all hover:opacity-80 flex-shrink-0"
+              style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text-muted)" }}
+              title="แสดงแผง"
+            >
+              <Settings size={14} />
+            </button>
+          )}
+          <Building2 size={18} style={{ color: "var(--accent)", flexShrink: 0 }} />
+          <span className="font-bold text-sm truncate" style={{ color: "var(--text)" }}>
+            ห้องประชุม AI{setup.companyName ? ` — ${setup.companyName}` : ""}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Mobile settings */}
+          <button
+            onClick={() => setMobileSettingsOpen(true)}
+            className="md:hidden w-8 h-8 rounded-lg border flex items-center justify-center"
+            style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}
+            title="ตั้งค่า"
+          >
+            <Settings size={14} />
+          </button>
+
+          {/* History */}
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border text-xs transition-all hover:opacity-80"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
+          >
+            <History size={13} />
+            <span className="hidden sm:inline">ประวัติ</span>
+            {history.totalSessionCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+                {history.totalSessionCount}
+              </span>
+            )}
+          </button>
+
+          {/* Export */}
+          {(session.rounds.length > 0 || history.viewingSession) && (
+            <>
+              <button onClick={exportMinutes} className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
+                <Download size={14} />
+              </button>
+              <button onClick={() => window.print()} className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="พิมพ์ / บันทึก PDF">
+                <Printer size={14} />
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* ── BODY ROW — fills remaining height, never overflows ───────────── */}
+      <div className="flex flex-1 min-h-0">
+
+        {/* ── Left sidebar (desktop) ──────────────────────────────────────── */}
+        {!sidebarCollapsed && (
+          <aside
+            className="hidden md:flex flex-col w-56 flex-shrink-0 border-r relative"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              className="absolute -right-2.5 top-3 z-10 w-5 h-5 rounded-full border flex items-center justify-center transition-all hover:opacity-80"
+              style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
+              title="ย่อแผง"
+            >
+              <ChevronLeft size={12} />
+            </button>
+            {renderSidebarContent()}
+          </aside>
+        )}
+
+        {/* Collapsed sidebar strip */}
+        {sidebarCollapsed && (
+          <aside className="hidden md:flex flex-col w-10 flex-shrink-0 border-r" style={{ borderColor: "var(--border)" }}>
+            {renderCollapsedSidebar()}
+          </aside>
+        )}
+
+        {/* ── Main column ─────────────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+
+          {/* Progress board — outside scroll area, fixed at top of main column */}
+          {!isEmptyState && (
+            <div className="flex-shrink-0">
+              <MeetingProgressBoard
+                running={session.running}
+                status={session.status}
+                currentPhase={session.currentPhase}
+                phase1DoneCount={session.phase1DoneCount.size}
+                totalAgents={setup.selectedIds.size}
+                elapsedTime={session.elapsedTime}
+                isSynthesizing={session.isSynthesizing}
+                effectiveMode={setup.effectiveMode}
+                onSkipToSummary={handleSkipToSummary}
+                onStop={session.handleStop}
+              />
+            </div>
+          )}
+
+          {/* ── Message area — ONLY this scrolls ──────────────────────────── */}
+          {isEmptyState ? (
+            // Empty state: centered in viewport height
+            <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center">
               <MeetingStartCard
                 companyName={setup.companyName}
                 agents={setup.agents}
@@ -410,401 +674,73 @@ export default function ResearchPage() {
                 {...clientProps}
                 {...advancedProps}
               />
-            )}
+            </div>
+          ) : (
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 space-y-3 sm:space-y-4 relative"
+            >
+              {renderMessages()}
 
-            {/* Messages area */}
-            {!isEmptyState && (
-              <>
-                <MeetingProgressBoard
-                  running={session.running}
-                  status={session.status}
-                  currentPhase={session.currentPhase}
-                  phase1DoneCount={session.phase1DoneCount.size}
-                  totalAgents={setup.selectedIds.size}
-                  elapsedTime={session.elapsedTime}
-                  isSynthesizing={session.isSynthesizing}
-                  effectiveMode={setup.effectiveMode}
-                  onSkipToSummary={handleSkipToSummary}
-                  onStop={session.handleStop}
-                />
-
-                {!session.running && (session.rounds.length > 0 || session.meetingSessionId) && (
-                  <div className="mx-1">
-                    <div className="rounded-lg px-3 py-2 border flex items-center gap-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-                      {session.meetingSessionId && !session.rounds.some(r => r.isSynthesis) ? (
-                        <>
-                          <span className="inline-block w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
-                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>รอวาระถัดไป — พิมพ์วาระใหม่หรือกด <strong style={{ color: "var(--accent)" }}>สรุปมติ</strong> เมื่อพร้อมปิดประชุม</span>
-                        </>
-                      ) : session.rounds.some(r => r.isSynthesis) ? (
-                        <>
-                          <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
-                          <span className="text-xs font-medium" style={{ color: "var(--green)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--text-muted)" }} />
-                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>มีข้อมูลการประชุม {session.rounds.filter(r => !r.isSynthesis).length} วาระ</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div
-                  ref={scrollContainerRef}
-                  onScroll={handleScroll}
-                  className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 min-h-[200px] sm:min-h-[300px] relative"
-                >
-                  {session.isSynthesizing && !session.currentFinalAnswer && (
-                    <div className="mx-1 rounded-xl border-2 p-4 flex items-center gap-3" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
-                      <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
-                      <div>
-                        <div className="text-sm font-bold" style={{ color: "var(--accent)" }}>🏛️ ประธานกำลังสรุปมติ...</div>
-                        <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>กรุณารอสักครู่ ประมาณ 15–30 วินาที</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {session.pendingClarification && session.clarificationQuestions.length > 0 && (
-                    <ClarificationCard
-                      questions={session.clarificationQuestions}
-                      answers={session.clarificationAnswers}
-                      onAnswerChange={(id, val) => session.setClarificationAnswers(prev => ({ ...prev, [id]: val }))}
-                      onSubmit={handleClarificationSubmit}
-                      onSkip={handleSkipClarification}
-                    />
-                  )}
-
-                  {session.midMeetingQuestion && (
-                    <MidMeetingQuestionCard
-                      question={session.midMeetingQuestion}
-                      onAnswer={(qid, ans) => session.handleMidMeetingAnswer(runOpts(), qid, ans)}
-                      onSkip={(qid) => session.handleSkipMidMeetingQuestion(runOpts(), qid)}
-                    />
-                  )}
-
-                  {/* Viewing server session */}
-                  {history.viewingSession && (
-                    <div className="space-y-3">
-                      <div className="flex justify-end">
-                        <div className="max-w-[85%] sm:max-w-xl px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tr-sm text-sm" style={{ background: "var(--accent)", color: "#000" }}>
-                          {history.viewingSession.question}
-                        </div>
-                      </div>
-                      {history.viewingSession.messages.filter((msg) => msg.role !== "thinking").map((msg) => (
-                        <AgentMessageCard
-                          key={msg.id}
-                          emoji={msg.agentEmoji}
-                          name={msg.agentName}
-                          role={msg.role}
-                          roleLabel={ROLE_LABEL[msg.role] ?? msg.role}
-                          roleColorClass={ROLE_COLOR[msg.role] ?? ""}
-                          content={msg.content}
-                          isChairman={false}
-                          agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
-                        />
-                      ))}
-                      {history.viewingSession.status === "running" && !history.viewingSession.finalAnswer && (
-                        <div className="border-2 border-dashed rounded-xl p-4 text-center space-y-3" style={{ borderColor: "var(--warning, #f59e0b)", background: "var(--surface)" }}>
-                          <div className="flex items-center justify-center gap-2 text-sm font-bold" style={{ color: "var(--warning, #f59e0b)" }}>
-                            <AlertTriangle size={16} /> ประชุมค้าง — ไม่ได้ปิดประชุม
-                          </div>
-                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>เซสชันนี้ยังค้างสถานะ &quot;กำลังประชุม&quot; — เลือกดำเนินการ</p>
-                          <div className="flex gap-2 justify-center flex-wrap">
-                            <button
-                              onClick={async () => {
-                                await fetch(`/api/team-research/${history.viewingSession!.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "force-complete", reason: "🔒 ปิดประชุมโดยผู้ใช้" }) });
-                                history.setViewingSession({ ...history.viewingSession!, status: "completed", finalAnswer: "🔒 ปิดประชุมโดยผู้ใช้" });
-                                history.fetchServerHistory();
-                              }}
-                              className="text-xs px-4 py-2 rounded-lg border font-bold"
-                              style={{ borderColor: "var(--error, #ef4444)", color: "var(--error, #ef4444)" }}
-                            ><X size={12} className="inline mr-1" /> ปิดประชุม</button>
-                            <button
-                              onClick={() => {
-                                if (history.viewingSession?.agentIds) setup.setSelectedIds(new Set(history.viewingSession.agentIds));
-                                const priorRound: ConversationRound = {
-                                  question: history.viewingSession!.question,
-                                  messages: history.viewingSession!.messages.map((m: ServerSession["messages"][0]) => ({ id: m.id, agentId: m.agentId, agentName: m.agentName, agentEmoji: m.agentEmoji, role: m.role, content: m.content, tokensUsed: m.tokensUsed, timestamp: m.timestamp || new Date().toISOString() })),
-                                  finalAnswer: "", agentTokens: {}, suggestions: [],
-                                };
-                                fetch(`/api/team-research/${history.viewingSession!.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "force-complete", reason: "🔄 ย้ายไปเซสชันใหม่" }) }).catch(() => {});
-                                session.clearSession();
-                                session.setRounds([priorRound]);
-                                session.setMeetingSessionId(null);
-                                session.meetingSessionIdRef.current = null;
-                                setup.setQuestion("");
-                                history.clearViewingSession();
-                                history.fetchServerHistory();
-                              }}
-                              className="text-xs px-4 py-2 rounded-lg border font-bold"
-                              style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                            ><RefreshCw size={12} className="inline mr-1" /> ถามต่อในเซสชันใหม่</button>
-                          </div>
-                        </div>
-                      )}
-                      {history.viewingSession.finalAnswer && (
-                        <MeetingResolution
-                          round={{
-                            finalAnswer: history.viewingSession.finalAnswer,
-                            isQA: (history.viewingSession.agentIds?.length ?? 0) <= 1,
-                            chartData: undefined,
-                            synthMeta: undefined,
-                            webSources: undefined,
-                          }}
-                        />
-                      )}
-                      {history.viewingSession.finalAnswer && (
-                        <button
-                          onClick={() => {
-                            if (history.viewingSession?.agentIds) setup.setSelectedIds(new Set(history.viewingSession.agentIds));
-                            const priorRound: ConversationRound = {
-                              question: history.viewingSession!.question,
-                              messages: history.viewingSession!.messages.map((m: ServerSession["messages"][0]) => ({ id: m.id, agentId: m.agentId, agentName: m.agentName, agentEmoji: m.agentEmoji, role: m.role, content: m.content, tokensUsed: m.tokensUsed, timestamp: m.timestamp || new Date().toISOString() })),
-                              finalAnswer: history.viewingSession!.finalAnswer || "", agentTokens: {}, suggestions: [],
-                            };
-                            session.clearSession();
-                            session.setRounds([priorRound]);
-                            session.setMeetingSessionId(null);
-                            session.meetingSessionIdRef.current = null;
-                            setup.setQuestion("");
-                            history.clearViewingSession();
-                            const clarAnswers = history.viewingSession!.messages.filter((m: ServerSession["messages"][0]) => m.role === "clarification" as unknown as ResearchMessage["role"]).map((m: ServerSession["messages"][0]) => ({ question: m.agentName || "", answer: m.content || "" })).filter((qa: { question: string; answer: string }) => qa.question && qa.answer);
-                            if (clarAnswers.length > 0) session.lastClarificationAnswersRef.current = clarAnswers;
-                          }}
-                          className="mt-2 text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1"
-                          style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
-                        ><RefreshCw size={12} /> นำวาระนี้กลับมาประชุมอีกครั้ง</button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Current session rounds */}
-                  {!history.viewingSession && displayRounds.map((round, roundIndex) => {
-                    const isResolution = !!round.finalAnswer;
-                    const chairmanAgent = round.chairmanId ? setup.agents.find(a => a.id === round.chairmanId) : undefined;
-
-                    return (
-                      <div key={roundIndex} className="space-y-3">
-                        {(round.isSynthesis || displayRounds.filter(r => !r.isSynthesis).length > 1) && (
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
-                            <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: round.isSynthesis ? "#000" : "var(--accent)", background: round.isSynthesis ? "var(--accent)" : "var(--accent-8)", fontWeight: round.isSynthesis ? 700 : 400 }}>
-                              {round.isSynthesis ? "สรุปมติที่ประชุม" : round.isQA ? `คำถามที่ ${roundIndex + 1}` : `วาระที่ ${roundIndex + 1}`}
-                            </div>
-                            <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
-                          </div>
-                        )}
-
-                        {!round.isSynthesis && (
-                          <div className="flex justify-end">
-                            <div className="max-w-[85%] sm:max-w-xl px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tr-sm text-sm" style={{ background: "var(--accent)", color: "#000" }}>
-                              {round.question}
-                            </div>
-                          </div>
-                        )}
-
-                        {(() => {
-                          let lastPhaseRole = "";
-                          return round.messages.filter((msg) => msg.role !== "thinking").map((msg) => {
-                            const elements: React.ReactNode[] = [];
-                            if (msg.role !== lastPhaseRole && lastPhaseRole !== "") {
-                              if (msg.role === "chat") {
-                                elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="💬" label="เริ่มการถกเถียง" color="var(--orange)" />);
-                              } else if (msg.role === "synthesis") {
-                                elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="🏛️" label="ประธานสรุปมติ" color="var(--accent)" />);
-                              }
-                            }
-                            lastPhaseRole = msg.role;
-                            elements.push(
-                              <AgentMessageCard
-                                key={msg.id}
-                                emoji={msg.agentEmoji}
-                                name={msg.agentName}
-                                role={msg.role}
-                                roleLabel={ROLE_LABEL[msg.role] ?? msg.role}
-                                roleColorClass={ROLE_COLOR[msg.role] ?? ""}
-                                content={msg.content}
-                                isChairman={round.chairmanId === msg.agentId}
-                                agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
-                              />
-                            );
-                            return elements;
-                          });
-                        })()}
-
-                        {isResolution && (
-                          <MeetingResolution
-                            round={round}
-                            chairmanEmoji={chairmanAgent?.emoji}
-                            chairmanName={chairmanAgent?.name}
-                            onPin={() => setPinnedRoundIdx(prev => prev === roundIndex ? null : roundIndex)}
-                            isPinned={pinnedRoundIdx === roundIndex}
-                          />
-                        )}
-
-                        {roundIndex === displayRounds.length - 1 && round.suggestions.length > 0 && !session.running && session.currentMessages.length === 0 && (
-                          <div className="space-y-2">
-                            <div className="text-xs" style={{ color: "var(--text-muted)" }}>วาระต่อเนื่องที่แนะนำ:</div>
-                            <div className="flex flex-col gap-1.5">
-                              {round.suggestions.map((s, i) => (
-                                <button key={i} onClick={() => handleRun(s)} disabled={session.running}
-                                  className="text-left px-3 py-2 rounded-lg border text-xs transition-all hover:opacity-80 disabled:opacity-40"
-                                  style={{ borderColor: "var(--border)", color: "var(--text)", background: "var(--surface)" }}
-                                >→ {s}</button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Current round in progress */}
-                  {!history.viewingSession && (session.currentMessages.length > 0 || session.running) && (
-                    <div className="space-y-3">
-                      {(session.isCurrentClosing || displayRounds.filter(r => !r.isSynthesis).length > 0) && (
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 border-t" style={{ borderColor: session.isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
-                          <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: session.isCurrentClosing ? "#000" : "var(--accent)", background: session.isCurrentClosing ? "var(--accent)" : "var(--accent-8)", fontWeight: session.isCurrentClosing ? 700 : 400 }}>
-                            {session.isCurrentClosing ? "สรุปมติที่ประชุม" : `วาระที่ ${displayRounds.filter(r => !r.isSynthesis).length + 1}`}
-                          </div>
-                          <div className="flex-1 border-t" style={{ borderColor: session.isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
-                        </div>
-                      )}
-
-                      {(() => {
-                        let lastPhaseRole = "";
-                        let thinkingIdx = 0;
-                        const thinkingAgents = session.currentMessages.filter(m => m.role === "thinking");
-
-                        return session.currentMessages.map((msg) => {
-                          const elements: React.ReactNode[] = [];
-
-                          if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
-                            if (msg.role === "chat" && lastPhaseRole === "finding") {
-                              const findingCount = session.currentMessages.filter(m => m.role === "finding").length;
-                              elements.push(
-                                <div key={`phase1-done-${msg.id}`} className="flex items-center justify-center py-1.5 animate-phase-reveal">
-                                  <span className="text-[11px] px-3 py-1 rounded-full font-medium" style={{ color: "var(--accent)", background: "var(--accent-8)" }}>
-                                    ✓ รับฟังความเห็นครบแล้ว — {findingCount} คน
-                                  </span>
-                                </div>
-                              );
-                            }
-                            if (msg.role === "chat") {
-                              elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="💬" label="เริ่มการถกเถียง" color="var(--orange)" isLive />);
-                            } else if (msg.role === "synthesis") {
-                              elements.push(<PhaseSeparator key={`sep-${msg.id}`} icon="🏛️" label="ประธานสรุปมติ" color="var(--accent)" isLive />);
-                            }
-                          }
-                          if (msg.role !== "thinking") lastPhaseRole = msg.role;
-
-                          if (msg.role === "thinking") {
-                            if (thinkingIdx === 0) {
-                              elements.push(
-                                <ThinkingRow key="thinking-group" agents={thinkingAgents.map(t => ({ id: t.id, emoji: t.agentEmoji, name: t.agentName }))} />
-                              );
-                            }
-                            thinkingIdx++;
-                          } else {
-                            elements.push(
-                              <AgentMessageCard
-                                key={msg.id}
-                                emoji={msg.agentEmoji}
-                                name={msg.agentName}
-                                role={msg.role}
-                                roleLabel={ROLE_LABEL[msg.role] ?? msg.role}
-                                roleColorClass={ROLE_COLOR[msg.role] ?? ""}
-                                content={msg.content}
-                                isChairman={session.chairmanId === msg.agentId}
-                                isLive
-                                agentIndex={setup.agents.findIndex(a => a.id === msg.agentId)}
-                              />
-                            );
-                          }
-                          return elements;
-                        });
-                      })()}
-
-                      {session.currentFinalAnswer && (() => {
-                        const chairmanAgent = session.chairmanId ? setup.agents.find(a => a.id === session.chairmanId) : undefined;
-                        return (
-                          <MeetingResolution
-                            round={{
-                              finalAnswer: session.currentFinalAnswer,
-                              isQA: session.isCurrentQA,
-                              chartData: session.currentChartData ?? undefined,
-                              synthMeta: session.currentSynthMeta ?? undefined,
-                              webSources: session.currentWebSources ?? undefined,
-                            }}
-                            chairmanEmoji={chairmanAgent?.emoji}
-                            chairmanName={chairmanAgent?.name}
-                            isLive
-                          />
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                  {session.currentFinalAnswer && !autoScroll && (
-                    <div className="sticky bottom-3 flex justify-center z-10 pointer-events-none">
-                      <button onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
-                        className="pointer-events-auto px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-all hover:scale-105 animate-message-in"
-                        style={{ background: "var(--accent)", color: "#000" }}
-                      >↓ ดูผลสรุป</button>
-                    </div>
-                  )}
-
-                  <div ref={bottomRef} />
+              {/* Scroll-to-bottom FAB */}
+              {session.currentFinalAnswer && !autoScroll && (
+                <div className="sticky bottom-3 flex justify-center z-10 pointer-events-none">
+                  <button
+                    onClick={() => { setAutoScroll(true); bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }}
+                    className="pointer-events-auto px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-all hover:scale-105 animate-message-in"
+                    style={{ background: "var(--accent)", color: "#000" }}
+                  >↓ ดูผลสรุป</button>
                 </div>
+              )}
 
-                {!history.viewingSession && (
-                  <MeetingInputBar
-                    question={setup.question}
-                    onQuestionChange={setup.setQuestion}
-                    onRun={() => handleRun()}
-                    onStop={session.handleStop}
-                    onSkipToSummary={handleSkipToSummary}
-                    onCloseMeeting={handleCloseMeeting}
-                    running={session.running}
-                    effectiveMode={setup.effectiveMode}
-                    forceMode={setup.forceMode}
-                    onToggleMode={() => setup.setForceMode(prev => prev === "auto" ? (setup.effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
-                    meetingSessionId={session.meetingSessionId}
-                    elapsedTime={session.elapsedTime}
-                    rounds={session.rounds}
-                    selectedCount={setup.selectedIds.size}
-                    totalAgents={setup.agents.length}
-                    attachedFilesCount={setup.attachedFiles.length}
-                    showAdvanced={setup.showAdvanced}
-                    onToggleAdvanced={() => setup.setShowAdvanced(v => !v)}
-                    showTemplates={setup.showTemplates}
-                    onToggleTemplates={() => setup.setShowTemplates(v => !v)}
-                    onSelectTemplate={(t) => { setup.setQuestion(t); setup.setShowTemplates(false); }}
-                  />
-                )}
-              </>
-            )}
-          </div>
+              <div ref={bottomRef} />
+            </div>
+          )}
+
+          {/* ── Input bar — outside scroll area, always at bottom ────────── */}
+          {!isEmptyState && !history.viewingSession && (
+            <div className="flex-shrink-0 px-3 sm:px-5 pb-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <MeetingInputBar
+                question={setup.question}
+                onQuestionChange={setup.setQuestion}
+                onRun={() => handleRun()}
+                onStop={session.handleStop}
+                onSkipToSummary={handleSkipToSummary}
+                onCloseMeeting={handleCloseMeeting}
+                running={session.running}
+                effectiveMode={setup.effectiveMode}
+                forceMode={setup.forceMode}
+                onToggleMode={() => setup.setForceMode(prev => prev === "auto" ? (setup.effectiveMode === "qa" ? "meeting" : "qa") : "auto")}
+                meetingSessionId={session.meetingSessionId}
+                elapsedTime={session.elapsedTime}
+                rounds={session.rounds}
+                selectedCount={setup.selectedIds.size}
+                totalAgents={setup.agents.length}
+                attachedFilesCount={setup.attachedFiles.length}
+                showAdvanced={setup.showAdvanced}
+                onToggleAdvanced={() => setup.setShowAdvanced(v => !v)}
+                showTemplates={setup.showTemplates}
+                onToggleTemplates={() => setup.setShowTemplates(v => !v)}
+                onSelectTemplate={(t) => { setup.setQuestion(t); setup.setShowTemplates(false); }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── History overlay panel (right side) ─────────────────────────── */}
+      {/* ── History overlay (right side) ─────────────────────────────────── */}
       {historyOpen && (
         <div className="fixed inset-0 z-[60]">
           <button className="absolute inset-0 bg-black/40" onClick={() => setHistoryOpen(false)} aria-label="ปิดประวัติ" />
-          <aside className="absolute top-0 right-0 bottom-0 w-80 max-w-[92vw] flex flex-col border-l shadow-2xl" style={{ borderColor: "var(--border)", background: "var(--card, var(--surface))" }}>
-            <div className="h-14 px-4 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+          <aside className="absolute top-0 right-0 bottom-0 w-80 max-w-[92vw] flex flex-col border-l shadow-2xl" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <div className="h-13 px-4 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
               <div className="font-semibold text-sm flex items-center gap-1.5" style={{ color: "var(--text)" }}>
                 <History size={14} style={{ color: "var(--accent)" }} /> ประวัติการประชุม
               </div>
-              <button
-                onClick={() => setHistoryOpen(false)}
-                className="w-8 h-8 rounded-lg border flex items-center justify-center hover:opacity-70"
-                style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}
-              >×</button>
+              <button onClick={() => setHistoryOpen(false)} className="w-8 h-8 rounded-lg border flex items-center justify-center hover:opacity-70" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}>
+                <X size={14} />
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-3">
               <HistoryPanel
@@ -827,16 +763,18 @@ export default function ResearchPage() {
         </div>
       )}
 
-      {/* ── Mobile settings overlay ─────────────────────────────────────── */}
+      {/* ── Mobile settings overlay ───────────────────────────────────────── */}
       {mobileSettingsOpen && (
         <div className="fixed inset-0 z-[55] md:hidden">
           <button className="absolute inset-0 bg-black/45" onClick={() => setMobileSettingsOpen(false)} aria-label="Close panel" />
-          <aside className="absolute top-0 left-0 bottom-0 w-[300px] max-w-[88vw] border-r flex flex-col" style={{ borderColor: "var(--border)", background: "var(--card, var(--surface))" }}>
-            <div className="h-14 px-3 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+          <aside className="absolute top-0 left-0 bottom-0 w-[300px] max-w-[88vw] border-r flex flex-col" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <div className="h-13 px-3 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
               <div className="font-semibold text-sm flex items-center gap-1.5" style={{ color: "var(--text)" }}><Settings size={14} /> ตั้งค่าการประชุม</div>
-              <button onClick={() => setMobileSettingsOpen(false)} className="w-8 h-8 rounded-lg border text-base flex items-center justify-center" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}>×</button>
+              <button onClick={() => setMobileSettingsOpen(false)} className="w-8 h-8 rounded-lg border flex items-center justify-center" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}>
+                <X size={14} />
+              </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+            <div className="flex-1 overflow-hidden">
               {renderSidebarContent()}
             </div>
           </aside>
@@ -850,7 +788,7 @@ export default function ResearchPage() {
             ล้างข้อมูลการประชุม {session.rounds.filter(r => !r.isSynthesis).length} วาระ จากหน้าจอ
           </p>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            ประวัติการประชุมบน server ยังคงอยู่ — สามารถดูย้อนหลังได้ในแท็บประวัติ
+            ประวัติการประชุมบน server ยังคงอยู่ — สามารถดูย้อนหลังได้ในประวัติ
           </p>
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowClearConfirm(false)} className="px-4 py-2 text-sm rounded-lg border transition-colors hover:bg-[var(--surface)]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>ยกเลิก</button>
