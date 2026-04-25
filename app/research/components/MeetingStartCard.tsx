@@ -97,32 +97,41 @@ export default function MeetingStartCard({
           </div>
         )}
 
-        {/* Client selector */}
-        {clientProfiles.length > 0 && (
-          <div className="border rounded-xl p-3" style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}>
-            <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-              <Users size={11} /> สำหรับลูกค้า
-              <span className="font-normal ml-1" style={{ color: "var(--text-muted)" }}>— ไม่บังคับ</span>
-            </div>
-            <select
-              value={selectedClientId}
-              onChange={(e) => onClientChange(e.target.value)}
-              title="เลือกลูกค้า"
-              className="w-full text-xs px-2 py-1.5 rounded-lg border outline-none"
-              style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--bg)", color: "var(--text)" }}
-            >
-              <option value="">ถามทั่วไป (ไม่เลือกลูกค้า)</option>
-              {clientProfiles.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            {selectedClientId && (
-              <div className="mt-1.5 text-[11px] flex items-center gap-1" style={{ color: "var(--accent)" }}>
-                ✓ ใช้ข้อมูล {clientProfiles.find(c => c.id === selectedClientId)?.name} เป็น context
-              </div>
-            )}
+        {/* Client selector — always visible */}
+        <div className="border rounded-xl p-3" style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}>
+          <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+            <Users size={11} /> สำหรับลูกค้า
+            <span className="font-normal ml-1" style={{ color: "var(--text-muted)" }}>— ไม่บังคับ</span>
           </div>
-        )}
+          {clientProfiles.length === 0 ? (
+            <div className="text-xs py-1 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+              ยังไม่มีข้อมูลลูกค้า —{" "}
+              <a href="/clients" className="underline hover:opacity-80" style={{ color: "var(--accent)" }}>
+                เพิ่มลูกค้าที่หน้า /clients
+              </a>
+            </div>
+          ) : (
+            <>
+              <select
+                value={selectedClientId}
+                onChange={(e) => onClientChange(e.target.value)}
+                title="เลือกลูกค้า"
+                className="w-full text-xs px-2 py-1.5 rounded-lg border outline-none"
+                style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--bg)", color: "var(--text)" }}
+              >
+                <option value="">ถามทั่วไป (ไม่เลือกลูกค้า)</option>
+                {clientProfiles.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {selectedClientId && (
+                <div className="mt-1.5 text-[11px] flex items-center gap-1" style={{ color: "var(--accent)" }}>
+                  ✓ ใช้ข้อมูล {clientProfiles.find(c => c.id === selectedClientId)?.name} เป็น context
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Quick templates */}
         <div>

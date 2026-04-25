@@ -5,7 +5,7 @@ import Modal from "../components/Modal";
 import { showToast } from "../components/Toast";
 import {
   Building2, Settings, Download, Printer, Trash2, RefreshCw,
-  History, X, AlertTriangle,
+  History, X, AlertTriangle, ChevronLeft,
 } from "lucide-react";
 
 import { useMeetingSession } from "./hooks/useMeetingSession";
@@ -33,10 +33,15 @@ import HistoryPanel from "./components/HistoryPanel";
 
 export default function ResearchPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [autoScroll, setAutoScroll] = useState(false);
   const [pinnedRoundIdx, setPinnedRoundIdx] = useState<number | null>(null);
+  // Sidebar collapsed (during active meeting)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // History overlay panel
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // Mobile settings overlay
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -54,7 +59,14 @@ export default function ResearchPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle URL params: ?q=, ?teamId=, ?sessionId=
+  // Auto-collapse sidebar when meeting starts
+  useEffect(() => {
+    if (session.running || session.rounds.length > 0) {
+      setSidebarCollapsed(true);
+    }
+  }, [session.running, session.rounds.length]);
+
+  // Handle URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
@@ -126,6 +138,7 @@ export default function ResearchPage() {
   const handleConfirmClear = () => {
     setShowClearConfirm(false);
     session.clearSessionStorage(currentUserId);
+    setSidebarCollapsed(false);
     showToast("info", "เริ่มการประชุมใหม่เรียบร้อย");
   };
 
@@ -159,7 +172,6 @@ export default function ResearchPage() {
   const displayRounds = session.rounds;
   const isEmptyState = !history.viewingSession && displayRounds.length === 0 && session.currentMessages.length === 0 && !session.running && !session.pendingClarification;
 
-  // Advanced settings props shared between sidebar and MeetingStartCard
   const advancedProps = {
     historyMode: setup.historyMode,
     onHistoryModeChange: (v: typeof setup.historyMode) => setup.setHistoryMode(v),
@@ -187,9 +199,9 @@ export default function ResearchPage() {
     clientProfiles: setup.clientProfiles,
   };
 
-  // ── Sidebar content ────────────────────────────────────────────────────────
-  const renderSidebarContent = (onNavigate?: () => void) => (
-    <>
+  // ── Sidebar content (desktop) ─────────────────────────────────────────────
+  const renderSidebarContent = () => (
+    <div className="flex flex-col gap-3 h-full">
       <AgentSetupPanel
         agents={setup.agents}
         selectedIds={setup.selectedIds}
@@ -215,81 +227,159 @@ export default function ResearchPage() {
 
       {setup.showAdvanced && <AdvancedSettingsSheet {...advancedProps} />}
 
+      {/* Spacer */}
+      <div className="flex-1" />
 
-      <HistoryPanel
-        serverSessions={history.serverSessions}
-        filteredSessions={history.filteredSessions}
-        totalSessionCount={history.totalSessionCount}
-        viewingSession={history.viewingSession}
-        sessionSearch={history.sessionSearch}
-        sessionStatusFilter={history.sessionStatusFilter}
-        onSessionSearch={history.setSessionSearch}
-        onStatusFilter={history.setSessionStatusFilter}
-        onLoadSession={(s) => { history.loadServerSession(s); onNavigate?.(); }}
-        onCloseSession={() => history.clearViewingSession()}
-        onRefresh={history.fetchServerHistory}
-        rounds={session.rounds}
-        onClearSession={confirmClearSession}
-      />
-    </>
+      {/* History button at bottom of sidebar */}
+      <button
+        onClick={() => setHistoryOpen(true)}
+        className="w-full text-xs px-3 py-2.5 rounded-lg border transition-all flex items-center justify-between"
+        style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
+      >
+        <span className="flex items-center gap-1.5">
+          <History size={12} /> ประวัติการประชุม
+        </span>
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+          {history.totalSessionCount}
+        </span>
+      </button>
+    </div>
+  );
+
+  // ── Collapsed sidebar (mini strip during meeting) ─────────────────────────
+  const renderCollapsedSidebar = () => (
+    <div className="flex flex-col items-center gap-2 py-2">
+      <button
+        onClick={() => setSidebarCollapsed(false)}
+        className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80"
+        style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
+        title="แสดงแผง"
+      >
+        <ChevronLeft size={14} style={{ transform: "rotate(180deg)" }} />
+      </button>
+
+      {/* Active agent indicators */}
+      {setup.agents.filter(a => setup.selectedIds.has(a.id)).map(agent => {
+        const isActive = session.activeAgentIds.has(agent.id);
+        const isDone = session.phase1DoneCount.has(agent.id);
+        return (
+          <div
+            key={agent.id}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm relative"
+            style={{
+              background: isDone ? "var(--accent-8)" : isActive ? "var(--accent-15)" : "var(--surface)",
+              border: `1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
+              boxShadow: isActive ? "0 0 6px var(--accent-30)" : "none",
+            }}
+            title={agent.name}
+          >
+            {agent.emoji}
+            {isDone && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500" />
+            )}
+          </div>
+        );
+      })}
+
+      <div className="flex-1" />
+
+      <button
+        onClick={() => setHistoryOpen(true)}
+        className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80"
+        style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
+        title="ประวัติการประชุม"
+      >
+        <History size={14} />
+      </button>
+    </div>
   );
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
-      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col p-3 sm:p-6 gap-3 sm:gap-6">
+      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col p-3 sm:p-6 gap-3 sm:gap-4">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2" style={{ color: "var(--text)" }}>
-              <Building2 size={22} style={{ color: "var(--accent)" }} />
-              <span>ห้องประชุม{setup.companyName ? ` — ${setup.companyName}` : ""}</span>
-            </h1>
-            <p className="text-xs sm:text-sm mt-1 hidden sm:block" style={{ color: "var(--text-muted)" }}>
-              ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
-            </p>
+          <div className="min-w-0 flex items-center gap-2">
+            {/* Sidebar expand button (when collapsed on desktop) */}
+            {sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="hidden md:flex w-8 h-8 rounded-lg border items-center justify-center transition-all hover:opacity-80 flex-shrink-0"
+                style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
+                title="แสดงแผง"
+              >
+                <Settings size={14} />
+              </button>
+            )}
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2" style={{ color: "var(--text)" }}>
+                <Building2 size={20} style={{ color: "var(--accent)" }} />
+                <span>ห้องประชุม{setup.companyName ? ` — ${setup.companyName}` : ""}</span>
+              </h1>
+              <p className="text-xs mt-0.5 hidden sm:block" style={{ color: "var(--text-muted)" }}>
+                ห้องประชุม AI — ประธานนำทีมถกเถียงและสรุปมติทุกวาระ
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <button onClick={() => setMobileSidebarOpen(true)} className="md:hidden px-3 py-2 rounded-lg text-xs border flex items-center gap-1.5" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}>
-              <Settings size={14} /> ตั้งค่า ({setup.selectedIds.size})
+          <div className="flex gap-2 flex-shrink-0 items-center">
+            {/* Mobile settings button */}
+            <button onClick={() => setMobileSettingsOpen(true)} className="md:hidden px-3 py-2 rounded-lg text-xs border flex items-center gap-1.5" style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-8)" }}>
+              <Settings size={14} /> ({setup.selectedIds.size})
+            </button>
+            {/* History button (header) */}
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1.5 transition-all hover:opacity-80"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
+            >
+              <History size={13} />
+              <span className="hidden sm:inline">ประวัติ</span>
+              {history.totalSessionCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+                  {history.totalSessionCount}
+                </span>
+              )}
             </button>
             {(session.rounds.length > 0 || history.viewingSession) && (
               <>
                 <button onClick={exportMinutes} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
-                  <Download size={14} /> Export
+                  <Download size={14} /> <span className="hidden sm:inline">Export</span>
                 </button>
                 <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg text-xs border flex items-center gap-1" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="พิมพ์ / บันทึก PDF">
-                  <Printer size={14} /> PDF
+                  <Printer size={14} /> <span className="hidden sm:inline">PDF</span>
                 </button>
               </>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0">
+        <div className="flex gap-3 flex-1 min-h-0">
 
-          {/* Mobile sidebar overlay */}
-          {mobileSidebarOpen && (
-            <div className="fixed inset-0 z-[55] md:hidden">
-              <button className="absolute inset-0 bg-black/45" onClick={() => setMobileSidebarOpen(false)} aria-label="Close panel" />
-              <aside className="absolute top-0 left-0 bottom-0 w-[300px] max-w-[88vw] border-r flex flex-col" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-                <div className="h-14 px-3 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
-                  <div className="font-semibold text-sm flex items-center gap-1.5" style={{ color: "var(--text)" }}><Settings size={14} /> ตั้งค่าการประชุม</div>
-                  <button onClick={() => setMobileSidebarOpen(false)} className="w-8 h-8 rounded-lg border text-base" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}>×</button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-                  {renderSidebarContent(() => setMobileSidebarOpen(false))}
-                </div>
-              </aside>
-            </div>
+          {/* ── Left sidebar (desktop) ──────────────────────────────────── */}
+          {/* Full sidebar */}
+          {!sidebarCollapsed && (
+            <aside className="hidden md:flex flex-col w-56 flex-shrink-0 relative">
+              <button
+                onClick={() => setSidebarCollapsed(true)}
+                className="absolute -right-2.5 top-3 z-10 w-5 h-5 rounded-full border flex items-center justify-center transition-all hover:opacity-80"
+                style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
+                title="ย่อแผง"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              {renderSidebarContent()}
+            </aside>
           )}
 
-          {/* Left sidebar (desktop) */}
-          <div className="hidden md:flex flex-col gap-3 w-64 flex-shrink-0">
-            {renderSidebarContent()}
-          </div>
+          {/* Collapsed sidebar strip */}
+          {sidebarCollapsed && (
+            <aside className="hidden md:flex flex-col w-10 flex-shrink-0">
+              {renderCollapsedSidebar()}
+            </aside>
+          )}
 
-          {/* Main panel */}
+          {/* ── Main panel ─────────────────────────────────────────────── */}
           <div className="flex-1 flex flex-col gap-2 sm:gap-3 min-w-0">
 
             {/* Viewing server session banner */}
@@ -303,7 +393,7 @@ export default function ResearchPage() {
               </div>
             )}
 
-            {/* Empty state — show MeetingStartCard */}
+            {/* Empty state — MeetingStartCard */}
             {isEmptyState && (
               <MeetingStartCard
                 companyName={setup.companyName}
@@ -325,7 +415,6 @@ export default function ResearchPage() {
             {/* Messages area */}
             {!isEmptyState && (
               <>
-                {/* Phase progress board */}
                 <MeetingProgressBoard
                   running={session.running}
                   status={session.status}
@@ -339,7 +428,6 @@ export default function ResearchPage() {
                   onStop={session.handleStop}
                 />
 
-                {/* Persistent meeting state badge (not running) */}
                 {!session.running && (session.rounds.length > 0 || session.meetingSessionId) && (
                   <div className="mx-1">
                     <div className="rounded-lg px-3 py-2 border flex items-center gap-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
@@ -368,7 +456,6 @@ export default function ResearchPage() {
                   onScroll={handleScroll}
                   className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 min-h-[200px] sm:min-h-[300px] relative"
                 >
-                  {/* Synthesis loading banner */}
                   {session.isSynthesizing && !session.currentFinalAnswer && (
                     <div className="mx-1 rounded-xl border-2 p-4 flex items-center gap-3" style={{ borderColor: "var(--accent)", background: "var(--accent-5)" }}>
                       <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />
@@ -379,7 +466,6 @@ export default function ResearchPage() {
                     </div>
                   )}
 
-                  {/* Clarification card */}
                   {session.pendingClarification && session.clarificationQuestions.length > 0 && (
                     <ClarificationCard
                       questions={session.clarificationQuestions}
@@ -390,7 +476,6 @@ export default function ResearchPage() {
                     />
                   )}
 
-                  {/* Mid-meeting question card */}
                   {session.midMeetingQuestion && (
                     <MidMeetingQuestionCard
                       question={session.midMeetingQuestion}
@@ -597,7 +682,6 @@ export default function ResearchPage() {
                         return session.currentMessages.map((msg) => {
                           const elements: React.ReactNode[] = [];
 
-                          // Phase transition separators
                           if (msg.role !== "thinking" && msg.role !== lastPhaseRole && lastPhaseRole !== "") {
                             if (msg.role === "chat" && lastPhaseRole === "finding") {
                               const findingCount = session.currentMessages.filter(m => m.role === "finding").length;
@@ -617,7 +701,6 @@ export default function ResearchPage() {
                           }
                           if (msg.role !== "thinking") lastPhaseRole = msg.role;
 
-                          // Thinking row
                           if (msg.role === "thinking") {
                             if (thinkingIdx === 0) {
                               elements.push(
@@ -665,7 +748,6 @@ export default function ResearchPage() {
                     </div>
                   )}
 
-                  {/* Jump to summary button */}
                   {session.currentFinalAnswer && !autoScroll && (
                     <div className="sticky bottom-3 flex justify-center z-10 pointer-events-none">
                       <button onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -678,7 +760,6 @@ export default function ResearchPage() {
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Input bar */}
                 {!history.viewingSession && (
                   <MeetingInputBar
                     question={setup.question}
@@ -709,6 +790,58 @@ export default function ResearchPage() {
           </div>
         </div>
       </div>
+
+      {/* ── History overlay panel (right side) ─────────────────────────── */}
+      {historyOpen && (
+        <div className="fixed inset-0 z-[60]">
+          <button className="absolute inset-0 bg-black/40" onClick={() => setHistoryOpen(false)} aria-label="ปิดประวัติ" />
+          <aside className="absolute top-0 right-0 bottom-0 w-80 max-w-[92vw] flex flex-col border-l shadow-2xl" style={{ borderColor: "var(--border)", background: "var(--card, var(--surface))" }}>
+            <div className="h-14 px-4 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+              <div className="font-semibold text-sm flex items-center gap-1.5" style={{ color: "var(--text)" }}>
+                <History size={14} style={{ color: "var(--accent)" }} /> ประวัติการประชุม
+              </div>
+              <button
+                onClick={() => setHistoryOpen(false)}
+                className="w-8 h-8 rounded-lg border flex items-center justify-center hover:opacity-70"
+                style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}
+              >×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3">
+              <HistoryPanel
+                serverSessions={history.serverSessions}
+                filteredSessions={history.filteredSessions}
+                totalSessionCount={history.totalSessionCount}
+                viewingSession={history.viewingSession}
+                sessionSearch={history.sessionSearch}
+                sessionStatusFilter={history.sessionStatusFilter}
+                onSessionSearch={history.setSessionSearch}
+                onStatusFilter={history.setSessionStatusFilter}
+                onLoadSession={(s) => { history.loadServerSession(s); setHistoryOpen(false); }}
+                onCloseSession={() => history.clearViewingSession()}
+                onRefresh={history.fetchServerHistory}
+                rounds={session.rounds}
+                onClearSession={confirmClearSession}
+              />
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* ── Mobile settings overlay ─────────────────────────────────────── */}
+      {mobileSettingsOpen && (
+        <div className="fixed inset-0 z-[55] md:hidden">
+          <button className="absolute inset-0 bg-black/45" onClick={() => setMobileSettingsOpen(false)} aria-label="Close panel" />
+          <aside className="absolute top-0 left-0 bottom-0 w-[300px] max-w-[88vw] border-r flex flex-col" style={{ borderColor: "var(--border)", background: "var(--card, var(--surface))" }}>
+            <div className="h-14 px-3 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+              <div className="font-semibold text-sm flex items-center gap-1.5" style={{ color: "var(--text)" }}><Settings size={14} /> ตั้งค่าการประชุม</div>
+              <button onClick={() => setMobileSettingsOpen(false)} className="w-8 h-8 rounded-lg border text-base flex items-center justify-center" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}>×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+              {renderSidebarContent()}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* Confirm clear modal */}
       <Modal open={showClearConfirm} onClose={() => setShowClearConfirm(false)} title="เริ่มการประชุมใหม่?" maxWidth="max-w-sm">
