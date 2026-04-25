@@ -19,7 +19,6 @@ import {
 
 // Components
 import AgentSetupPanel from "./components/AgentSetupPanel";
-import AdvancedSettingsSheet from "./components/AdvancedSettingsSheet";
 import MeetingStartCard from "./components/MeetingStartCard";
 import MeetingProgressBoard from "./components/MeetingProgressBoard";
 import AgentMessageCard from "./components/AgentMessageCard";
@@ -189,46 +188,110 @@ export default function ResearchPage() {
     clientProfiles: setup.clientProfiles,
   };
 
-  // ── Sidebar full content ──────────────────────────────────────────────────
-  const renderSidebarContent = () => (
-    <div className="flex flex-col gap-3 h-full overflow-y-auto py-3 px-2">
-      <AgentSetupPanel
-        agents={setup.agents}
-        selectedIds={setup.selectedIds}
-        onToggle={setup.toggleAgent}
-        onSelectAll={setup.selectAllAgents}
-        onDeselectAll={setup.deselectAllAgents}
-        running={session.running}
-        chairmanId={session.chairmanId}
-        searchingAgents={session.searchingAgents}
-        activeAgentIds={session.activeAgentIds}
-        phase1DoneCount={session.phase1DoneCount}
-        currentPhase={session.currentPhase}
-        agentTokens={session.agentTokens}
-      />
-      <button
-        onClick={() => setup.setShowAdvanced(v => !v)}
-        className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all flex items-center gap-1 flex-shrink-0"
-        style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
-      >
-        <Settings size={11} /> ตั้งค่าขั้นสูง {setup.showAdvanced ? "▲" : "▼"}
-      </button>
-      {setup.showAdvanced && <AdvancedSettingsSheet {...advancedProps} />}
-      <div className="flex-1" />
-      <button
-        onClick={() => setHistoryOpen(true)}
-        className="w-full text-xs px-3 py-2.5 rounded-lg border transition-all flex items-center justify-between flex-shrink-0"
-        style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
-      >
-        <span className="flex items-center gap-1.5"><History size={12} /> ประวัติการประชุม</span>
-        {history.totalSessionCount > 0 && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
-            {history.totalSessionCount}
-          </span>
-        )}
-      </button>
-    </div>
-  );
+  // ── Sidebar content ───────────────────────────────────────────────────────
+  const renderSidebarContent = () => {
+    if (isEmptyState) {
+      // Empty state: full agent setup panel for selection
+      return (
+        <div className="flex flex-col gap-3 h-full overflow-y-auto py-3 px-2">
+          <AgentSetupPanel
+            agents={setup.agents}
+            selectedIds={setup.selectedIds}
+            onToggle={setup.toggleAgent}
+            onSelectAll={setup.selectAllAgents}
+            onDeselectAll={setup.deselectAllAgents}
+            running={false}
+            chairmanId={null}
+            searchingAgents={new Set()}
+            activeAgentIds={new Set()}
+            phase1DoneCount={new Set()}
+            currentPhase={0}
+            agentTokens={{}}
+          />
+          <div className="flex-1" />
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="w-full text-xs px-3 py-2.5 rounded-lg border transition-all flex items-center justify-between flex-shrink-0"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
+          >
+            <span className="flex items-center gap-1.5"><History size={12} /> ประวัติการประชุม</span>
+            {history.totalSessionCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+                {history.totalSessionCount}
+              </span>
+            )}
+          </button>
+        </div>
+      );
+    }
+
+    // During meeting: compact avatar list with status dots
+    const selectedAgents = setup.agents.filter(a => setup.selectedIds.has(a.id));
+    return (
+      <div className="flex flex-col h-full overflow-y-auto py-3 px-2">
+        <div className="text-[11px] font-bold uppercase tracking-wider mb-2 px-1" style={{ color: "var(--text-muted)" }}>
+          สมาชิก ({selectedAgents.length})
+        </div>
+        <div className="flex flex-col gap-1 flex-1">
+          {selectedAgents.map((agent) => {
+            const isActive = session.activeAgentIds.has(agent.id);
+            const isDone = session.phase1DoneCount.has(agent.id);
+            const isChairman = session.chairmanId === agent.id;
+            return (
+              <div
+                key={agent.id}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all"
+                style={{
+                  background: isActive ? "var(--accent-8)" : "transparent",
+                  border: `1px solid ${isActive ? "var(--accent-30)" : "transparent"}`,
+                }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 relative"
+                  style={{
+                    background: isActive ? "var(--accent-15)" : "var(--surface)",
+                    border: `1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
+                    boxShadow: isActive ? "0 0 6px var(--accent-30)" : "none",
+                  }}
+                >
+                  {agent.emoji}
+                  {isDone && !isActive && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500" />
+                  )}
+                  {isActive && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+                  )}
+                </div>
+                <span
+                  className="text-xs truncate flex-1"
+                  style={{ color: isActive ? "var(--accent)" : "var(--text-muted)", fontWeight: isActive ? 600 : 400 }}
+                >
+                  {agent.name}
+                </span>
+                {isChairman && (
+                  <span className="text-[9px] flex-shrink-0" style={{ color: "var(--accent)" }}>👑</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="w-full text-xs px-2 py-2 rounded-lg border transition-all flex items-center justify-between"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--surface)" }}
+          >
+            <span className="flex items-center gap-1.5"><History size={12} /> ประวัติ</span>
+            {history.totalSessionCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+                {history.totalSessionCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // ── Collapsed sidebar strip ───────────────────────────────────────────────
   const renderCollapsedSidebar = () => (
@@ -661,16 +724,12 @@ export default function ResearchPage() {
             <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center">
               <MeetingStartCard
                 companyName={setup.companyName}
-                agents={setup.agents}
-                selectedIds={setup.selectedIds}
-                onToggleAgent={setup.toggleAgent}
-                onSelectAll={setup.selectAllAgents}
-                onDeselectAll={setup.deselectAllAgents}
                 question={setup.question}
                 onQuestionChange={setup.setQuestion}
                 onRun={(q) => handleRun(q)}
                 showAdvanced={setup.showAdvanced}
                 onToggleAdvanced={() => setup.setShowAdvanced(v => !v)}
+                selectedCount={setup.selectedIds.size}
                 {...clientProps}
                 {...advancedProps}
               />

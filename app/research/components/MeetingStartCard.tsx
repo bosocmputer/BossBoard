@@ -1,29 +1,21 @@
 "use client";
 
 import { useRef } from "react";
-import { Building2, Lightbulb, Paperclip, Settings, ChevronDown, ChevronUp, Send, AlertTriangle, Users } from "lucide-react";
-import type { Agent, AttachedFile } from "../types";
+import { Building2, Lightbulb, Paperclip, Settings, ChevronDown, ChevronUp, Send } from "lucide-react";
+import type { AttachedFile } from "../types";
 import { MEETING_TEMPLATES } from "../types";
-import AgentSetupPanel from "./AgentSetupPanel";
 import AdvancedSettingsSheet from "./AdvancedSettingsSheet";
 
 interface Props {
   companyName: string;
-  agents: Agent[];
-  selectedIds: Set<string>;
-  onToggleAgent: (id: string) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
   question: string;
   onQuestionChange: (v: string) => void;
   onRun: (q?: string) => void;
   showAdvanced: boolean;
   onToggleAdvanced: () => void;
-  // client selector (prominent)
   selectedClientId: string;
   onClientChange: (id: string) => void;
   clientProfiles: { id: string; name: string }[];
-  // advanced settings
   historyMode: "full" | "last3" | "summary" | "none";
   onHistoryModeChange: (v: "full" | "last3" | "summary" | "none") => void;
   useFileContext: boolean;
@@ -42,11 +34,11 @@ interface Props {
   onRemoveFile: (i: number) => void;
   onClearFiles: () => void;
   onToggleSheet: (fileIdx: number, sheet: string) => void;
+  selectedCount: number;
 }
 
 export default function MeetingStartCard({
-  companyName, agents, selectedIds, onToggleAgent, onSelectAll, onDeselectAll,
-  question, onQuestionChange, onRun,
+  companyName, question, onQuestionChange, onRun,
   showAdvanced, onToggleAdvanced,
   selectedClientId, onClientChange, clientProfiles,
   historyMode, onHistoryModeChange,
@@ -55,9 +47,10 @@ export default function MeetingStartCard({
   attachedFiles, uploadingFile, uploadError, isDragOver,
   fileInputRef, onFileInput, onDrop, onDragOver, onDragLeave,
   onRemoveFile, onClearFiles, onToggleSheet,
+  selectedCount,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const canStart = selectedIds.size > 0 && question.trim().length > 0;
+  const canStart = selectedCount > 0 && question.trim().length > 0;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-start py-6 px-2 sm:px-4">
@@ -71,37 +64,30 @@ export default function MeetingStartCard({
               เริ่มการประชุมใหม่{companyName ? ` — ${companyName}` : ""}
             </h2>
           </div>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>เลือกสมาชิก พิมพ์วาระ แล้วกด "เริ่มประชุม"</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {selectedCount === 0
+              ? "เลือกสมาชิกในแผงซ้าย แล้วพิมพ์วาระเพื่อเริ่มประชุม"
+              : `เลือก ${selectedCount} สมาชิกแล้ว — พิมพ์วาระแล้วกด "เริ่มประชุม"`}
+          </p>
         </div>
 
-        {/* Agent selector */}
-        <AgentSetupPanel
-          agents={agents}
-          selectedIds={selectedIds}
-          onToggle={onToggleAgent}
-          onSelectAll={onSelectAll}
-          onDeselectAll={onDeselectAll}
-          running={false}
-          chairmanId={null}
-          searchingAgents={new Set()}
-          activeAgentIds={new Set()}
-          phase1DoneCount={new Set()}
-          currentPhase={0}
-          agentTokens={{}}
-        />
-
         {/* No agents warning */}
-        {agents.length > 0 && selectedIds.size === 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs" style={{ borderColor: "var(--danger-40)", background: "var(--danger-8)", color: "var(--danger)" }}>
-            <AlertTriangle size={13} /> เลือกสมาชิกอย่างน้อย 1 คนก่อนเริ่มประชุม
+        {selectedCount === 0 && (
+          <div
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs"
+            style={{ borderColor: "var(--accent-30)", background: "var(--accent-8)", color: "var(--accent)" }}
+          >
+            <span>← เลือกสมาชิกอย่างน้อย 1 คนในแผงซ้ายก่อนเริ่มประชุม</span>
           </div>
         )}
 
-        {/* Client selector — always visible */}
-        <div className="border rounded-xl p-3" style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}>
-          <div className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-            <Users size={11} /> สำหรับลูกค้า
-            <span className="font-normal ml-1" style={{ color: "var(--text-muted)" }}>— ไม่บังคับ</span>
+        {/* Client selector */}
+        <div
+          className="border rounded-xl p-3"
+          style={{ borderColor: selectedClientId ? "var(--accent)" : "var(--border)", background: "var(--surface)" }}
+        >
+          <div className="text-xs font-bold mb-1.5" style={{ color: "var(--text-muted)" }}>
+            สำหรับลูกค้า <span className="font-normal">— ไม่บังคับ</span>
           </div>
           {clientProfiles.length === 0 ? (
             <div className="text-xs py-1 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
@@ -125,7 +111,7 @@ export default function MeetingStartCard({
                 ))}
               </select>
               {selectedClientId && (
-                <div className="mt-1.5 text-[11px] flex items-center gap-1" style={{ color: "var(--accent)" }}>
+                <div className="mt-1.5 text-[11px]" style={{ color: "var(--accent)" }}>
                   ✓ ใช้ข้อมูล {clientProfiles.find(c => c.id === selectedClientId)?.name} เป็น context
                 </div>
               )}
@@ -179,7 +165,6 @@ export default function MeetingStartCard({
           />
           <div className="flex items-center justify-between px-3 pb-3 gap-2">
             <div className="flex items-center gap-2">
-              {/* File attach inline trigger */}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-all hover:opacity-80"
@@ -189,7 +174,6 @@ export default function MeetingStartCard({
                 <Paperclip size={13} />
                 {attachedFiles.length > 0 ? `${attachedFiles.length} ไฟล์` : "แนบ"}
               </button>
-              {/* Advanced toggle */}
               <button
                 onClick={onToggleAdvanced}
                 className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-all hover:opacity-80"

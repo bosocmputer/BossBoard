@@ -30,40 +30,55 @@ export default function AgentMessageCard({
   content, isChairman, isLive,
   agentIndex = 0,
 }: Props) {
-  const color = isChairman
+  const bubbleColor = isChairman || role === "synthesis"
     ? { bg: "var(--accent-8)", border: "var(--accent)" }
     : BUBBLE_COLORS[agentIndex % BUBBLE_COLORS.length];
 
-  // Phase 2 chat: alternate left/right. Phase 1 finding: all left. Chairman/synthesis: centered.
-  const isCenter = isChairman || role === "synthesis";
-  const isRight = !isCenter && role === "chat" && agentIndex % 2 === 1;
+  const nameColor = isChairman || role === "synthesis"
+    ? "var(--accent)"
+    : bubbleColor.border;
 
   return (
-    <div className={`flex ${isCenter ? "justify-center" : isRight ? "justify-end" : "justify-start"} ${isLive ? "animate-message-in" : ""}`}>
-      <div className={`${isCenter ? "w-full max-w-2xl" : "max-w-[88%] sm:max-w-[78%]"}`}>
-        {/* Avatar + name row */}
-        <div className={`flex items-center gap-1.5 mb-1 ${isRight ? "flex-row-reverse" : ""} ${isCenter ? "justify-center" : ""}`}>
-          <span className="text-base leading-none">{emoji}</span>
-          <span className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>{name}</span>
+    <div className={`flex items-start gap-3 ${isLive ? "animate-message-in" : ""}`}>
+      {/* Avatar */}
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 mt-0.5 border"
+        style={{ background: bubbleColor.bg, borderColor: bubbleColor.border }}
+      >
+        {emoji}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {/* Name + badges */}
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="text-xs font-bold" style={{ color: nameColor }}>{name}</span>
           {isChairman && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0" style={{ background: "var(--accent)", color: "#000" }}>
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0"
+              style={{ background: "var(--accent-8)", color: "var(--accent)", border: "1px solid var(--accent-30)" }}
+            >
               👑 ประธาน
             </span>
           )}
-          <span className="text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+          >
             {roleLabel}
           </span>
+          {isLive && (
+            <span
+              className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0"
+              style={{ background: bubbleColor.border }}
+            />
+          )}
         </div>
 
         {/* Bubble */}
         <div
-          className="rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 border text-sm"
-          style={{
-            background: typeof color === "object" && "bg" in color ? (color as { bg: string; border: string }).bg : color,
-            borderColor: typeof color === "object" && "border" in color ? (color as { bg: string; border: string }).border : "var(--border)",
-            borderTopLeftRadius: isRight ? "1rem" : "0.25rem",
-            borderTopRightRadius: isRight ? "0.25rem" : "1rem",
-          }}
+          className="rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2.5 sm:py-3 border text-sm leading-relaxed"
+          style={{ background: bubbleColor.bg, borderColor: bubbleColor.border, color: "var(--text)" }}
         >
           <MessageContent content={content} />
         </div>
