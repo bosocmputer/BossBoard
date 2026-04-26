@@ -138,10 +138,10 @@ function SessionCard({ session: s, active, onLoad }: { session: ServerSession; a
   }
 
   let statusIcon: React.ReactNode;
-  if (s.status === "completed") statusIcon = <Check size={10} className="text-green-500" />;
-  else if (s.status === "error") statusIcon = <X size={10} className="text-red-500" />;
-  else if (isStale) statusIcon = <span className="text-[10px] text-amber-500">⚠️</span>;
-  else statusIcon = <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />;
+  if (s.status === "completed") statusIcon = <Check size={10} style={{ color: "var(--green)" }} />;
+  else if (s.status === "error") statusIcon = <X size={10} style={{ color: "var(--danger)" }} />;
+  else if (isStale) statusIcon = <span className="text-[10px]" style={{ color: "var(--warning)" }}>⚠️</span>;
+  else statusIcon = <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: "var(--accent)" }} />;
 
   const verdict = extractVerdict(s.finalAnswer);
   const timeStr = new Date(s.startedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
@@ -159,7 +159,7 @@ function SessionCard({ session: s, active, onLoad }: { session: ServerSession; a
       <div className="flex items-center gap-1.5 mb-1.5 text-[10px]" style={{ color: "var(--text-muted)" }}>
         {statusIcon}
         <span>{timeStr}</span>
-        {isRunning && !isStale && <span style={{ color: "#3b82f6" }}><MessageSquare size={9} className="inline" /> กำลังประชุม</span>}
+        {isRunning && !isStale && <span style={{ color: "var(--accent)" }}><MessageSquare size={9} className="inline" /> กำลังประชุม</span>}
         {active && (
           <span className="ml-auto px-1.5 py-0.5 rounded font-bold" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>
             👁 ดูอยู่

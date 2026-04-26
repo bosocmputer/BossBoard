@@ -508,6 +508,20 @@ export default function ResearchPage() {
               </button>
             </>
           )}
+
+          {/* New meeting — primary action when meeting exists */}
+          {session.rounds.length > 0 && !session.running && !history.viewingSession && (
+            <button
+              type="button"
+              onClick={confirmClearSession}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-bold transition-all hover:opacity-90 ml-1"
+              style={{ background: "var(--accent)", color: "#000" }}
+              title="ปิดประชุมนี้และเริ่มประชุมใหม่"
+            >
+              <Trash2 size={13} />
+              <span className="hidden sm:inline">ประชุมใหม่</span>
+            </button>
+          )}
         </div>
       </header>
 

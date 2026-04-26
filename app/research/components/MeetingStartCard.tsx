@@ -55,37 +55,39 @@ export default function MeetingStartCard({
 
   return (
     <div className="flex-1 w-full overflow-y-auto">
-      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-5">
+      <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16 space-y-6">
 
-        {/* Hero greeting */}
-        <div className="text-center mb-2">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: "var(--text)" }}>
-            👋 วันนี้ปรึกษาเรื่องอะไรครับ
+        {/* Hero — restrained, professional */}
+        <div className="space-y-1">
+          <div className="text-[11px] uppercase tracking-[0.2em] font-bold" style={{ color: "var(--accent)" }}>
+            ห้องประชุมที่ปรึกษา
+          </div>
+          <h1 className="text-2xl sm:text-[28px] font-bold leading-tight" style={{ color: "var(--text)" }}>
+            ปรึกษาเรื่องอะไรในวันนี้
           </h1>
           {companyName && (
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{companyName}</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>สำนักงาน · {companyName}</p>
           )}
         </div>
 
-        {/* Client selector — large, first */}
-        <div
-          className="border rounded-xl p-3"
-          style={{
-            borderColor: selectedClientId ? "var(--accent)" : "var(--border)",
-            background: "var(--surface)",
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-base">👤</span>
-            <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
-              ลูกค้า
-            </span>
+        {/* Client selector — minimal label */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+            <span>ลูกค้า</span>
+            <span className="font-normal normal-case tracking-normal" style={{ color: "var(--text-muted)" }}>— ไม่บังคับ</span>
             {selectedClientId && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
-                ✓ ใช้เป็น context
+              <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto normal-case tracking-normal" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>
+                ใช้เป็น context
               </span>
             )}
-          </div>
+          </label>
+          <div
+            className="border rounded-xl p-2.5"
+            style={{
+              borderColor: selectedClientId ? "var(--accent)" : "var(--border)",
+              background: "var(--surface)",
+            }}
+          >
           {clientProfiles.length === 0 ? (
             <a
               href="/clients"
@@ -119,6 +121,7 @@ export default function MeetingStartCard({
               </a>
             </div>
           )}
+          </div>
         </div>
 
         {/* Question input — hero */}
@@ -180,13 +183,24 @@ export default function MeetingStartCard({
           </div>
         </div>
 
-        {/* Team preview — auto-selected with override button */}
-        <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <div className="flex items-center gap-2 mb-2">
-            <Users size={13} style={{ color: "var(--text-muted)" }} />
-            <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
-              ทีมที่ปรึกษาที่พร้อมประชุม ({selectedAgents.length} ท่าน)
-            </span>
+        {/* Team preview — minimal label, professional */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+              <Users size={11} />
+              <span>ทีมที่ปรึกษา</span>
+              {selectedAgents.length > 0 && (
+                <span className="font-normal normal-case tracking-normal">— {selectedAgents.length} ท่าน</span>
+              )}
+            </label>
+            <button
+              type="button"
+              onClick={onOpenTeamModal}
+              className="text-[11px] hover:underline"
+              style={{ color: "var(--accent)" }}
+            >
+              ปรับทีม
+            </button>
           </div>
           {selectedAgents.length === 0 ? (
             <button
@@ -195,32 +209,25 @@ export default function MeetingStartCard({
               className="w-full flex items-center justify-between text-xs px-3 py-2.5 rounded-lg border hover:opacity-80"
               style={{ borderColor: "var(--accent-30)", background: "var(--accent-5)", color: "var(--accent)" }}
             >
-              <span>⚠️ ไม่มีทีมที่ปรึกษา — กดเพื่อเลือก</span>
+              <span>ยังไม่ได้เลือกทีม — กดเพื่อเลือก</span>
               <ChevronRight size={13} />
             </button>
           ) : (
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1 flex-wrap flex-1">
-                {selectedAgents.map(a => (
-                  <span
-                    key={a.id}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px]"
-                    style={{ background: "var(--bg)", color: "var(--text)" }}
-                    title={a.name}
-                  >
-                    <span className="text-sm leading-none">{a.emoji}</span>
-                    {a.name}
-                  </span>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={onOpenTeamModal}
-                className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg border hover:opacity-80 flex-shrink-0"
-                style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-              >
-                <Settings size={11} /> ปรับทีม
-              </button>
+            <div
+              className="flex items-center gap-1.5 flex-wrap px-2.5 py-2 rounded-xl border"
+              style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+            >
+              {selectedAgents.map(a => (
+                <span
+                  key={a.id}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px]"
+                  style={{ background: "var(--bg)", color: "var(--text)" }}
+                  title={a.name}
+                >
+                  <span className="text-sm leading-none">{a.emoji}</span>
+                  {a.name}
+                </span>
+              ))}
             </div>
           )}
         </div>
@@ -249,9 +256,9 @@ export default function MeetingStartCard({
           />
         )}
 
-        {/* Hint footer */}
-        <div className="text-center text-[11px] pt-2" style={{ color: "var(--text-muted)" }}>
-          กด ⌘+Enter เพื่อเปิดประชุม · ทีมจะปรึกษากันแล้วประธานสรุปมติให้
+        {/* Footer hint */}
+        <div className="text-[11px] pt-1" style={{ color: "var(--text-muted)" }}>
+          ⌘+Enter เพื่อเปิดประชุม
         </div>
       </div>
     </div>

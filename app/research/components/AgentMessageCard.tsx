@@ -2,14 +2,13 @@
 
 import MessageContent from "./MessageContent";
 
+// Ocean Dark palette — cool tones only, professional accountant feel
 const BUBBLE_COLORS = [
-  { bg: "rgb(59 130 246 / 0.12)", border: "rgb(59 130 246 / 0.45)" },
-  { bg: "rgb(249 115 22 / 0.12)", border: "rgb(249 115 22 / 0.45)" },
-  { bg: "rgb(168 85 247 / 0.12)", border: "rgb(168 85 247 / 0.45)" },
-  { bg: "rgb(34 197 94 / 0.12)", border: "rgb(34 197 94 / 0.4)" },
-  { bg: "rgb(236 72 153 / 0.12)", border: "rgb(236 72 153 / 0.45)" },
-  { bg: "rgb(234 179 8 / 0.12)", border: "rgb(234 179 8 / 0.45)" },
-  { bg: "rgb(20 184 166 / 0.12)", border: "rgb(20 184 166 / 0.45)" },
+  { bg: "rgb(56 189 248 / 0.10)", border: "rgb(56 189 248 / 0.40)" },   // sky
+  { bg: "rgb(99 102 241 / 0.10)", border: "rgb(99 102 241 / 0.40)" },   // indigo
+  { bg: "rgb(20 184 166 / 0.10)", border: "rgb(20 184 166 / 0.40)" },   // teal
+  { bg: "rgb(125 211 252 / 0.10)", border: "rgb(125 211 252 / 0.40)" }, // light cyan
+  { bg: "rgb(94 234 212 / 0.10)", border: "rgb(94 234 212 / 0.40)" },   // mint
 ];
 
 interface Props {

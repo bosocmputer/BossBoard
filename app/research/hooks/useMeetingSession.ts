@@ -375,7 +375,13 @@ export function useMeetingSession(currentUserId: string | null) {
 
       if (skipToSummaryRef.current && !closeMode) {
         skipToSummaryRef.current = false;
-        setTimeout(() => handleCloseRef.current(), 300);
+        // Only trigger close-summary if no synthesis was already produced this round.
+        // Otherwise we'd save a duplicate synthesis message.
+        const hasSynthesis = !!currentFinalAnswerRef.current
+          || currentMessagesRef.current.some(m => m.role === "synthesis");
+        if (!hasSynthesis) {
+          setTimeout(() => handleCloseRef.current(), 300);
+        }
       }
 
       if (closeMode) {
