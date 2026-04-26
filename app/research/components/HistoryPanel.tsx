@@ -4,7 +4,6 @@ import { History, Check, X, MessageSquare, Trash2, RefreshCw } from "lucide-reac
 import type { ServerSession, ConversationRound } from "../types";
 
 interface Props {
-  // server sessions
   serverSessions: ServerSession[];
   filteredSessions: ServerSession[];
   totalSessionCount: number;
@@ -16,7 +15,6 @@ interface Props {
   onLoadSession: (s: ServerSession) => void;
   onCloseSession: () => void;
   onRefresh: () => void;
-  // current rounds
   rounds: ConversationRound[];
   onClearSession: () => void;
 }
@@ -127,6 +125,17 @@ function SessionCard({ session: s, active, onLoad }: { session: ServerSession; a
   const isRunning = s.status !== "completed" && s.status !== "error";
   const isStale = isRunning && Date.now() - new Date(s.startedAt).getTime() > 30 * 60 * 1000;
 
+  // Extract unique agents from messages
+  const agentPreviews: { emoji: string; name: string }[] = [];
+  const seen = new Set<string>();
+  for (const m of s.messages ?? []) {
+    if (m.agentId && !seen.has(m.agentId) && m.agentEmoji) {
+      seen.add(m.agentId);
+      agentPreviews.push({ emoji: m.agentEmoji, name: m.agentName });
+    }
+    if (agentPreviews.length >= 5) break;
+  }
+
   let statusIcon: React.ReactNode;
   if (s.status === "completed") statusIcon = <Check size={10} className="text-green-500" />;
   else if (s.status === "error") statusIcon = <X size={10} className="text-red-500" />;
@@ -142,6 +151,23 @@ function SessionCard({ session: s, active, onLoad }: { session: ServerSession; a
         background: active ? "var(--accent-8)" : "transparent",
       }}
     >
+      {/* Agent previews */}
+      {agentPreviews.length > 0 && (
+        <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+          {agentPreviews.map((a, i) => (
+            <span key={i} className="text-sm leading-none" title={a.name}>{a.emoji}</span>
+          ))}
+          <span className="text-[10px] truncate max-w-[120px]" style={{ color: "var(--text-muted)" }}>
+            {agentPreviews.map(a => a.name).join(" · ")}
+          </span>
+          {active && (
+            <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>
+              👁 ดูอยู่
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
       <div className="text-[11px] mt-1 flex items-center gap-1.5 flex-wrap" style={{ color: "var(--text-muted)" }}>
         {statusIcon}

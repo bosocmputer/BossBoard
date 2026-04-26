@@ -9,15 +9,15 @@ interface Props {
 
 export default function PhaseSeparator({ icon, label, color, isLive }: Props) {
   return (
-    <div className={`flex items-center gap-3 py-2 ${isLive ? "animate-phase-reveal" : ""}`}>
-      <div className="flex-1 h-px" style={{ background: color }} />
+    <div className={`flex items-center gap-2 py-1 ${isLive ? "animate-phase-reveal" : ""}`}>
+      <div className="flex-1 h-px opacity-30" style={{ background: color }} />
       <div
-        className="text-xs px-3 py-1.5 rounded-full border font-bold"
-        style={{ borderColor: color, color, background: "var(--surface)" }}
+        className="text-[11px] px-2 py-0.5 rounded-full"
+        style={{ color, opacity: 0.75 }}
       >
         {icon} {label}
       </div>
-      <div className="flex-1 h-px" style={{ background: color }} />
+      <div className="flex-1 h-px opacity-30" style={{ background: color }} />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Building2, Lightbulb, Paperclip, Settings, ChevronDown, ChevronUp, Send } from "lucide-react";
-import type { AttachedFile } from "../types";
+import type { AttachedFile, Agent } from "../types";
 import { MEETING_TEMPLATES } from "../types";
 import AdvancedSettingsSheet from "./AdvancedSettingsSheet";
 
@@ -35,6 +35,7 @@ interface Props {
   onClearFiles: () => void;
   onToggleSheet: (fileIdx: number, sheet: string) => void;
   selectedCount: number;
+  selectedAgents: Pick<Agent, "id" | "emoji" | "name">[];
 }
 
 export default function MeetingStartCard({
@@ -47,7 +48,7 @@ export default function MeetingStartCard({
   attachedFiles, uploadingFile, uploadError, isDragOver,
   fileInputRef, onFileInput, onDrop, onDragOver, onDragLeave,
   onRemoveFile, onClearFiles, onToggleSheet,
-  selectedCount,
+  selectedCount, selectedAgents,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const canStart = selectedCount > 0 && question.trim().length > 0;
@@ -64,20 +65,31 @@ export default function MeetingStartCard({
               เริ่มการประชุมใหม่{companyName ? ` — ${companyName}` : ""}
             </h2>
           </div>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {selectedCount === 0
-              ? "เลือกสมาชิกในแผงซ้าย แล้วพิมพ์วาระเพื่อเริ่มประชุม"
-              : `เลือก ${selectedCount} สมาชิกแล้ว — พิมพ์วาระแล้วกด "เริ่มประชุม"`}
-          </p>
         </div>
 
-        {/* No agents warning */}
-        {selectedCount === 0 && (
+        {/* Selected agents preview / prompt to select */}
+        {selectedAgents.length === 0 ? (
           <div
             className="flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs"
-            style={{ borderColor: "var(--accent-30)", background: "var(--accent-8)", color: "var(--accent)" }}
+            style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
           >
-            <span>← เลือกสมาชิกอย่างน้อย 1 คนในแผงซ้ายก่อนเริ่มประชุม</span>
+            <span className="text-base">←</span>
+            <span>เลือกสมาชิกในแผงซ้ายก่อนเริ่มประชุม</span>
+          </div>
+        ) : (
+          <div
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg border flex-wrap"
+            style={{ borderColor: "var(--accent-30)", background: "var(--accent-8)" }}
+          >
+            <div className="flex items-center gap-1 flex-wrap flex-1">
+              {selectedAgents.map(a => (
+                <span key={a.id} className="text-base leading-none" title={a.name}>{a.emoji}</span>
+              ))}
+              <span className="text-xs ml-1" style={{ color: "var(--accent)" }}>
+                {selectedAgents.length} คนพร้อมประชุม
+              </span>
+            </div>
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>พิมพ์วาระด้านล่าง →</span>
           </div>
         )}
 

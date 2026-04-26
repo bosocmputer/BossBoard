@@ -191,9 +191,22 @@ export default function ResearchPage() {
   // ── Sidebar content ───────────────────────────────────────────────────────
   const renderSidebarContent = () => {
     if (isEmptyState) {
-      // Empty state: full agent setup panel for selection
+      const step1Done = setup.selectedIds.size > 0;
       return (
-        <div className="flex flex-col gap-3 h-full overflow-y-auto py-3 px-2">
+        <div className="flex flex-col gap-2 h-full overflow-y-auto py-3 px-2">
+          {/* Step 1 header */}
+          <div className="flex items-center gap-1.5 px-1 mb-0.5">
+            <span
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+              style={{ background: step1Done ? "var(--green, #4ade80)" : "var(--accent)", color: "#000" }}
+            >
+              {step1Done ? "✓" : "1"}
+            </span>
+            <span className="text-[11px] font-bold" style={{ color: step1Done ? "var(--green, #4ade80)" : "var(--accent)" }}>
+              เลือกสมาชิก
+            </span>
+          </div>
+
           <AgentSetupPanel
             agents={setup.agents}
             selectedIds={setup.selectedIds}
@@ -208,6 +221,20 @@ export default function ResearchPage() {
             currentPhase={0}
             agentTokens={{}}
           />
+
+          {/* Step 2 hint */}
+          <div className="flex items-center gap-1.5 px-1 mt-1">
+            <span
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+              style={{ background: step1Done ? "var(--accent)" : "var(--border)", color: step1Done ? "#000" : "var(--text-muted)" }}
+            >
+              2
+            </span>
+            <span className="text-[11px]" style={{ color: step1Done ? "var(--text-muted)" : "var(--border)" }}>
+              พิมพ์วาระในช่องกลาง →
+            </span>
+          </div>
+
           <div className="flex-1" />
           <button
             onClick={() => setHistoryOpen(true)}
@@ -481,10 +508,18 @@ export default function ResearchPage() {
         return (
           <div key={roundIndex} className="space-y-3">
             {(round.isSynthesis || displayRounds.filter(r => !r.isSynthesis).length > 1) && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 my-1">
                 <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
-                <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: round.isSynthesis ? "#000" : "var(--accent)", background: round.isSynthesis ? "var(--accent)" : "var(--accent-8)", fontWeight: round.isSynthesis ? 700 : 400 }}>
-                  {round.isSynthesis ? "สรุปมติที่ประชุม" : round.isQA ? `คำถามที่ ${roundIndex + 1}` : `วาระที่ ${roundIndex + 1}`}
+                <div
+                  className="text-[11px] px-3 py-1 rounded-lg font-bold flex-shrink-0"
+                  style={{
+                    borderColor: "var(--accent)",
+                    color: round.isSynthesis ? "#000" : "var(--accent)",
+                    background: round.isSynthesis ? "var(--accent)" : "var(--surface)",
+                    border: `1px solid ${round.isSynthesis ? "var(--accent)" : "var(--accent-40, rgba(0,212,255,0.4))"}`,
+                  }}
+                >
+                  {round.isSynthesis ? "🏛️ สรุปมติที่ประชุม" : round.isQA ? `💬 คำถามที่ ${roundIndex + 1}` : `📋 วาระที่ ${roundIndex + 1}`}
                 </div>
                 <div className="flex-1 border-t" style={{ borderColor: round.isSynthesis ? "var(--accent)" : "var(--border)" }} />
               </div>
@@ -543,10 +578,17 @@ export default function ResearchPage() {
       {!history.viewingSession && (session.currentMessages.length > 0 || session.running) && (
         <div className="space-y-3">
           {(session.isCurrentClosing || displayRounds.filter(r => !r.isSynthesis).length > 0) && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 my-1">
               <div className="flex-1 border-t" style={{ borderColor: session.isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
-              <div className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: "var(--accent)", color: session.isCurrentClosing ? "#000" : "var(--accent)", background: session.isCurrentClosing ? "var(--accent)" : "var(--accent-8)", fontWeight: session.isCurrentClosing ? 700 : 400 }}>
-                {session.isCurrentClosing ? "สรุปมติที่ประชุม" : `วาระที่ ${displayRounds.filter(r => !r.isSynthesis).length + 1}`}
+              <div
+                className="text-[11px] px-3 py-1 rounded-lg font-bold flex-shrink-0"
+                style={{
+                  color: session.isCurrentClosing ? "#000" : "var(--accent)",
+                  background: session.isCurrentClosing ? "var(--accent)" : "var(--surface)",
+                  border: `1px solid ${session.isCurrentClosing ? "var(--accent)" : "var(--accent-40, rgba(0,212,255,0.4))"}`,
+                }}
+              >
+                {session.isCurrentClosing ? "🏛️ สรุปมติที่ประชุม" : `📋 วาระที่ ${displayRounds.filter(r => !r.isSynthesis).length + 1}`}
               </div>
               <div className="flex-1 border-t" style={{ borderColor: session.isCurrentClosing ? "var(--accent)" : "var(--border)" }} />
             </div>
@@ -730,6 +772,7 @@ export default function ResearchPage() {
                 showAdvanced={setup.showAdvanced}
                 onToggleAdvanced={() => setup.setShowAdvanced(v => !v)}
                 selectedCount={setup.selectedIds.size}
+                selectedAgents={setup.agents.filter(a => setup.selectedIds.has(a.id))}
                 {...clientProps}
                 {...advancedProps}
               />
