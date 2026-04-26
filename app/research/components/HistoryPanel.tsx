@@ -2,6 +2,7 @@
 
 import { History, Check, X, MessageSquare, Trash2, RefreshCw } from "lucide-react";
 import type { ServerSession, ConversationRound } from "../types";
+import { extractVerdict } from "../utils";
 
 interface Props {
   serverSessions: ServerSession[];
@@ -142,42 +143,51 @@ function SessionCard({ session: s, active, onLoad }: { session: ServerSession; a
   else if (isStale) statusIcon = <span className="text-[10px] text-amber-500">⚠️</span>;
   else statusIcon = <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />;
 
+  const verdict = extractVerdict(s.finalAnswer);
+  const timeStr = new Date(s.startedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+
   return (
     <button
       onClick={() => onLoad(s)}
-      className="w-full text-left p-2.5 rounded-lg border transition-all"
+      className="w-full text-left p-2.5 rounded-lg border transition-all hover:opacity-90"
       style={{
         borderColor: active ? "var(--accent)" : "var(--border)",
-        background: active ? "var(--accent-8)" : "transparent",
+        background: active ? "var(--accent-8)" : "var(--bg)",
       }}
     >
-      {/* Agent previews */}
-      {agentPreviews.length > 0 && (
-        <div className="flex items-center gap-1 mb-1.5 flex-wrap">
-          {agentPreviews.map((a, i) => (
-            <span key={i} className="text-sm leading-none" title={a.name}>{a.emoji}</span>
-          ))}
-          <span className="text-[10px] truncate max-w-[120px]" style={{ color: "var(--text-muted)" }}>
-            {agentPreviews.map(a => a.name).join(" · ")}
+      {/* Top row: status + time + viewing badge */}
+      <div className="flex items-center gap-1.5 mb-1.5 text-[10px]" style={{ color: "var(--text-muted)" }}>
+        {statusIcon}
+        <span>{timeStr}</span>
+        {isRunning && !isStale && <span style={{ color: "#3b82f6" }}><MessageSquare size={9} className="inline" /> กำลังประชุม</span>}
+        {active && (
+          <span className="ml-auto px-1.5 py-0.5 rounded font-bold" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>
+            👁 ดูอยู่
           </span>
-          {active && (
-            <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0" style={{ background: "var(--accent-15)", color: "var(--accent)" }}>
-              👁 ดูอยู่
-            </span>
-          )}
+        )}
+      </div>
+
+      {/* Verdict (extracted from synthesis) */}
+      {verdict && (
+        <div className="text-xs font-bold mb-1 line-clamp-1" style={{ color: "var(--accent)" }}>
+          {verdict}
         </div>
       )}
 
+      {/* Question */}
       <div className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>{s.question}</div>
-      <div className="text-[11px] mt-1 flex items-center gap-1.5 flex-wrap" style={{ color: "var(--text-muted)" }}>
-        {statusIcon}
-        <span>{new Date(s.startedAt).toLocaleDateString("th")}</span>
-        {s.totalTokens > 0 && <span>· {s.totalTokens.toLocaleString()} tk</span>}
-        {s.ownerUsername && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: "var(--accent-8)", color: "var(--accent)" }}>@{s.ownerUsername}</span>
-        )}
-        {isRunning && !isStale && <span className="text-[10px]" style={{ color: "#3b82f6" }}><MessageSquare size={9} className="inline" /> กำลังประชุม</span>}
-      </div>
+
+      {/* Agent emojis */}
+      {agentPreviews.length > 0 && (
+        <div className="flex items-center gap-0.5 mt-1.5 flex-wrap">
+          {agentPreviews.map((a, i) => (
+            <span key={i} className="text-xs leading-none" title={a.name}>{a.emoji}</span>
+          ))}
+          <span className="text-[10px] ml-1 truncate" style={{ color: "var(--text-muted)" }}>
+            {agentPreviews.length} ท่าน
+          </span>
+        </div>
+      )}
     </button>
   );
 }

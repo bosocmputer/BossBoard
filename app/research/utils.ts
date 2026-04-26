@@ -6,6 +6,14 @@ export function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// Extract a one-line verdict from the synthesis finalAnswer for history previews
+export function extractVerdict(finalAnswer: string | undefined | null): string {
+  if (!finalAnswer) return "";
+  const stripped = finalAnswer.replace(/[#*`>]/g, "").split("\n").map(l => l.trim()).filter(Boolean);
+  const verdict = stripped.find(l => /^(✅|❌|⚠️|✔|✗)|(^|\s)(ควร|ต้อง|ไม่ต้อง|ไม่ควร|สามารถ|ไม่สามารถ)/.test(l));
+  return (verdict ?? stripped[0] ?? "").slice(0, 90);
+}
+
 export function buildMinutesMarkdown(rounds: ConversationRound[], agents: Agent[]): string {
   const agentMap = Object.fromEntries(agents.map((a) => [a.id, a]));
   const isAllQA = rounds.every((r) => r.isQA);

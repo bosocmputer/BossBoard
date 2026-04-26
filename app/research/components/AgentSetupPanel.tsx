@@ -22,7 +22,7 @@ interface Props {
 export default function AgentSetupPanel({
   agents, selectedIds, onToggle, onSelectAll, onDeselectAll,
   running, chairmanId, searchingAgents, activeAgentIds,
-  phase1DoneCount, currentPhase, agentTokens,
+  phase1DoneCount, currentPhase,
 }: Props) {
   return (
     <div className="border rounded-xl p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
@@ -52,7 +52,6 @@ export default function AgentSetupPanel({
       ) : (
         <div className="space-y-1.5">
           {agents.map((agent) => {
-            const tokens = agentTokens[agent.id];
             const isChairman = agent.id === chairmanId;
             const isSearching = searchingAgents.has(agent.id);
             const isSpeaking = activeAgentIds.has(agent.id);
@@ -110,11 +109,6 @@ export default function AgentSetupPanel({
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: isSelected ? "var(--accent)" : "var(--border)" }} />
                   )}
                 </div>
-                {tokens && (
-                  <div className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tokens.totalTokens.toLocaleString()} tokens
-                  </div>
-                )}
               </button>
             );
           })}

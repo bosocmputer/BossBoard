@@ -32,6 +32,11 @@ export function useMeetingSetup() {
     const data = await res.json();
     const activeAgents = (data.agents ?? []).filter((a: Agent) => a.active && !a.isSystem);
     setAgents(activeAgents);
+    // Auto-select all agents that have API keys (accountant user shouldn't manually toggle)
+    setSelectedIds(prev => {
+      if (prev.size > 0) return prev; // user already chose
+      return new Set(activeAgents.filter((a: Agent) => a.hasApiKey).map((a: Agent) => a.id));
+    });
   }, []);
 
   const fetchSettings = useCallback(async () => {
