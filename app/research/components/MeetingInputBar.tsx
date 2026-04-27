@@ -124,7 +124,7 @@ export default function MeetingInputBar({
             <div className="text-[11px] sm:text-xs truncate" style={{ color: "var(--text-muted)" }}>
               {meetingSessionId && effectiveMode !== "qa" && (
                 <span className="inline-flex items-center gap-1 mr-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
                   ประชุมอยู่{" "}
                   {elapsedTime > 0 && (
                     <span className="font-mono">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, "0")}</span>
@@ -141,7 +141,7 @@ export default function MeetingInputBar({
 
           {/* Right: action buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {rounds.length > 0 && !running && meetingSessionId && effectiveMode !== "qa" && (
+            {rounds.length > 0 && !running && meetingSessionId && effectiveMode !== "qa" && !rounds.some(r => r.isSynthesis) && (
               <button
                 onClick={onCloseMeeting}
                 className="h-8 px-3 rounded-lg flex items-center gap-1 text-xs font-bold transition-all hover:opacity-80"

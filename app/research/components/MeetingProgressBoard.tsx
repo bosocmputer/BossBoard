@@ -36,10 +36,10 @@ export default function MeetingProgressBoard({
 
   return (
     <div className="sticky top-0 z-10 mx-1">
-      <div className="rounded-xl border px-3 py-2.5" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+      <div className="rounded-xl border px-3 py-2.5" style={{ background: "var(--surface)", borderColor: running ? "var(--accent-30)" : "var(--border)" }}>
         {/* Top row: status + timer + controls */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-[var(--green)] animate-pulse flex-shrink-0" />
+          <span className="inline-block w-2 h-2 rounded-full animate-pulse flex-shrink-0" style={{ background: "var(--accent)" }} />
           <span className="text-xs flex-1 min-w-0 truncate" style={{ color: "var(--text-muted)" }}>{status}</span>
           {elapsedTime > 0 && (
             <span className="text-[11px] font-mono flex-shrink-0" style={{ color: "var(--text-muted)" }}>{elapsed(elapsedTime)}</span>
@@ -76,8 +76,8 @@ export default function MeetingProgressBoard({
                 <div
                   className="flex-1 px-2 py-1.5 rounded-lg text-center transition-all"
                   style={{
-                    background: isDone ? "var(--green)" : isActive ? "var(--accent)" : "var(--bg)",
-                    color: isDone || isActive ? "#000" : "var(--text-muted)",
+                    background: isDone ? "var(--accent-18)" : isActive ? "var(--accent)" : "var(--bg)",
+                    color: isDone ? "var(--accent)" : isActive ? "#000" : "var(--text-muted)",
                     opacity: !isDone && !isActive ? 0.5 : 1,
                     fontWeight: isActive ? 700 : 400,
                   }}
@@ -93,7 +93,7 @@ export default function MeetingProgressBoard({
                   )}
                 </div>
                 {i < PHASES.length - 1 && (
-                  <div className="w-3 h-px flex-shrink-0" style={{ background: currentPhase > step.phase ? "var(--green)" : "var(--border)" }} />
+                  <div className="w-3 h-px flex-shrink-0" style={{ background: currentPhase > step.phase ? "var(--accent)" : "var(--border)" }} />
                 )}
               </div>
             );

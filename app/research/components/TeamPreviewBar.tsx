@@ -36,7 +36,7 @@ export default function TeamPreviewBar({
           let statusLabel = "";
           let statusColor = "var(--text-muted)";
           if (isActive) { statusLabel = "พูดอยู่"; statusColor = "var(--accent)"; }
-          else if (isDone) { statusLabel = "เสร็จ"; statusColor = "var(--green, #4ade80)"; }
+          else if (isDone) { statusLabel = "เสร็จ"; statusColor = "var(--accent)"; }
           else if (running) { statusLabel = "รอ"; statusColor = "var(--text-muted)"; }
 
           return (

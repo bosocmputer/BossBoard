@@ -201,13 +201,13 @@ export default function ResearchPage() {
         <div className="rounded-lg px-3 py-2 border flex items-center gap-2 mb-2" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
           {session.meetingSessionId && !session.rounds.some(r => r.isSynthesis) ? (
             <>
-              <span className="inline-block w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+              <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>รอวาระถัดไป — หรือกด <strong style={{ color: "var(--accent)" }}>สรุปมติ</strong> เมื่อพร้อมปิดประชุม</span>
             </>
           ) : session.rounds.some(r => r.isSynthesis) ? (
             <>
-              <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
-              <span className="text-xs font-medium" style={{ color: "var(--green)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
+              <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
+              <span className="text-xs font-medium" style={{ color: "var(--accent)" }}>✅ ประชุมเสร็จสิ้น — มีมติที่ประชุมแล้ว</span>
             </>
           ) : null}
         </div>
