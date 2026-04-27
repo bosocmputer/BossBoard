@@ -1,7 +1,7 @@
 # LEDGIO AI — Production Roadmap
 
 > **สถานะปัจจุบัน:** Production-ready (self-hosted) — Auth + DB + UX Thai accounting ครบถ้วน พร้อมให้ลูกค้าใช้งาน  
-> **อัปเดตล่าสุด:** 2026-04-21 | **เวอร์ชัน:** v1.14.1
+> **อัปเดตล่าสุด:** 2026-04-27 | **เวอร์ชัน:** v1.15.0
 
 ---
 
@@ -81,6 +81,31 @@
 
 ---
 
+## Phase UX-2 — /research Redesign & PDF Export ✅ เสร็จแล้ว (2026-04-27)
+
+**เป้าหมาย:** ปรับ /research ให้เป็น "ห้องประชุมที่ปรึกษา" สำหรับนักบัญชี/สำนักงานบัญชี โดยเฉพาะ
+
+### ✅ เสร็จแล้ว
+
+- [x] **ลบ sidebar ออกทั้งหมด** — full-width layout ทั้ง empty state และ during meeting
+- [x] **Auto-select team** — ระบบเลือก agents ที่ active+hasApiKey ทั้งหมดให้อัตโนมัติ
+- [x] **AgentTeamModal** — ปุ่ม "ปรับทีม" เปิด modal override ทีมได้
+- [x] **TeamPreviewBar** — แถว real-time agent status ระหว่างประชุม
+- [x] **MeetingStartCard hero redesign** — client selector ก่อน, textarea ใหญ่, ทีมด้านล่าง
+- [x] **ลบ token count / cost ออกทุกที่** ใน /research
+- [x] **ลบ templates / categories** — user พิมพ์คำถามเอง
+- [x] **Ocean Dark theme consistency** — ลบสีเขียวทั้งหมด → ใช้ `var(--accent)` เท่านั้น
+- [x] **Grid background** — เหมือนหน้าอื่น (body::before ส่องผ่านได้)
+- [x] **Fix synthesis duplicate** — ปุ่ม "สรุปมติ" ซ่อนเมื่อมี synthesis round แล้ว
+- [x] **Fix history team restore** — โหลด session จาก history → setSelectedIds ตาม agentIds
+- [x] **Export PDF รายงานการประชุมทางการ** (jsPDF + Sarabun font)
+  - A4 layout, header LEDGIO AI, วันที่พุทธศักราช
+  - ความเห็นแต่ละ agent แยก section
+  - กรอบมติพื้นสีอ่อน พร้อม action items / risk level / legal refs
+  - เลขหน้า + footer ทุกหน้า
+
+---
+
 ## Phase UX — Thai Accounting UX Overhaul ✅ เสร็จแล้ว (2026-04-21)
 
 **เป้าหมาย:** ทำให้พนักงานบัญชีอายุ 25–50 ใช้ระบบได้โดยไม่ต้องรู้เรื่อง AI/LLM
@@ -119,7 +144,7 @@
 - [ ] **Admin dashboard** (`/admin`) — manage users, plans, API keys
 - [ ] **Audit log** — บันทึกการกระทำสำคัญ (สร้าง/ลบ agent, export ประชุม ฯลฯ)
 - [ ] **Email notifications** — แจ้งเตือนเมื่อ plan ใกล้ครบ limit
-- [ ] **Export ประชุม PDF** — นอกจาก Markdown ที่มีอยู่แล้ว
+- [x] **Export ประชุม PDF** — ✅ เสร็จแล้ว (2026-04-27) jsPDF + Sarabun font, A4 รายงานทางการ
 - [ ] **Custom domain** per enterprise customer (white-label)
 
 ---
