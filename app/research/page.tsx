@@ -651,7 +651,11 @@ export default function ResearchPage() {
                 sessionStatusFilter={history.sessionStatusFilter}
                 onSessionSearch={history.setSessionSearch}
                 onStatusFilter={history.setSessionStatusFilter}
-                onLoadSession={(s) => { history.loadServerSession(s); setHistoryOpen(false); }}
+                onLoadSession={(s) => {
+                  history.loadServerSession(s);
+                  if (s.agentIds?.length) setup.setSelectedIds(new Set(s.agentIds));
+                  setHistoryOpen(false);
+                }}
                 onCloseSession={() => history.clearViewingSession()}
                 onRefresh={history.fetchServerHistory}
                 rounds={session.rounds}
