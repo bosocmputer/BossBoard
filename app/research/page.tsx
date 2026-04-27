@@ -12,6 +12,7 @@ import { useMeetingSession } from "./hooks/useMeetingSession";
 import { useMeetingSetup } from "./hooks/useMeetingSetup";
 import { useServerHistory } from "./hooks/useServerHistory";
 import { buildMinutesMarkdown } from "./utils";
+import { generateMeetingPDF } from "./lib/generateMeetingPDF";
 import {
   ROLE_LABEL, ROLE_COLOR,
   type ConversationRound, type ServerSession, type ResearchMessage,
@@ -38,6 +39,7 @@ export default function ResearchPage() {
   const [pinnedRoundIdx, setPinnedRoundIdx] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [agentTeamModalOpen, setAgentTeamModalOpen] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -122,6 +124,36 @@ export default function ResearchPage() {
     setShowClearConfirm(false);
     session.clearSessionStorage(currentUserId);
     showToast("info", "เริ่มการประชุมใหม่เรียบร้อย");
+  };
+
+  const exportPDF = async () => {
+    if (pdfGenerating) return;
+    let exportRounds: ConversationRound[];
+    if (history.viewingSession) {
+      exportRounds = [{
+        question: history.viewingSession.question,
+        messages: history.viewingSession.messages.map((m) => ({
+          id: m.id, agentId: m.agentId, agentName: m.agentName, agentEmoji: m.agentEmoji,
+          role: m.role, content: m.content, tokensUsed: m.tokensUsed,
+          timestamp: m.timestamp || new Date().toISOString(),
+        })),
+        finalAnswer: history.viewingSession.finalAnswer || "",
+        agentTokens: {}, suggestions: [],
+      }];
+    } else {
+      if (session.rounds.length === 0) return;
+      exportRounds = session.rounds;
+    }
+    setPdfGenerating(true);
+    try {
+      await generateMeetingPDF(exportRounds, setup.agents, {
+        companyName: setup.companyName || undefined,
+      });
+    } catch {
+      showToast("error", "สร้าง PDF ไม่สำเร็จ — กรุณาลองใหม่");
+    } finally {
+      setPdfGenerating(false);
+    }
   };
 
   const exportMinutes = () => {
@@ -503,8 +535,8 @@ export default function ResearchPage() {
               <button onClick={exportMinutes} className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="Export รายงานการประชุม">
                 <Download size={14} />
               </button>
-              <button onClick={() => window.print()} className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} title="พิมพ์ / บันทึก PDF">
-                <Printer size={14} />
+              <button onClick={exportPDF} disabled={pdfGenerating} className="w-8 h-8 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-40" style={{ borderColor: pdfGenerating ? "var(--accent)" : "var(--border)", color: pdfGenerating ? "var(--accent)" : "var(--text-muted)" }} title={pdfGenerating ? "กำลังสร้าง PDF..." : "บันทึก PDF รายงานการประชุม"}>
+                {pdfGenerating ? <span className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} /> : <Printer size={14} />}
               </button>
             </>
           )}
