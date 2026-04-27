@@ -467,7 +467,7 @@ export default function ResearchPage() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     // Root: fixed viewport — nothing outside scrolls
-    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "var(--bg)" }}>
+    <div className="h-screen overflow-hidden flex flex-col">
 
       {/* ── HEADER — fixed height, never scrolls ─────────────────────────── */}
       <header
